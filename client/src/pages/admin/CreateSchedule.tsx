@@ -5,7 +5,9 @@ import {
   getMatches, 
   updateMatch,
   deleteMatch,
-  initializeMatchStats 
+  initializeMatchStats,
+  listenToTeams,
+  listenToMatches
 } from '@/lib/firebase';
 import type { Team, Match } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
@@ -30,45 +32,39 @@ const CreateSchedule = () => {
   const [editStartTime, setEditStartTime] = useState<string>('');
   const { toast } = useToast();
 
-  // Load teams
+  // Load teams - use a listener to keep data in sync
   useEffect(() => {
-    const loadTeams = async () => {
-      try {
-        const teamsData = await getTeams();
-        setTeams(teamsData);
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to load teams",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoadingTeams(false);
-      }
+    setIsLoadingTeams(true);
+    
+    // Set up listener for teams collection
+    const unsubscribe = listenToTeams((teamsData) => {
+      console.log('Teams data updated:', teamsData);
+      setTeams(teamsData);
+      setIsLoadingTeams(false);
+    });
+    
+    // Clean up listener on unmount
+    return () => {
+      unsubscribe();
     };
+  }, []);
 
-    loadTeams();
-  }, [toast]);
-
-  // Load matches
+  // Load matches - use a listener to keep data in sync
   useEffect(() => {
-    const loadMatches = async () => {
-      try {
-        const matchesData = await getMatches();
-        setMatches(matchesData);
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to load matches",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoadingMatches(false);
-      }
+    setIsLoadingMatches(true);
+    
+    // Set up listener for matches collection
+    const unsubscribe = listenToMatches((matchesData) => {
+      console.log('Matches data updated:', matchesData);
+      setMatches(matchesData);
+      setIsLoadingMatches(false);
+    });
+    
+    // Clean up listener on unmount
+    return () => {
+      unsubscribe();
     };
-
-    loadMatches();
-  }, [toast]);
+  }, []);
 
   const handleSubmit = async () => {
     if (!teamA || !teamB) {
@@ -111,20 +107,6 @@ const CreateSchedule = () => {
       // Initialize stats for this match
       if (matchId) {
         await initializeMatchStats(matchId);
-        
-        // Update local state
-        setMatches(prev => ({
-          ...prev,
-          [matchId]: {
-            id: matchId,
-            courtNumber,
-            teamA,
-            teamB,
-            startTime,
-            scoreA: 0,
-            scoreB: 0
-          }
-        }));
       }
       
       toast({
@@ -192,18 +174,6 @@ const CreateSchedule = () => {
         startTime: editStartTime
       });
       
-      // Update local state
-      setMatches(prev => ({
-        ...prev,
-        [editingMatchId]: {
-          ...prev[editingMatchId],
-          courtNumber: editCourtNumber,
-          teamA: editTeamA,
-          teamB: editTeamB,
-          startTime: editStartTime
-        }
-      }));
-      
       toast({
         title: "Success",
         description: "Match updated successfully",
@@ -237,13 +207,6 @@ const CreateSchedule = () => {
     
     try {
       await deleteMatch(matchId);
-      
-      // Update local state
-      setMatches(prev => {
-        const updated = { ...prev };
-        delete updated[matchId];
-        return updated;
-      });
       
       toast({
         title: "Success",

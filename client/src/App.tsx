@@ -10,6 +10,7 @@ import LoginPage from "@/pages/admin/LoginPage";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import StatTrackerPage from "@/pages/tracker/StatTrackerPage";
 import ScoreboardPage from "@/pages/scoreboard/ScoreboardPage";
+import AllCourtsScoreboard from "@/pages/scoreboard/AllCourtsScoreboard";
 import Home from "@/pages/Home";
 
 function Router() {
@@ -22,6 +23,7 @@ function Router() {
           <Route path="/admin" component={LoginPage} />
           <Route path="/admin/dashboard" component={AdminDashboard} />
           <Route path="/track" component={StatTrackerPage} />
+          <Route path="/scoreboard/all" component={AllCourtsScoreboard} />
           <Route path="/scoreboard/:courtId" component={ScoreboardPage} />
           {/* Fallback to 404 */}
           <Route component={NotFound} />

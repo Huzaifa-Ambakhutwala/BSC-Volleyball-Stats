@@ -80,18 +80,21 @@ const ScoreboardPage = () => {
         <div className="mb-6">
           <h2 className="text-xl font-bold">Scoreboard Display</h2>
           <p className="text-gray-600">Select a court to view:</p>
-          <div className="mt-3 flex space-x-2">
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Link href="/scoreboard/all">
+              <button className="btn-blue">All Courts</button>
+            </Link>
             <Link href="/scoreboard/1">
-              <a className={`btn-blue ${courtNumber === 1 ? 'bg-blue-800' : ''}`}>Court 1</a>
+              <button className={`btn-blue ${courtNumber === 1 ? 'bg-blue-800' : ''}`}>Court 1</button>
             </Link>
             <Link href="/scoreboard/2">
-              <a className={`btn-blue ${courtNumber === 2 ? 'bg-blue-800' : ''}`}>Court 2</a>
+              <button className={`btn-blue ${courtNumber === 2 ? 'bg-blue-800' : ''}`}>Court 2</button>
             </Link>
             <Link href="/scoreboard/3">
-              <a className={`btn-blue ${courtNumber === 3 ? 'bg-blue-800' : ''}`}>Court 3</a>
+              <button className={`btn-blue ${courtNumber === 3 ? 'bg-blue-800' : ''}`}>Court 3</button>
             </Link>
             <Link href="/scoreboard/4">
-              <a className={`btn-blue ${courtNumber === 4 ? 'bg-blue-800' : ''}`}>Court 4</a>
+              <button className={`btn-blue ${courtNumber === 4 ? 'bg-blue-800' : ''}`}>Court 4</button>
             </Link>
           </div>
         </div>

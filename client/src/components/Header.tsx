@@ -15,7 +15,7 @@ const Header = () => {
           <ul className="flex space-x-6">
             <li>
               <Link href="/admin" 
-                className={`hover:text-[hsl(var(--vb-yellow))] transition ${location === '/admin' ? 'text-[hsl(var(--vb-yellow))]' : ''}`}>
+                className={`hover:text-[hsl(var(--vb-yellow))] transition ${location === '/admin' || location.startsWith('/admin/') ? 'text-[hsl(var(--vb-yellow))]' : ''}`}>
                 Admin
               </Link>
             </li>

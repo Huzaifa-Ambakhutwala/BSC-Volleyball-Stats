@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getDatabase, ref, set, get, update, push, onValue, off } from "firebase/database";
+import { getDatabase, ref, set, get, update, push, onValue, off, remove } from "firebase/database";
 import type { Player, Team, Match, PlayerStats, MatchStats } from "@shared/schema";
 
 // Firebase configuration from environment variables
@@ -41,6 +41,18 @@ export const listenToPlayers = (callback: (players: Record<string, Player>) => v
   return () => off(playersRef);
 };
 
+export const updatePlayer = async (playerId: string, name: string) => {
+  const playerRef = ref(database, `players/${playerId}`);
+  await update(playerRef, { name });
+  return true;
+};
+
+export const deletePlayer = async (playerId: string) => {
+  const playerRef = ref(database, `players/${playerId}`);
+  await remove(playerRef);
+  return true;
+};
+
 // Teams API
 export const createTeam = async (teamName: string, playerIds: string[]) => {
   const teamsRef = ref(database, 'teams');
@@ -67,6 +79,18 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
   const teamRef = ref(database, `teams/${teamId}`);
   const snapshot = await get(teamRef);
   return snapshot.val();
+};
+
+export const updateTeam = async (teamId: string, teamName: string, playerIds: string[]) => {
+  const teamRef = ref(database, `teams/${teamId}`);
+  await update(teamRef, { teamName, players: playerIds });
+  return true;
+};
+
+export const deleteTeam = async (teamId: string) => {
+  const teamRef = ref(database, `teams/${teamId}`);
+  await remove(teamRef);
+  return true;
 };
 
 // Matches API

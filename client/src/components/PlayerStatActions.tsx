@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Player, PlayerStats } from '@shared/schema';
-import { updatePlayerStat } from '@/lib/firebase';
+import { updatePlayerStat, listenToPlayerStats, createEmptyPlayerStats } from '@/lib/firebase';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, CheckCircle2 } from 'lucide-react';
 
 interface PlayerStatActionsProps {
   player: Player;
@@ -11,7 +13,19 @@ interface PlayerStatActionsProps {
 }
 
 const PlayerStatActions = ({ player, playerId, matchId, isSelected, onSelect }: PlayerStatActionsProps) => {
-  // A separate component for all the action buttons
+  const [stats, setStats] = useState<PlayerStats>(createEmptyPlayerStats());
+  
+  useEffect(() => {
+    if (!matchId || !playerId) return;
+    
+    const unsubscribe = listenToPlayerStats(matchId, playerId, (playerStats) => {
+      setStats(playerStats);
+    });
+    
+    return () => unsubscribe();
+  }, [matchId, playerId]);
+  
+  // Display some key stats alongside the player's name
   return (
     <div 
       className={`w-full cursor-pointer rounded-lg p-3 transition-colors ${
@@ -23,6 +37,12 @@ const PlayerStatActions = ({ player, playerId, matchId, isSelected, onSelect }: 
     >
       <div className="text-center">
         <h4 className="font-semibold text-[hsl(var(--vb-blue))]">{player.name}</h4>
+        <div className="mt-1 flex justify-center space-x-2 text-xs text-gray-500">
+          <span title="Aces">A: {stats.aces}</span>
+          <span title="Blocks">B: {stats.blocks}</span>
+          <span title="Kills">K: {stats.spikes}</span>
+          <span title="Digs">D: {stats.digs}</span>
+        </div>
       </div>
     </div>
   );
@@ -34,14 +54,41 @@ interface ActionButtonProps {
   className?: string;
 }
 
-const ActionButton = ({ label, onClick, className = "btn-neutral" }: ActionButtonProps) => (
-  <button 
-    className={`${className} w-full text-center py-2 px-3`}
-    onClick={onClick}
-  >
-    {label}
-  </button>
-);
+const ActionButton = ({ label, onClick, className = "btn-neutral" }: ActionButtonProps) => {
+  const [isActive, setIsActive] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  
+  const handleClick = () => {
+    setIsActive(true);
+    
+    // Call the provided onClick handler
+    onClick();
+    
+    // Show success indicator
+    setShowSuccess(true);
+    
+    // Reset after a delay
+    setTimeout(() => {
+      setIsActive(false);
+      setShowSuccess(false);
+    }, 1000);
+  };
+  
+  return (
+    <button 
+      className={`${className} w-full text-center py-2 px-3 relative ${isActive ? 'ring-2 ring-white ring-opacity-50' : ''}`}
+      onClick={handleClick}
+      disabled={isActive}
+    >
+      {showSuccess && (
+        <span className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20 rounded">
+          <CheckCircle2 className="h-5 w-5 text-white" />
+        </span>
+      )}
+      {label}
+    </button>
+  );
+};
 
 interface ActionCategoryProps {
   title: string;
@@ -64,6 +111,9 @@ interface StatActionsProps {
 }
 
 export const StatActions = ({ matchId, selectedPlayerId }: StatActionsProps) => {
+  const { toast } = useToast();
+  const [isUpdating, setIsUpdating] = useState(false);
+
   if (!selectedPlayerId) {
     return (
       <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
@@ -72,28 +122,56 @@ export const StatActions = ({ matchId, selectedPlayerId }: StatActionsProps) => 
     );
   }
 
-  const handleStatUpdate = (statName: keyof PlayerStats) => {
+  const handleStatUpdate = (statName: keyof PlayerStats, label: string) => {
     if (!selectedPlayerId || !matchId) return;
     
-    updatePlayerStat(matchId, selectedPlayerId, statName, 1);
+    // Set loading state
+    setIsUpdating(true);
+    
+    // Update the stat
+    updatePlayerStat(matchId, selectedPlayerId, statName, 1)
+      .then(() => {
+        // Show success toast
+        toast({
+          title: "Stat Recorded",
+          description: `${label} stat updated successfully`,
+          variant: "default",
+        });
+      })
+      .catch((error) => {
+        toast({
+          title: "Error",
+          description: "Failed to update stat",
+          variant: "destructive",
+        });
+      })
+      .finally(() => {
+        setIsUpdating(false);
+      });
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4">
+    <div className="bg-white border border-gray-200 rounded-lg p-4 relative">
+      {isUpdating && (
+        <div className="absolute inset-0 bg-black bg-opacity-10 flex items-center justify-center rounded-lg">
+          <Loader2 className="h-8 w-8 animate-spin text-white" />
+        </div>
+      )}
+      
       <ActionCategory title="In-Rally" className="bg-gray-200 text-gray-800">
         <ActionButton 
           label="Dig" 
-          onClick={() => handleStatUpdate('digs')} 
+          onClick={() => handleStatUpdate('digs', 'Dig')} 
           className="btn-neutral"
         />
         <ActionButton 
           label="Block" 
-          onClick={() => handleStatUpdate('blocks')} 
+          onClick={() => handleStatUpdate('blocks', 'Block')} 
           className="btn-neutral"
         />
         <ActionButton 
           label="Spike" 
-          onClick={() => handleStatUpdate('spikes')} 
+          onClick={() => handleStatUpdate('spikes', 'Spike')} 
           className="btn-neutral"
         />
       </ActionCategory>
@@ -101,27 +179,27 @@ export const StatActions = ({ matchId, selectedPlayerId }: StatActionsProps) => 
       <ActionCategory title="Earned" className="bg-[hsl(var(--vb-success))] text-white">
         <ActionButton 
           label="Ace" 
-          onClick={() => handleStatUpdate('aces')} 
+          onClick={() => handleStatUpdate('aces', 'Ace')} 
           className="btn-success"
         />
         <ActionButton 
-          label="Spike" 
-          onClick={() => handleStatUpdate('spikes')} 
+          label="Kill" 
+          onClick={() => handleStatUpdate('spikes', 'Kill')} 
           className="btn-success"
         />
         <ActionButton 
           label="Tip" 
-          onClick={() => handleStatUpdate('tips')} 
+          onClick={() => handleStatUpdate('tips', 'Tip')} 
           className="btn-success"
         />
         <ActionButton 
           label="Dump" 
-          onClick={() => handleStatUpdate('dumps')} 
+          onClick={() => handleStatUpdate('dumps', 'Dump')} 
           className="btn-success"
         />
         <ActionButton 
           label="Block" 
-          onClick={() => handleStatUpdate('blocks')} 
+          onClick={() => handleStatUpdate('blocks', 'Block')} 
           className="btn-success"
         />
       </ActionCategory>
@@ -129,32 +207,32 @@ export const StatActions = ({ matchId, selectedPlayerId }: StatActionsProps) => 
       <ActionCategory title="Error" className="bg-[hsl(var(--vb-warning))] text-white">
         <ActionButton 
           label="Serve" 
-          onClick={() => handleStatUpdate('serveErrors')} 
+          onClick={() => handleStatUpdate('serveErrors', 'Serve Error')} 
           className="btn-warning"
         />
         <ActionButton 
           label="Spike" 
-          onClick={() => handleStatUpdate('spikeErrors')} 
+          onClick={() => handleStatUpdate('spikeErrors', 'Spike Error')} 
           className="btn-warning"
         />
         <ActionButton 
           label="Receive" 
-          onClick={() => handleStatUpdate('digs')} 
+          onClick={() => handleStatUpdate('digs', 'Receive Error')} 
           className="btn-warning"
         />
         <ActionButton 
           label="Set" 
-          onClick={() => handleStatUpdate('dumps')} 
+          onClick={() => handleStatUpdate('dumps', 'Set Error')} 
           className="btn-warning"
         />
         <ActionButton 
           label="Whose Ball?" 
-          onClick={() => handleStatUpdate('digs')} 
+          onClick={() => handleStatUpdate('digs', 'Coverage Error')} 
           className="btn-warning"
         />
         <ActionButton 
           label="Block" 
-          onClick={() => handleStatUpdate('blocks')} 
+          onClick={() => handleStatUpdate('blocks', 'Block Error')} 
           className="btn-warning"
         />
       </ActionCategory>
@@ -162,32 +240,32 @@ export const StatActions = ({ matchId, selectedPlayerId }: StatActionsProps) => 
       <ActionCategory title="Fault" className="bg-[hsl(var(--vb-error))] text-white">
         <ActionButton 
           label="Serve" 
-          onClick={() => handleStatUpdate('serveErrors')} 
+          onClick={() => handleStatUpdate('serveErrors', 'Serve Fault')} 
           className="btn-error"
         />
         <ActionButton 
           label="Spike" 
-          onClick={() => handleStatUpdate('spikeErrors')} 
+          onClick={() => handleStatUpdate('spikeErrors', 'Spike Fault')} 
           className="btn-error"
         />
         <ActionButton 
           label="Net Touch" 
-          onClick={() => handleStatUpdate('netTouches')} 
+          onClick={() => handleStatUpdate('netTouches', 'Net Touch')} 
           className="btn-error"
         />
         <ActionButton 
           label="Foot Fault" 
-          onClick={() => handleStatUpdate('footFaults')} 
+          onClick={() => handleStatUpdate('footFaults', 'Foot Fault')} 
           className="btn-error"
         />
         <ActionButton 
           label="Reach" 
-          onClick={() => handleStatUpdate('reaches')} 
+          onClick={() => handleStatUpdate('reaches', 'Reach')} 
           className="btn-error"
         />
         <ActionButton 
           label="Carry" 
-          onClick={() => handleStatUpdate('carries')} 
+          onClick={() => handleStatUpdate('carries', 'Carry')} 
           className="btn-error"
         />
       </ActionCategory>

@@ -96,14 +96,7 @@ const AddPlayers = () => {
       // Update player in database
       await updatePlayer(editingPlayerId, editPlayerName);
       
-      // Update local state
-      setPlayersList(prev => ({
-        ...prev,
-        [editingPlayerId]: { 
-          ...prev[editingPlayerId], 
-          name: editPlayerName 
-        }
-      }));
+      // No need to update local state - Firebase listener will handle it
       
       toast({
         title: "Success",
@@ -135,12 +128,7 @@ const AddPlayers = () => {
       // Delete from database
       await deletePlayer(playerId);
       
-      // Update local state
-      setPlayersList(prev => {
-        const updated = { ...prev };
-        delete updated[playerId];
-        return updated;
-      });
+      // No need to update local state - Firebase listener will handle it
       
       toast({
         title: "Success",
@@ -167,13 +155,9 @@ const AddPlayers = () => {
     setIsAddingSingle(true);
     
     try {
-      const newPlayerId = await addPlayer(newPlayerName);
+      await addPlayer(newPlayerName);
       
-      // Update local state
-      setPlayersList(prev => ({
-        ...prev,
-        [newPlayerId]: { id: newPlayerId, name: newPlayerName }
-      }));
+      // No need to update local state - Firebase listener will handle it
       
       toast({
         title: "Success",
@@ -240,9 +224,9 @@ const AddPlayers = () => {
             </div>
           ) : (
             <div className="divide-y">
-              {Object.values(playersList).map(player => (
-                <div key={player.id} className="px-4 py-3 flex items-center">
-                  {editingPlayerId === player.id ? (
+              {Object.entries(playersList).map(([playerId, player]) => (
+                <div key={playerId} className="px-4 py-3 flex items-center">
+                  {editingPlayerId === playerId ? (
                     // Edit mode
                     <div className="flex-grow flex space-x-2">
                       <input
@@ -273,14 +257,14 @@ const AddPlayers = () => {
                       <div className="w-24 flex justify-end space-x-1">
                         <button 
                           className="text-blue-500 p-1 hover:bg-blue-50 rounded" 
-                          onClick={() => handleEditClick(player)}
+                          onClick={() => handleEditClick({ ...player, id: playerId })}
                           title="Edit"
                         >
                           <Pencil className="h-5 w-5" />
                         </button>
                         <button 
                           className="text-red-500 p-1 hover:bg-red-50 rounded" 
-                          onClick={() => handleDeleteClick(player.id)}
+                          onClick={() => handleDeleteClick(playerId)}
                           title="Delete"
                           disabled={isDeleting}
                         >

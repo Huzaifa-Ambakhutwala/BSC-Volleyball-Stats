@@ -1,27 +1,42 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
 
 const LoginForm = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const { login } = useAuth();
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoggingIn(true);
     
-    if (login(username, password)) {
+    try {
+      const success = await login(username, password);
+      
+      if (success) {
+        toast({
+          title: "Login Successful",
+          description: "Welcome to the admin panel",
+        });
+      } else {
+        toast({
+          title: "Login Failed",
+          description: "Invalid username or password",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
       toast({
-        title: "Login Successful",
-        description: "Welcome to the admin panel",
-      });
-    } else {
-      toast({
-        title: "Login Failed",
-        description: "Invalid username or password",
+        title: "Login Error",
+        description: "An error occurred during login. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 

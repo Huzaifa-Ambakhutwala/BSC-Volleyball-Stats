@@ -9,8 +9,8 @@ import CreateSchedule from './CreateSchedule';
 type AdminTab = 'players' | 'teams' | 'schedule';
 
 const AdminPage = () => {
-  const { isAuthenticated, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<AdminTab>('players');
+  const { isAuthenticated, logout } = useAuth();
 
   if (!isAuthenticated) {
     return <LoginForm />;

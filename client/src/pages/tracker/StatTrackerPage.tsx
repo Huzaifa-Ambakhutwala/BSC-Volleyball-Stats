@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { getMatches, getTeamById, getPlayers, updateMatchScore, listenToMatchById } from '@/lib/firebase';
 import type { Match, Team, Player } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
-import PlayerStatCard from '@/components/PlayerStatCard';
+import PlayerStatActions, { StatActions } from '@/components/PlayerStatActions';
+import { Button } from '@/components/ui/button';
 
 const StatTrackerPage = () => {
   const [matches, setMatches] = useState<Record<string, Match>>({});
@@ -12,6 +13,8 @@ const StatTrackerPage = () => {
   const [teamB, setTeamB] = useState<Team | null>(null);
   const [playersMap, setPlayersMap] = useState<Record<string, Player>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   // Load all matches
@@ -68,6 +71,9 @@ const StatTrackerPage = () => {
       }
     });
     
+    // Reset selected player when match changes
+    setSelectedPlayerId(null);
+    
     return () => unsubscribe();
   }, [selectedMatchId]);
 
@@ -100,25 +106,56 @@ const StatTrackerPage = () => {
     setSelectedMatchId(e.target.value);
   };
 
-  const handleScoreUpdate = async (team: 'A' | 'B') => {
+  const handleScoreUpdate = async (team: 'A' | 'B', increment: 1 | -1) => {
     if (!currentMatch || !selectedMatchId) return;
     
     try {
-      const newScoreA = team === 'A' ? currentMatch.scoreA + 1 : currentMatch.scoreA;
-      const newScoreB = team === 'B' ? currentMatch.scoreB + 1 : currentMatch.scoreB;
+      let newScoreA = currentMatch.scoreA;
+      let newScoreB = currentMatch.scoreB;
+      
+      if (team === 'A') {
+        newScoreA = Math.max(0, currentMatch.scoreA + increment);
+      } else {
+        newScoreB = Math.max(0, currentMatch.scoreB + increment);
+      }
       
       await updateMatchScore(selectedMatchId, newScoreA, newScoreB);
-      
-      toast({
-        title: "Score Updated",
-        description: `Team ${team} score increased`,
-      });
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to update score",
         variant: "destructive",
       });
+    }
+  };
+
+  const handlePlayerSelect = (playerId: string) => {
+    setSelectedPlayerId(playerId === selectedPlayerId ? null : playerId);
+  };
+  
+  const handleSubmitMatch = async () => {
+    if (!currentMatch || !selectedMatchId) return;
+    
+    setIsSubmitting(true);
+    try {
+      // Here you would update the match status in your database
+      // await updateMatchStatus(selectedMatchId, 'completed');
+      
+      toast({
+        title: "Match Complete",
+        description: "Match data has been saved successfully",
+      });
+      
+      // Reset selection and navigation as needed
+      setSelectedPlayerId(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to complete the match",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -152,9 +189,32 @@ const StatTrackerPage = () => {
                 <option value="">Select a match</option>
                 {Object.entries(matches).map(([id, match]) => {
                   const startTime = new Date(match.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  
+                  // Get team names instead of IDs
+                  let teamAName = "Team A";
+                  let teamBName = "Team B";
+                  
+                  try {
+                    // Try to find the team names in the cache
+                    const teamAObj = Object.values(matches).find(m => m.teamA === match.teamA);
+                    const teamBObj = Object.values(matches).find(m => m.teamB === match.teamB);
+                    
+                    if (teamA && teamA.id === match.teamA) {
+                      teamAName = teamA.teamName;
+                    }
+                    
+                    if (teamB && teamB.id === match.teamB) {
+                      teamBName = teamB.teamName;
+                    }
+                  } catch (error) {
+                    // Fallback to IDs if names can't be found
+                    teamAName = `Team ${match.teamA}`;
+                    teamBName = `Team ${match.teamB}`;
+                  }
+                  
                   return (
                     <option key={id} value={id}>
-                      Court {match.courtNumber}: Teams {match.teamA} vs {match.teamB} ({startTime})
+                      Court {match.courtNumber}: {teamAName} vs {teamBName} ({startTime})
                     </option>
                   );
                 })}
@@ -165,49 +225,86 @@ const StatTrackerPage = () => {
           {currentMatch && (
             <>
               {/* Score Controls */}
-              <div className="flex justify-between items-center p-4 bg-gray-50 border-b border-gray-200">
-                <div className="flex items-center space-x-4">
-                  <span className="font-bold text-lg">Score:</span>
-                  <div className="flex items-center space-x-1">
-                    <span className="text-[hsl(var(--vb-blue))] font-bold text-xl">{currentMatch.scoreA}</span>
-                    <span className="text-gray-500">-</span>
-                    <span className="text-[hsl(var(--vb-yellow))] font-bold text-xl">{currentMatch.scoreB}</span>
+              <div className="p-4 bg-gray-50 border-b border-gray-200">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                  <div className="flex items-center space-x-4">
+                    <span className="font-bold text-lg">Score:</span>
+                    <div className="flex items-center space-x-1">
+                      <span className="text-[hsl(var(--vb-blue))] font-bold text-xl">{currentMatch.scoreA}</span>
+                      <span className="text-gray-500">-</span>
+                      <span className="text-[hsl(var(--vb-yellow))] font-bold text-xl">{currentMatch.scoreB}</span>
+                    </div>
                   </div>
-                </div>
-                <div className="flex space-x-3">
+                  <div className="flex space-x-3">
+                    <div className="flex flex-col items-center">
+                      <div className="text-sm text-[hsl(var(--vb-blue))] font-semibold mb-1">
+                        {teamA?.teamName || 'Team A'}
+                      </div>
+                      <div className="flex space-x-1">
+                        <button 
+                          className="bg-red-500 text-white w-8 h-8 rounded-md hover:bg-red-600 transition flex items-center justify-center"
+                          onClick={() => handleScoreUpdate('A', -1)}
+                        >
+                          -
+                        </button>
+                        <button 
+                          className="bg-[hsl(var(--vb-blue))] text-white w-8 h-8 rounded-md hover:bg-blue-700 transition flex items-center justify-center"
+                          onClick={() => handleScoreUpdate('A', 1)}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <div className="text-sm text-[hsl(var(--vb-yellow))] font-semibold mb-1">
+                        {teamB?.teamName || 'Team B'}
+                      </div>
+                      <div className="flex space-x-1">
+                        <button 
+                          className="bg-red-500 text-white w-8 h-8 rounded-md hover:bg-red-600 transition flex items-center justify-center"
+                          onClick={() => handleScoreUpdate('B', -1)}
+                        >
+                          -
+                        </button>
+                        <button 
+                          className="bg-[hsl(var(--vb-yellow))] text-white w-8 h-8 rounded-md hover:bg-amber-600 transition flex items-center justify-center"
+                          onClick={() => handleScoreUpdate('B', 1)}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                   <button 
-                    className="bg-[hsl(var(--vb-blue))] text-white py-2 px-4 rounded-md hover:bg-blue-700 transition"
-                    onClick={() => handleScoreUpdate('A')}
+                    className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition"
+                    onClick={handleSubmitMatch}
+                    disabled={isSubmitting}
                   >
-                    +1 Team A
-                  </button>
-                  <button 
-                    className="bg-[hsl(var(--vb-yellow))] text-white py-2 px-4 rounded-md hover:bg-amber-600 transition"
-                    onClick={() => handleScoreUpdate('B')}
-                  >
-                    +1 Team B
+                    {isSubmitting ? 'Submitting...' : 'Submit Match'}
                   </button>
                 </div>
               </div>
 
-              {/* Teams and Stats Tracking */}
+              {/* New Layout: Teams and Stats Tracking */}
               <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Team A */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Team A Players - Left Column */}
                   <div>
                     <h3 className="text-lg font-semibold mb-4 text-[hsl(var(--vb-blue))]">
-                      Team A: {teamA?.teamName || 'Loading...'}
+                      {teamA?.teamName || 'Team A'}
                     </h3>
                     {teamA ? (
-                      <div className="space-y-6">
+                      <div className="space-y-2">
                         {teamA.players.map(playerId => {
                           const player = playersMap[playerId];
                           return player ? (
-                            <PlayerStatCard 
+                            <PlayerStatActions 
                               key={playerId} 
                               player={player} 
                               playerId={playerId} 
-                              matchId={selectedMatchId} 
+                              matchId={selectedMatchId}
+                              isSelected={selectedPlayerId === playerId}
+                              onSelect={() => handlePlayerSelect(playerId)}
                             />
                           ) : null;
                         })}
@@ -217,21 +314,32 @@ const StatTrackerPage = () => {
                     )}
                   </div>
 
-                  {/* Team B */}
+                  {/* Actions - Right/Middle Column */}
+                  <div className="lg:col-span-2">
+                    <h3 className="text-lg font-semibold mb-4">Actions</h3>
+                    <StatActions 
+                      matchId={selectedMatchId}
+                      selectedPlayerId={selectedPlayerId}
+                    />
+                  </div>
+                  
+                  {/* Team B Players - Right Column */}
                   <div>
                     <h3 className="text-lg font-semibold mb-4 text-[hsl(var(--vb-yellow))]">
-                      Team B: {teamB?.teamName || 'Loading...'}
+                      {teamB?.teamName || 'Team B'}
                     </h3>
                     {teamB ? (
-                      <div className="space-y-6">
+                      <div className="space-y-2">
                         {teamB.players.map(playerId => {
                           const player = playersMap[playerId];
                           return player ? (
-                            <PlayerStatCard 
+                            <PlayerStatActions 
                               key={playerId} 
                               player={player} 
                               playerId={playerId} 
-                              matchId={selectedMatchId} 
+                              matchId={selectedMatchId}
+                              isSelected={selectedPlayerId === playerId}
+                              onSelect={() => handlePlayerSelect(playerId)}
                             />
                           ) : null;
                         })}

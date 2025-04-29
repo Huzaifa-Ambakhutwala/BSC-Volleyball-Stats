@@ -10,6 +10,7 @@ import AdminPage from "@/pages/admin/AdminPage";
 import StatTrackerPage from "@/pages/tracker/StatTrackerPage";
 import ScoreboardPage from "@/pages/scoreboard/ScoreboardPage";
 import Home from "@/pages/Home";
+// Auth is handled in each component that needs it
 
 function Router() {
   return (

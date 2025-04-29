@@ -77,9 +77,15 @@ const LoginForm = () => {
               </div>
               <button 
                 type="submit" 
-                className="w-full bg-[hsl(var(--vb-blue))] text-white py-2 px-4 rounded-md hover:bg-blue-700 transition"
+                className="w-full bg-[hsl(var(--vb-blue))] text-white py-2 px-4 rounded-md hover:bg-blue-700 transition flex justify-center items-center"
+                disabled={isLoggingIn}
               >
-                Login
+                {isLoggingIn ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Logging in...
+                  </>
+                ) : 'Login'}
               </button>
             </form>
           </div>

@@ -38,10 +38,17 @@ export const useAuth = () => {
     localStorage.setItem('bscVolleyballAuth', JSON.stringify(authState));
   }, [authState]);
 
-  const login = (username: string, password: string): boolean => {
+  const login = async (username: string, password: string): Promise<boolean> => {
     if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      // Set the state first
       setAuthState({ isAuthenticated: true, username, id: 1 });
-      return true;
+      
+      // Force a small delay to ensure state is updated before returning
+      return new Promise(resolve => {
+        setTimeout(() => {
+          resolve(true);
+        }, 50);
+      });
     }
     return false;
   };

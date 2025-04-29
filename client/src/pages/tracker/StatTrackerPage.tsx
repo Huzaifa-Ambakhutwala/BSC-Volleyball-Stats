@@ -285,11 +285,11 @@ const StatTrackerPage = () => {
                 </div>
               </div>
 
-              {/* New Layout: Teams and Stats Tracking */}
+              {/* Revised Layout: Team A (left), Actions (middle), Team B (right) */}
               <div className="p-6">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
                   {/* Team A Players - Left Column */}
-                  <div>
+                  <div className="lg:col-span-1">
                     <h3 className="text-lg font-semibold mb-4 text-[hsl(var(--vb-blue))]">
                       {teamA?.teamName || 'Team A'}
                     </h3>
@@ -314,9 +314,9 @@ const StatTrackerPage = () => {
                     )}
                   </div>
 
-                  {/* Actions - Right/Middle Column */}
-                  <div className="lg:col-span-2">
-                    <h3 className="text-lg font-semibold mb-4">Actions</h3>
+                  {/* Actions - Middle Column */}
+                  <div className="lg:col-span-3">
+                    <h3 className="text-lg font-semibold mb-4 text-center">Actions</h3>
                     <StatActions 
                       matchId={selectedMatchId}
                       selectedPlayerId={selectedPlayerId}
@@ -324,7 +324,7 @@ const StatTrackerPage = () => {
                   </div>
                   
                   {/* Team B Players - Right Column */}
-                  <div>
+                  <div className="lg:col-span-1">
                     <h3 className="text-lg font-semibold mb-4 text-[hsl(var(--vb-yellow))]">
                       {teamB?.teamName || 'Team B'}
                     </h3>

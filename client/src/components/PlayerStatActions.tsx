@@ -25,10 +25,10 @@ const PlayerStatActions = ({ player, playerId, matchId, isSelected, onSelect }: 
     return () => unsubscribe();
   }, [matchId, playerId]);
   
-  // Display some key stats alongside the player's name
+  // Display the player's name only, without stats
   return (
     <div 
-      className={`w-full cursor-pointer rounded-lg p-3 transition-colors ${
+      className={`w-full cursor-pointer rounded-lg p-2 transition-colors ${
         isSelected 
           ? 'bg-blue-100 border-2 border-[hsl(var(--vb-blue))]' 
           : 'bg-white border border-gray-200 hover:bg-gray-50'
@@ -36,13 +36,7 @@ const PlayerStatActions = ({ player, playerId, matchId, isSelected, onSelect }: 
       onClick={onSelect}
     >
       <div className="text-center">
-        <h4 className="font-semibold text-[hsl(var(--vb-blue))]">{player.name}</h4>
-        <div className="mt-1 flex justify-center space-x-2 text-xs text-gray-500">
-          <span title="Aces">A: {stats.aces}</span>
-          <span title="Blocks">B: {stats.blocks}</span>
-          <span title="Kills">K: {stats.spikes}</span>
-          <span title="Digs">D: {stats.digs}</span>
-        </div>
+        <h4 className="font-semibold text-sm text-[hsl(var(--vb-blue))]">{player.name}</h4>
       </div>
     </div>
   );

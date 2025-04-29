@@ -134,6 +134,34 @@ export const updateMatchScore = async (matchId: string, scoreA: number, scoreB: 
   await update(matchRef, { scoreA, scoreB });
 };
 
+export const updateMatch = async (
+  matchId: string, 
+  updates: {
+    courtNumber?: number;
+    teamA?: string;
+    teamB?: string;
+    startTime?: string;
+    scoreA?: number;
+    scoreB?: number;
+  }
+) => {
+  const matchRef = ref(database, `matches/${matchId}`);
+  await update(matchRef, updates);
+  return true;
+};
+
+export const deleteMatch = async (matchId: string) => {
+  // Delete match from matches collection
+  const matchRef = ref(database, `matches/${matchId}`);
+  await remove(matchRef);
+  
+  // Delete associated stats if they exist
+  const statsRef = ref(database, `stats/${matchId}`);
+  await remove(statsRef);
+  
+  return true;
+};
+
 export const getMatchesByCourtNumber = async (courtNumber: number): Promise<Record<string, Match>> => {
   const matchesRef = ref(database, 'matches');
   const snapshot = await get(matchesRef);

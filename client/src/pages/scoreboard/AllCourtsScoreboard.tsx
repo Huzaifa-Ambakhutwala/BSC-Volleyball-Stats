@@ -179,40 +179,7 @@ const AllCourtsScoreboard = () => {
           </div>
         )}
 
-        {/* Court Layout Diagram */}
-        <div className="mt-8">
-          <h3 className="text-lg font-semibold mb-4">Court Layout</h3>
-          <div className="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden shadow-md bg-gray-800 flex items-center justify-center">
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              viewBox="0 0 800 450" 
-              className="w-full h-full"
-            >
-              {/* Background */}
-              <rect x="0" y="0" width="800" height="450" fill="#1F2937" />
-              
-              {/* Court 1 (Top Left) */}
-              <rect x="50" y="50" width="300" height="150" fill="#3B82F6" fillOpacity="0.2" stroke="#3B82F6" strokeWidth="2"/>
-              <line x1="200" y1="50" x2="200" y2="200" stroke="#fff" strokeWidth="2" strokeDasharray="5 3"/>
-              <text x="200" y="125" textAnchor="middle" fill="#fff" fontSize="24" fontWeight="bold">1</text>
-              
-              {/* Court 2 (Top Right) */}
-              <rect x="450" y="50" width="300" height="150" fill="#3B82F6" fillOpacity="0.2" stroke="#3B82F6" strokeWidth="2"/>
-              <line x1="600" y1="50" x2="600" y2="200" stroke="#fff" strokeWidth="2" strokeDasharray="5 3"/>
-              <text x="600" y="125" textAnchor="middle" fill="#fff" fontSize="24" fontWeight="bold">2</text>
-              
-              {/* Court 3 (Bottom Left) */}
-              <rect x="50" y="250" width="300" height="150" fill="#3B82F6" fillOpacity="0.2" stroke="#3B82F6" strokeWidth="2"/>
-              <line x1="200" y1="250" x2="200" y2="400" stroke="#fff" strokeWidth="2" strokeDasharray="5 3"/>
-              <text x="200" y="325" textAnchor="middle" fill="#fff" fontSize="24" fontWeight="bold">3</text>
-              
-              {/* Court 4 (Bottom Right) */}
-              <rect x="450" y="250" width="300" height="150" fill="#3B82F6" fillOpacity="0.2" stroke="#3B82F6" strokeWidth="2"/>
-              <line x1="600" y1="250" x2="600" y2="400" stroke="#fff" strokeWidth="2" strokeDasharray="5 3"/>
-              <text x="600" y="325" textAnchor="middle" fill="#fff" fontSize="24" fontWeight="bold">4</text>
-            </svg>
-          </div>
-        </div>
+
       </div>
     </section>
   );

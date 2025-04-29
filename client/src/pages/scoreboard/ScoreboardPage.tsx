@@ -134,27 +134,7 @@ const ScoreboardPage = () => {
           </div>
         )}
 
-        {/* Court Images */}
-        <div className="mt-8">
-          <h3 className="text-lg font-semibold mb-4">Court Layout</h3>
-          <div className="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden shadow-md bg-gray-800 flex items-center justify-center">
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              viewBox="0 0 800 450" 
-              className="w-full h-full"
-            >
-              {/* Volleyball court SVG */}
-              <rect x="50" y="50" width="700" height="350" fill="#3B82F6" fillOpacity="0.2" stroke="#3B82F6" strokeWidth="4"/>
-              <line x1="400" y1="50" x2="400" y2="400" stroke="#fff" strokeWidth="4" strokeDasharray="10 5"/>
-              <circle cx="400" cy="225" r="50" stroke="#fff" strokeWidth="2" fill="none"/>
-              <rect x="50" y="175" width="50" height="100" fill="#F59E0B" fillOpacity="0.2" stroke="#F59E0B" strokeWidth="2"/>
-              <rect x="700" y="175" width="50" height="100" fill="#F59E0B" fillOpacity="0.2" stroke="#F59E0B" strokeWidth="2"/>
-              <text x="400" y="225" textAnchor="middle" fill="#fff" fontSize="48" fontWeight="bold">
-                {courtNumber}
-              </text>
-            </svg>
-          </div>
-        </div>
+
       </div>
     </section>
   );

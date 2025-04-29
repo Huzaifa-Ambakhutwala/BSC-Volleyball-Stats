@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getPlayers, createTeam, getTeams, updateTeam, deleteTeam } from '@/lib/firebase';
+import { getPlayers, createTeam, getTeams, updateTeam, deleteTeam, listenToPlayers, listenToTeams } from '@/lib/firebase';
 import type { Player, Team } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
 import { Pencil, Trash2, Save, X, Loader2, PlusCircle, Users } from 'lucide-react';
@@ -18,45 +18,39 @@ const CreateTeams = () => {
   const [editSelectedPlayers, setEditSelectedPlayers] = useState<string[]>([]);
   const { toast } = useToast();
 
-  // Load players
+  // Load players - use a listener to keep data in sync
   useEffect(() => {
-    const loadPlayers = async () => {
-      try {
-        const playersData = await getPlayers();
-        setPlayers(playersData);
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to load players",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoadingPlayers(false);
-      }
+    setIsLoadingPlayers(true);
+    
+    // Set up listener for players collection
+    const unsubscribe = listenToPlayers((playersData) => {
+      console.log('Players data updated:', playersData);
+      setPlayers(playersData);
+      setIsLoadingPlayers(false);
+    });
+    
+    // Clean up listener on unmount
+    return () => {
+      unsubscribe();
     };
+  }, []);
 
-    loadPlayers();
-  }, [toast]);
-
-  // Load teams
+  // Load teams - use a listener to keep data in sync
   useEffect(() => {
-    const loadTeams = async () => {
-      try {
-        const teamsData = await getTeams();
-        setTeams(teamsData);
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to load teams",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoadingTeams(false);
-      }
+    setIsLoadingTeams(true);
+    
+    // Set up listener for teams collection
+    const unsubscribe = listenToTeams((teamsData) => {
+      console.log('Teams data updated:', teamsData);
+      setTeams(teamsData);
+      setIsLoadingTeams(false);
+    });
+    
+    // Clean up listener on unmount
+    return () => {
+      unsubscribe();
     };
-
-    loadTeams();
-  }, [toast]);
+  }, []);
 
   const handleSubmit = async () => {
     if (!teamName.trim()) {

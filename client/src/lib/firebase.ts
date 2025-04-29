@@ -42,15 +42,29 @@ export const listenToPlayers = (callback: (players: Record<string, Player>) => v
 };
 
 export const updatePlayer = async (playerId: string, name: string) => {
-  const playerRef = ref(database, `players/${playerId}`);
-  await update(playerRef, { name });
-  return true;
+  try {
+    console.log(`Updating player with ID: ${playerId}, name: ${name}`);
+    const playerRef = ref(database, `players/${playerId}`);
+    await update(playerRef, { name });
+    console.log('Player update completed successfully');
+    return true;
+  } catch (error) {
+    console.error('Error updating player:', error);
+    throw error;
+  }
 };
 
 export const deletePlayer = async (playerId: string) => {
-  const playerRef = ref(database, `players/${playerId}`);
-  await remove(playerRef);
-  return true;
+  try {
+    console.log(`Deleting player with ID: ${playerId}`);
+    const playerRef = ref(database, `players/${playerId}`);
+    await remove(playerRef);
+    console.log('Player deletion completed successfully');
+    return true;
+  } catch (error) {
+    console.error('Error deleting player:', error);
+    throw error;
+  }
 };
 
 // Teams API
@@ -82,15 +96,29 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
 };
 
 export const updateTeam = async (teamId: string, teamName: string, playerIds: string[]) => {
-  const teamRef = ref(database, `teams/${teamId}`);
-  await update(teamRef, { teamName, players: playerIds });
-  return true;
+  try {
+    console.log(`Updating team with ID: ${teamId}, name: ${teamName}, players:`, playerIds);
+    const teamRef = ref(database, `teams/${teamId}`);
+    await update(teamRef, { teamName, players: playerIds });
+    console.log('Team update completed successfully');
+    return true;
+  } catch (error) {
+    console.error('Error updating team:', error);
+    throw error;
+  }
 };
 
 export const deleteTeam = async (teamId: string) => {
-  const teamRef = ref(database, `teams/${teamId}`);
-  await remove(teamRef);
-  return true;
+  try {
+    console.log(`Deleting team with ID: ${teamId}`);
+    const teamRef = ref(database, `teams/${teamId}`);
+    await remove(teamRef);
+    console.log('Team deletion completed successfully');
+    return true;
+  } catch (error) {
+    console.error('Error deleting team:', error);
+    throw error;
+  }
 };
 
 // Matches API
@@ -145,21 +173,36 @@ export const updateMatch = async (
     scoreB?: number;
   }
 ) => {
-  const matchRef = ref(database, `matches/${matchId}`);
-  await update(matchRef, updates);
-  return true;
+  try {
+    console.log(`Updating match with ID: ${matchId}, updates:`, updates);
+    const matchRef = ref(database, `matches/${matchId}`);
+    await update(matchRef, updates);
+    console.log('Match update completed successfully');
+    return true;
+  } catch (error) {
+    console.error('Error updating match:', error);
+    throw error;
+  }
 };
 
 export const deleteMatch = async (matchId: string) => {
-  // Delete match from matches collection
-  const matchRef = ref(database, `matches/${matchId}`);
-  await remove(matchRef);
-  
-  // Delete associated stats if they exist
-  const statsRef = ref(database, `stats/${matchId}`);
-  await remove(statsRef);
-  
-  return true;
+  try {
+    console.log(`Deleting match with ID: ${matchId}`);
+    // Delete match from matches collection
+    const matchRef = ref(database, `matches/${matchId}`);
+    await remove(matchRef);
+    
+    // Delete associated stats if they exist
+    console.log(`Deleting match stats for match ID: ${matchId}`);
+    const statsRef = ref(database, `stats/${matchId}`);
+    await remove(statsRef);
+    
+    console.log('Match deletion completed successfully');
+    return true;
+  } catch (error) {
+    console.error('Error deleting match:', error);
+    throw error;
+  }
 };
 
 export const getMatchesByCourtNumber = async (courtNumber: number): Promise<Record<string, Match>> => {

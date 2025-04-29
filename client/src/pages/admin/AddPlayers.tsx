@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { addPlayer, getPlayers, updatePlayer, deletePlayer } from '@/lib/firebase';
+import { addPlayer, getPlayers, updatePlayer, deletePlayer, listenToPlayers } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Pencil, Trash2, Save, X, Loader2, PlusCircle } from 'lucide-react';
 import type { Player } from '@shared/schema';
@@ -15,24 +15,22 @@ const AddPlayers = () => {
   const { toast } = useToast();
 
   // Load existing players
+  // Load players - use a listener to keep data in sync
   useEffect(() => {
-    const loadPlayers = async () => {
-      try {
-        const players = await getPlayers();
-        setPlayersList(players);
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to load players",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
+    setIsLoading(true);
+    
+    // Set up listener for players collection
+    const unsubscribe = listenToPlayers((playersData) => {
+      console.log('Players data updated:', playersData);
+      setPlayersList(playersData);
+      setIsLoading(false);
+    });
+    
+    // Clean up listener on unmount
+    return () => {
+      unsubscribe();
     };
-
-    loadPlayers();
-  }, [toast]);
+  }, []);
 
   const handleSubmit = async () => {
     if (!playersText.trim()) {

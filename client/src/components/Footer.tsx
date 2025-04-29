@@ -7,11 +7,9 @@ const Footer = () => {
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="mb-4 md:mb-0">
-            <Link href="/">
-              <a className="flex items-center space-x-2">
+            <Link href="/" className="flex items-center space-x-2">
                 <VolleyballIcon className="h-6 w-6 text-[hsl(var(--vb-yellow))]" />
                 <h2 className="text-lg font-bold">BSCVolleyballStats</h2>
-              </a>
             </Link>
             <p className="text-sm text-gray-400 mt-1">Real-time volleyball statistics tracking</p>
           </div>
@@ -19,18 +17,18 @@ const Footer = () => {
             <nav>
               <ul className="flex space-x-4">
                 <li>
-                  <Link href="/admin">
-                    <a className="hover:text-[hsl(var(--vb-yellow))] transition">Admin</a>
+                  <Link href="/admin" className="hover:text-[hsl(var(--vb-yellow))] transition">
+                    Admin
                   </Link>
                 </li>
                 <li>
-                  <Link href="/track">
-                    <a className="hover:text-[hsl(var(--vb-yellow))] transition">Stat Tracker</a>
+                  <Link href="/track" className="hover:text-[hsl(var(--vb-yellow))] transition">
+                    Stat Tracker
                   </Link>
                 </li>
                 <li>
-                  <Link href="/scoreboard/1">
-                    <a className="hover:text-[hsl(var(--vb-yellow))] transition">Scoreboard</a>
+                  <Link href="/scoreboard/1" className="hover:text-[hsl(var(--vb-yellow))] transition">
+                    Scoreboard
                   </Link>
                 </li>
               </ul>

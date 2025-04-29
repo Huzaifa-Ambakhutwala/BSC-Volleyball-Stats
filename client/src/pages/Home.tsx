@@ -23,8 +23,8 @@ const Home = () => {
               <p className="text-gray-600 mb-4">
                 Manage players, create teams, and schedule matches
               </p>
-              <Link href="/admin">
-                <a className="btn-blue inline-block">Access Admin</a>
+              <Link href="/admin" className="btn-blue inline-block">
+                Access Admin
               </Link>
             </div>
             
@@ -38,8 +38,8 @@ const Home = () => {
               <p className="text-gray-600 mb-4">
                 Record player stats and track scores in real-time
               </p>
-              <Link href="/track">
-                <a className="btn-blue inline-block">Track Stats</a>
+              <Link href="/track" className="btn-blue inline-block">
+                Track Stats
               </Link>
             </div>
             
@@ -53,8 +53,8 @@ const Home = () => {
               <p className="text-gray-600 mb-4">
                 Display live scores for each court in your tournament
               </p>
-              <Link href="/scoreboard/1">
-                <a className="btn-blue inline-block">View Scoreboard</a>
+              <Link href="/scoreboard/1" className="btn-blue inline-block">
+                View Scoreboard
               </Link>
             </div>
           </div>

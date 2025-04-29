@@ -1,0 +1,152 @@
+Perfect — thanks for the full update.
+Here’s your extended, detailed, Replit-ready prompt that will build the entire BSCVolleyballStats app in one go, based on your new workflow and visual expectations.
+
+⸻
+
+✅ REPLIT PROMPT: Full Volleyball Stat Tracking Web App (Admin + Stat Tracker + Scoreboard)
+
+Build a professional multi-page volleyball tournament web application called BSCVolleyballStats using:
+	•	React + Vite frontend
+	•	TailwindCSS for styling
+	•	Firebase Realtime Database for backend data storage
+	•	React Router DOM for navigation
+	•	Hosting on Vercel or Replit deployment
+
+Pages to Build:
+
+1. Admin Panel (Protected)
+
+Route: /admin
+Auth: Hardcoded login (username/password stored in code, no Firebase Auth)
+
+Sections in Admin Panel:
+
+A. Add Players (Bulk Input)
+	•	Large multiline text area
+	•	Accepts player names either comma-separated or newline-separated
+	•	Parses and adds each name to Firebase under /players
+
+B. Create Teams
+	•	Admin inputs a team name
+	•	Select multiple players from a multi-select dropdown (populated from /players)
+	•	On submit, creates a new team in Firebase /teams/{teamID} with:
+	•	teamName
+	•	playerIDs array
+
+C. Create Schedule
+	•	Form to select:
+	•	Court Number (1–4)
+	•	Team A
+	•	Team B (dropdowns populated from /teams)
+	•	Start Time
+	•	On submit, save match under /matches/{matchID} with:
+	•	courtNumber, teamA, teamB, startTime, scoreA, scoreB
+
+Design:
+	•	Clean, well-structured form layouts
+	•	Use blue and yellow volleyball-themed UI
+	•	Easy to use on laptop or tablet
+
+⸻
+
+2. Stat Tracker (Public)
+
+Route: /track
+No login required. Used by volunteers/stat keepers.
+	•	First, shows dropdown to select active match (court number + team names)
+	•	Displays two columns: Team A and Team B players
+	•	Each player has action buttons below them
+
+Action Buttons:
+	•	Grey: Good plays that didn’t directly earn a point (e.g., digs, regular serves)
+	•	Green: Actions that directly earned a point (e.g., ace, kill, block point)
+	•	Yellow: Errors during play that didn’t cost a point (e.g., overpass, net violation during rally)
+	•	Red: Faults that resulted in a lost point (e.g., foot fault, net touch on serve)
+
+Tap Interaction:
+	•	First tap = highlight with shadow (pending)
+	•	Second tap = confirm and increment count in /stats/{matchID}/{playerID} under action key
+	•	Floating score controls at top: +1 Team A, +1 Team B
+
+UI Requirements:
+	•	Use responsive grid layout
+	•	Stunning UI with large, tappable buttons
+	•	Maintain volleyball theme (blue/yellow accents)
+	•	Optimized for tablets and touchscreen interaction
+
+⸻
+
+3. Scoreboard Display (Public)
+
+Route: /scoreboard/:courtId
+Used to display match score live on TV/projector.
+	•	Pulls data from /matches based on courtId param
+	•	Displays:
+	•	Court #
+	•	Team A vs Team B
+	•	Score A - Score B (live)
+
+Design:
+	•	Minimalist
+	•	Fullscreen dark layout
+	•	Large text
+	•	Blue and yellow accents
+	•	Automatically updates score using Firebase listeners
+
+⸻
+
+Firebase Realtime DB Structure:
+
+/players/{playerID}
+  - name: String
+
+/teams/{teamID}
+  - teamName: String
+  - players: [playerID, playerID]
+
+/matches/{matchID}
+  - courtNumber: Number
+  - teamA: teamID
+  - teamB: teamID
+  - startTime: String
+  - scoreA: Number
+  - scoreB: Number
+
+/stats/{matchID}/{playerID}
+  - aces: Number
+  - serveErrors: Number
+  - spikes: Number
+  - spikeErrors: Number
+  - digs: Number
+  - blocks: Number
+  - netTouches: Number
+  - tips: Number
+  - dumps: Number
+  - footFaults: Number
+  - reaches: Number
+  - carries: Number
+
+Notes:
+	•	Do not use Firebase Authentication — login can be hardcoded for admin panel
+	•	Use modular React components
+	•	Use Tailwind for all styling (no external CSS frameworks)
+	•	App must be mobile + tablet friendly
+	•	Deploy-ready for Replit or Vercel
+
+⸻
+
+✅ How to Use:
+	•	Copy and paste this entire prompt into Replit AI or Clines
+	•	Let it scaffold the project
+	•	Add your Firebase config manually to firebase.js
+	•	Test it locally, then deploy to Vercel or use Replit hosting
+
+⸻
+
+✅ This prompt will build your full system — players ➔ teams ➔ schedule ➔ stat tracking ➔ scoreboard.
+Let me know if you want:
+	•	A short version of this for smaller AI models
+	•	Or a breakdown to build each part individually
+
+You’re running this like a product launch. Respect.
+Ready to go! Want a downloadable .txt version too?

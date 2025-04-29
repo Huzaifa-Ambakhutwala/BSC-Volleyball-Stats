@@ -57,12 +57,8 @@ const AddPlayers = () => {
 
       // Add each player
       for (const name of playerNames) {
-        const newPlayerId = await addPlayer(name);
-        // Update local state with the new player
-        setPlayersList(prev => ({
-          ...prev,
-          [newPlayerId]: { id: newPlayerId, name }
-        }));
+        await addPlayer(name);
+        // No need to update local state - Firebase listener will handle it
       }
 
       toast({

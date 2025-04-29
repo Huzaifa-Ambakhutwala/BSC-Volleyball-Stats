@@ -35,10 +35,22 @@ export const getPlayers = async (): Promise<Record<string, Player>> => {
 
 export const listenToPlayers = (callback: (players: Record<string, Player>) => void) => {
   const playersRef = ref(database, 'players');
-  onValue(playersRef, (snapshot) => {
-    callback(snapshot.val() || {});
+  console.log('Setting up players listener');
+  
+  // Use the returned unsubscribe function from onValue for proper cleanup
+  const unsubscribe = onValue(playersRef, (snapshot) => {
+    const data = snapshot.val() || {};
+    console.log('Players data received:', data);
+    callback(data);
+  }, (error) => {
+    console.error('Error in players listener:', error);
   });
-  return () => off(playersRef);
+  
+  // Return function that calls the unsubscribe function
+  return () => {
+    console.log('Removing players listener');
+    unsubscribe();
+  };
 };
 
 export const updatePlayer = async (playerId: string, name: string) => {
@@ -83,10 +95,22 @@ export const getTeams = async (): Promise<Record<string, Team>> => {
 
 export const listenToTeams = (callback: (teams: Record<string, Team>) => void) => {
   const teamsRef = ref(database, 'teams');
-  onValue(teamsRef, (snapshot) => {
-    callback(snapshot.val() || {});
+  console.log('Setting up teams listener');
+  
+  // Use the returned unsubscribe function from onValue for proper cleanup
+  const unsubscribe = onValue(teamsRef, (snapshot) => {
+    const data = snapshot.val() || {};
+    console.log('Teams data received:', data);
+    callback(data);
+  }, (error) => {
+    console.error('Error in teams listener:', error);
   });
-  return () => off(teamsRef);
+  
+  // Return function that calls the unsubscribe function
+  return () => {
+    console.log('Removing teams listener');
+    unsubscribe();
+  };
 };
 
 export const getTeamById = async (teamId: string): Promise<Team | null> => {
@@ -137,10 +161,22 @@ export const getMatches = async (): Promise<Record<string, Match>> => {
 
 export const listenToMatches = (callback: (matches: Record<string, Match>) => void) => {
   const matchesRef = ref(database, 'matches');
-  onValue(matchesRef, (snapshot) => {
-    callback(snapshot.val() || {});
+  console.log('Setting up matches listener');
+  
+  // Use the returned unsubscribe function from onValue for proper cleanup
+  const unsubscribe = onValue(matchesRef, (snapshot) => {
+    const data = snapshot.val() || {};
+    console.log('Matches data received:', data);
+    callback(data);
+  }, (error) => {
+    console.error('Error in matches listener:', error);
   });
-  return () => off(matchesRef);
+  
+  // Return function that calls the unsubscribe function
+  return () => {
+    console.log('Removing matches listener');
+    unsubscribe();
+  };
 };
 
 export const getMatchById = async (matchId: string): Promise<Match | null> => {
@@ -151,10 +187,22 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
 
 export const listenToMatchById = (matchId: string, callback: (match: Match | null) => void) => {
   const matchRef = ref(database, `matches/${matchId}`);
-  onValue(matchRef, (snapshot) => {
-    callback(snapshot.val());
+  console.log(`Setting up match listener for ID: ${matchId}`);
+  
+  // Use the returned unsubscribe function from onValue for proper cleanup
+  const unsubscribe = onValue(matchRef, (snapshot) => {
+    const data = snapshot.val();
+    console.log(`Match data received for ID ${matchId}:`, data);
+    callback(data);
+  }, (error) => {
+    console.error(`Error in match listener for ID ${matchId}:`, error);
   });
-  return () => off(matchRef);
+  
+  // Return function that calls the unsubscribe function
+  return () => {
+    console.log(`Removing match listener for ID: ${matchId}`);
+    unsubscribe();
+  };
 };
 
 export const updateMatchScore = async (matchId: string, scoreA: number, scoreB: number) => {
@@ -223,7 +271,10 @@ export const getMatchesByCourtNumber = async (courtNumber: number): Promise<Reco
 
 export const listenToMatchesByCourtNumber = (courtNumber: number, callback: (matches: Record<string, Match>) => void) => {
   const matchesRef = ref(database, 'matches');
-  onValue(matchesRef, (snapshot) => {
+  console.log(`Setting up matches by court ${courtNumber} listener`);
+  
+  // Use the returned unsubscribe function from onValue for proper cleanup
+  const unsubscribe = onValue(matchesRef, (snapshot) => {
     const matches = snapshot.val() || {};
     
     // Filter matches by court number
@@ -234,9 +285,17 @@ export const listenToMatchesByCourtNumber = (courtNumber: number, callback: (mat
       }
     });
     
+    console.log(`Matches for court ${courtNumber} received:`, filteredMatches);
     callback(filteredMatches);
+  }, (error) => {
+    console.error(`Error in matches by court ${courtNumber} listener:`, error);
   });
-  return () => off(matchesRef);
+  
+  // Return function that calls the unsubscribe function
+  return () => {
+    console.log(`Removing matches by court ${courtNumber} listener`);
+    unsubscribe();
+  };
 };
 
 // Stats API
@@ -272,10 +331,22 @@ export const listenToPlayerStats = (
   callback: (stats: PlayerStats) => void
 ) => {
   const playerStatsRef = ref(database, `stats/${matchId}/${playerId}`);
-  onValue(playerStatsRef, (snapshot) => {
-    callback(snapshot.val() || createEmptyPlayerStats());
+  console.log(`Setting up player stats listener for match ID: ${matchId}, player ID: ${playerId}`);
+  
+  // Use the returned unsubscribe function from onValue for proper cleanup
+  const unsubscribe = onValue(playerStatsRef, (snapshot) => {
+    const data = snapshot.val() || createEmptyPlayerStats();
+    console.log(`Player stats received for match ID: ${matchId}, player ID: ${playerId}:`, data);
+    callback(data);
+  }, (error) => {
+    console.error(`Error in player stats listener for match ID: ${matchId}, player ID: ${playerId}:`, error);
   });
-  return () => off(playerStatsRef);
+  
+  // Return function that calls the unsubscribe function
+  return () => {
+    console.log(`Removing player stats listener for match ID: ${matchId}, player ID: ${playerId}`);
+    unsubscribe();
+  };
 };
 
 export const listenToMatchStats = (
@@ -283,10 +354,22 @@ export const listenToMatchStats = (
   callback: (stats: MatchStats) => void
 ) => {
   const matchStatsRef = ref(database, `stats/${matchId}`);
-  onValue(matchStatsRef, (snapshot) => {
-    callback(snapshot.val() || {});
+  console.log(`Setting up match stats listener for match ID: ${matchId}`);
+  
+  // Use the returned unsubscribe function from onValue for proper cleanup
+  const unsubscribe = onValue(matchStatsRef, (snapshot) => {
+    const data = snapshot.val() || {};
+    console.log(`Match stats received for match ID: ${matchId}:`, data);
+    callback(data);
+  }, (error) => {
+    console.error(`Error in match stats listener for match ID: ${matchId}:`, error);
   });
-  return () => off(matchStatsRef);
+  
+  // Return function that calls the unsubscribe function
+  return () => {
+    console.log(`Removing match stats listener for match ID: ${matchId}`);
+    unsubscribe();
+  };
 };
 
 // Helper function to create an empty player stats object

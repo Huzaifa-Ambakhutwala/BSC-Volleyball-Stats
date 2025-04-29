@@ -74,19 +74,9 @@ const CreateTeams = () => {
     setIsSubmitting(true);
 
     try {
-      const teamId = await createTeam(teamName, selectedPlayers);
+      await createTeam(teamName, selectedPlayers);
       
-      // Update local state
-      if (teamId) {
-        setTeams(prev => ({
-          ...prev,
-          [teamId]: { 
-            id: teamId, 
-            teamName, 
-            players: selectedPlayers 
-          }
-        }));
-      }
+      // No need to update local state - Firebase listener will handle it
       
       toast({
         title: "Success",
@@ -134,15 +124,7 @@ const CreateTeams = () => {
     try {
       await updateTeam(editingTeamId, editTeamName, editSelectedPlayers);
       
-      // Update local state
-      setTeams(prev => ({
-        ...prev,
-        [editingTeamId]: {
-          ...prev[editingTeamId],
-          teamName: editTeamName,
-          players: editSelectedPlayers
-        }
-      }));
+      // No need to update local state - Firebase listener will handle it
       
       toast({
         title: "Success",
@@ -176,12 +158,7 @@ const CreateTeams = () => {
     try {
       await deleteTeam(teamId);
       
-      // Update local state
-      setTeams(prev => {
-        const updated = { ...prev };
-        delete updated[teamId];
-        return updated;
-      });
+      // No need to update local state - Firebase listener will handle it
       
       toast({
         title: "Success",
@@ -244,9 +221,9 @@ const CreateTeams = () => {
             </div>
           ) : (
             <div className="divide-y">
-              {Object.values(teams).map(team => (
-                <div key={team.id} className="px-4 py-3">
-                  {editingTeamId === team.id ? (
+              {Object.entries(teams).map(([teamId, team]) => (
+                <div key={teamId} className="px-4 py-3">
+                  {editingTeamId === teamId ? (
                     // Edit mode
                     <div className="flex flex-col space-y-2">
                       <div className="flex space-x-2 items-center">
@@ -299,14 +276,14 @@ const CreateTeams = () => {
                       <div className="w-1/6 flex justify-center space-x-1">
                         <button 
                           className="text-blue-500 p-1 hover:bg-blue-50 rounded" 
-                          onClick={() => handleEditClick(team)}
+                          onClick={() => handleEditClick({...team, id: teamId})}
                           title="Edit"
                         >
                           <Pencil className="h-5 w-5" />
                         </button>
                         <button 
                           className="text-red-500 p-1 hover:bg-red-50 rounded" 
-                          onClick={() => handleDeleteClick(team.id)}
+                          onClick={() => handleDeleteClick(teamId)}
                           title="Delete"
                           disabled={isDeleting}
                         >

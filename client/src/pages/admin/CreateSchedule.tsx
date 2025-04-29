@@ -242,13 +242,15 @@ const CreateSchedule = () => {
   };
 
   // Sort matches by date
-  const sortedMatches = Object.values(matches).sort((a, b) => {
-    try {
-      return parseISO(a.startTime).getTime() - parseISO(b.startTime).getTime();
-    } catch (error) {
-      return 0;
-    }
-  });
+  const sortedMatches = Object.entries(matches)
+    .map(([id, match]) => ({...match, id}))
+    .sort((a, b) => {
+      try {
+        return parseISO(a.startTime).getTime() - parseISO(b.startTime).getTime();
+      } catch (error) {
+        return 0;
+      }
+    });
 
   return (
     <div className="space-y-8">

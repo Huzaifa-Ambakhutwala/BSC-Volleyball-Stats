@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 // In a real app, you would use Firebase Auth or similar
 
 // Hardcoded admin credentials - in a real app these would be in a secure backend
-const ADMIN_USERNAME = 'admin';
-const ADMIN_PASSWORD = 'volleyball123';
+const ADMIN_USERNAME = 'Mehdi';
+const ADMIN_PASSWORD = '0000';
 
 interface AuthState {
   isAuthenticated: boolean;

@@ -550,6 +550,12 @@ export const getPlayerStats = async (matchId: string, playerId: string): Promise
   return snapshot.val() || createEmptyPlayerStats();
 };
 
+export const getMatchStats = async (matchId: string): Promise<MatchStats> => {
+  const matchStatsRef = ref(database, `stats/${matchId}`);
+  const snapshot = await get(matchStatsRef);
+  return snapshot.val() || {};
+};
+
 export const listenToPlayerStats = (
   matchId: string, 
   playerId: string, 

@@ -12,6 +12,8 @@ import StatTrackerPage from "@/pages/tracker/StatTrackerPage";
 import StatTrackerLogin from "@/pages/tracker/StatTrackerLogin";
 import ScoreboardPage from "@/pages/scoreboard/ScoreboardPage";
 import AllCourtsScoreboard from "@/pages/scoreboard/AllCourtsScoreboard";
+import GameHistoryPage from "@/pages/history/GameHistoryPage";
+import MatchDetailsPage from "@/pages/history/MatchDetailsPage";
 import Home from "@/pages/Home";
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
@@ -53,6 +55,8 @@ function Router() {
           <Route path="/tracker/login" component={StatTrackerLogin} />
           <Route path="/scoreboard/all" component={AllCourtsScoreboard} />
           <Route path="/scoreboard/:courtId" component={ScoreboardPage} />
+          <Route path="/history" component={GameHistoryPage} />
+          <Route path="/history/:matchId" component={MatchDetailsPage} />
           {/* Fallback to 404 */}
           <Route component={NotFound} />
         </Switch>

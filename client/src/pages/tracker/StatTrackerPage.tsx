@@ -33,6 +33,7 @@ const StatTrackerPage = () => {
   const { toast } = useToast();
   const [_, setLocation] = useLocation();
   const [trackerUser] = useState(() => getTrackerUser());
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   // Logout handler
   const handleLogout = () => {
@@ -171,7 +172,12 @@ const StatTrackerPage = () => {
     setSelectedPlayerId(playerId === selectedPlayerId ? null : playerId);
   };
   
-  const handleSubmitMatch = async () => {
+  const openSubmitDialog = () => {
+    setShowConfirmDialog(true);
+  };
+  
+  const handleConfirmSubmit = async () => {
+    setShowConfirmDialog(false);
     if (!currentMatch || !selectedMatchId) return;
     
     setIsSubmitting(true);
@@ -186,6 +192,9 @@ const StatTrackerPage = () => {
       
       // Reset selection and navigation as needed
       setSelectedPlayerId(null);
+      
+      // After successful submission, redirect to the match details page
+      setLocation(`/history/${selectedMatchId}`);
     } catch (error) {
       toast({
         title: "Error",
@@ -195,6 +204,10 @@ const StatTrackerPage = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+  
+  const handleCancelSubmit = () => {
+    setShowConfirmDialog(false);
   };
 
   // Handler for deleting logs
@@ -360,7 +373,7 @@ const StatTrackerPage = () => {
                   </div>
                   <button 
                     className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition"
-                    onClick={handleSubmitMatch}
+                    onClick={openSubmitDialog}
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? 'Submitting...' : 'Submit Match'}
@@ -512,6 +525,46 @@ const StatTrackerPage = () => {
           )}
         </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center">
+              <AlertTriangle className="w-5 h-5 text-amber-500 mr-2" />
+              Confirm Match Submission
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to submit this match? This will finalize the current statistics and make them available in the match history.
+              <div className="mt-4 p-3 bg-gray-50 rounded-md">
+                <div className="font-medium">Match Summary:</div>
+                <div className="mt-1 text-sm">
+                  {teamA?.teamName || 'Team A'}: <span className="font-semibold">{currentMatch?.scoreA || 0}</span>
+                </div>
+                <div className="text-sm">
+                  {teamB?.teamName || 'Team B'}: <span className="font-semibold">{currentMatch?.scoreB || 0}</span>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelSubmit}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmSubmit}
+              className="bg-green-600 hover:bg-green-700 focus:ring-green-500"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                'Yes, Submit Match'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 };

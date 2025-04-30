@@ -13,22 +13,15 @@ interface PlayerStatActionsProps {
   onSelect: () => void;
 }
 
-// Helper function to get emoji for most significant stat
-const getPlayerStatEmoji = (stats: PlayerStats): string => {
-  if (stats.aces > 0) return '🔥';
-  if (stats.spikes > 0) return '💥';
-  if (stats.blocks > 0) return '🧱';
-  if (stats.digs > 0) return '🛡️';
-  if (stats.tips > 0) return '👆';
-  if (stats.serveErrors > 0) return '❌';
-  return '';
-};
-
 // Helper to calculate total points earned
 const getTotalPointsContribution = (stats: PlayerStats): number => {
   const earned = stats.aces + stats.spikes + stats.blocks;
-  const faults = stats.serveErrors + stats.spikeErrors + stats.netTouches + stats.footFaults + stats.carries;
-  return earned - faults;
+  return earned;
+};
+
+// Helper to calculate total faults
+const getTotalFaults = (stats: PlayerStats): number => {
+  return stats.serveErrors + stats.spikeErrors + stats.netTouches + stats.footFaults + stats.carries;
 };
 
 const PlayerStatActions = ({ player, playerId, matchId, teamId, isSelected, onSelect }: PlayerStatActionsProps) => {
@@ -57,7 +50,7 @@ const PlayerStatActions = ({ player, playerId, matchId, teamId, isSelected, onSe
   }, [teamId]);
   
   const totalPoints = getTotalPointsContribution(stats);
-  const statEmoji = getPlayerStatEmoji(stats);
+  const totalFaults = getTotalFaults(stats);
   
   // Get text color based on background color
   const getTextColor = (hexColor: string): string => {
@@ -95,13 +88,17 @@ const PlayerStatActions = ({ player, playerId, matchId, teamId, isSelected, onSe
           </h4>
         </div>
         
-        {/* Show emoji indicator and points if player has stats */}
-        {(totalPoints !== 0 || statEmoji) && (
+        {/* Show points and faults if player has stats */}
+        {(totalPoints > 0 || totalFaults > 0) && (
           <div className="flex items-center space-x-1">
-            {statEmoji && <span className="text-xs">{statEmoji}</span>}
-            {totalPoints !== 0 && (
-              <span className={`text-xs font-semibold ${totalPoints > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {totalPoints > 0 ? '+' : ''}{totalPoints}
+            {totalPoints > 0 && (
+              <span className="text-xs font-semibold text-green-600">
+                +{totalPoints}
+              </span>
+            )}
+            {totalFaults > 0 && (
+              <span className="text-xs font-semibold text-red-600 ml-1">
+                -{totalFaults}
               </span>
             )}
           </div>

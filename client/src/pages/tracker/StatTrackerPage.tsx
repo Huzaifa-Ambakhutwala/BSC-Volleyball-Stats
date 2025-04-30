@@ -43,6 +43,14 @@ const StatTrackerPage = () => {
     setLocation('/tracker/login');
   };
 
+  // Redirect to login if no user
+  useEffect(() => {
+    if (!trackerUser) {
+      console.log("No tracker user found in context, redirecting to login");
+      setLocation('/tracker/login');
+    }
+  }, [trackerUser, setLocation]);
+
   // Load assigned matches
   useEffect(() => {
     if (!trackerUser) {
@@ -51,6 +59,7 @@ const StatTrackerPage = () => {
     }
     
     console.log("Loading matches for team ID:", trackerUser.teamId);
+    setIsLoading(true);
     
     const loadMatches = async () => {
       try {
@@ -84,7 +93,7 @@ const StatTrackerPage = () => {
     };
 
     loadMatches();
-  }, [toast, trackerUser, selectedMatchId]);
+  }, [toast, trackerUser]);
 
   // Load all players
   useEffect(() => {

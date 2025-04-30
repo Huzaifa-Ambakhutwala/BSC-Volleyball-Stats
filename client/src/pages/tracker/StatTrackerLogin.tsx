@@ -16,7 +16,14 @@ const StatTrackerLogin = () => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const { toast } = useToast();
   const [_, setLocation] = useLocation();
-  const { setTrackerUser } = useContext(TrackerUserContext);
+  const { trackerUser, setTrackerUser } = useContext(TrackerUserContext);
+  
+  // If user is already logged in, redirect to tracker page
+  useEffect(() => {
+    if (trackerUser) {
+      setLocation('/tracker');
+    }
+  }, [trackerUser, setLocation]);
 
   // Load teams
   useEffect(() => {

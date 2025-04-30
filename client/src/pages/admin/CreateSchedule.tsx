@@ -89,6 +89,15 @@ const CreateSchedule = () => {
       return;
     }
 
+    if (!trackerTeam) {
+      toast({
+        title: "Error",
+        description: "Please select a tracker team",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!startTime) {
       toast({
         title: "Error",
@@ -102,9 +111,11 @@ const CreateSchedule = () => {
 
     try {
       const matchId = await createMatch({
+        gameNumber,
         courtNumber,
         teamA,
         teamB,
+        trackerTeam,
         startTime
       });
       
@@ -115,12 +126,14 @@ const CreateSchedule = () => {
       
       toast({
         title: "Success",
-        description: `Match scheduled on Court ${courtNumber}`,
+        description: `Game #${gameNumber} scheduled on Court ${courtNumber}`,
       });
       
       // Reset form
+      setGameNumber(prev => prev + 1); // Increment game number
       setTeamA('');
       setTeamB('');
+      setTrackerTeam('');
       setStartTime('');
     } catch (error) {
       toast({
@@ -135,22 +148,27 @@ const CreateSchedule = () => {
 
   const handleEditClick = (match: Match) => {
     setEditingMatchId(match.id);
+    // Set default values for new fields if they don't exist in the match object
+    setEditGameNumber(match.gameNumber || 1);
     setEditCourtNumber(match.courtNumber);
     setEditTeamA(match.teamA);
     setEditTeamB(match.teamB);
+    setEditTrackerTeam(match.trackerTeam || '');
     setEditStartTime(match.startTime);
   };
 
   const handleCancelEdit = () => {
     setEditingMatchId(null);
+    setEditGameNumber(1);
     setEditCourtNumber(1);
     setEditTeamA('');
     setEditTeamB('');
+    setEditTrackerTeam('');
     setEditStartTime('');
   };
 
   const handleSaveEdit = async () => {
-    if (!editingMatchId || !editTeamA || !editTeamB || !editStartTime) {
+    if (!editingMatchId || !editTeamA || !editTeamB || !editTrackerTeam || !editStartTime) {
       toast({
         title: "Error",
         description: "All fields are required",
@@ -172,9 +190,11 @@ const CreateSchedule = () => {
     
     try {
       await updateMatch(editingMatchId, {
+        gameNumber: editGameNumber,
         courtNumber: editCourtNumber,
         teamA: editTeamA,
         teamB: editTeamB,
+        trackerTeam: editTrackerTeam,
         startTime: editStartTime
       });
       
@@ -185,9 +205,11 @@ const CreateSchedule = () => {
       
       // Reset edit mode
       setEditingMatchId(null);
+      setEditGameNumber(1);
       setEditCourtNumber(1);
       setEditTeamA('');
       setEditTeamB('');
+      setEditTrackerTeam('');
       setEditStartTime('');
     } catch (error) {
       toast({
@@ -264,10 +286,12 @@ const CreateSchedule = () => {
         
         {/* Matches List */}
         <div className="border rounded-md overflow-hidden mb-8">
-          <div className="bg-gray-100 px-4 py-2 font-medium grid grid-cols-5">
+          <div className="bg-gray-100 px-4 py-2 font-medium grid grid-cols-7">
+            <div>Game #</div>
             <div>Court</div>
             <div>Team A</div>
             <div>Team B</div>
+            <div>Tracker Team</div>
             <div>Start Time</div>
             <div className="text-center">Actions</div>
           </div>
@@ -282,7 +306,16 @@ const CreateSchedule = () => {
                 <div key={match.id} className="px-4 py-3">
                   {editingMatchId === match.id ? (
                     // Edit mode
-                    <div className="grid grid-cols-5 gap-2">
+                    <div className="grid grid-cols-7 gap-2">
+                      <div>
+                        <input 
+                          type="number" 
+                          min="1"
+                          className="w-full px-2 py-1 border border-gray-300 rounded-md text-sm"
+                          value={editGameNumber}
+                          onChange={(e) => setEditGameNumber(parseInt(e.target.value) || 1)}
+                        />
+                      </div>
                       <div>
                         <select 
                           className="w-full px-2 py-1 border border-gray-300 rounded-md text-sm"
@@ -320,6 +353,18 @@ const CreateSchedule = () => {
                         </select>
                       </div>
                       <div>
+                        <select 
+                          className="w-full px-2 py-1 border border-gray-300 rounded-md text-sm"
+                          value={editTrackerTeam}
+                          onChange={(e) => setEditTrackerTeam(e.target.value)}
+                        >
+                          <option value="">Select Tracker Team</option>
+                          {Object.entries(teams).map(([id, team]) => (
+                            <option key={id} value={id}>{team.teamName}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
                         <input 
                           type="datetime-local" 
                           className="w-full px-2 py-1 border border-gray-300 rounded-md text-sm"
@@ -351,7 +396,12 @@ const CreateSchedule = () => {
                     </div>
                   ) : (
                     // Display mode
-                    <div className="grid grid-cols-5 gap-2">
+                    <div className="grid grid-cols-7 gap-2">
+                      <div className="flex items-center">
+                        <span className="bg-gray-200 text-gray-800 text-xs py-1 px-2 rounded-full">
+                          #{match.gameNumber || '?'}
+                        </span>
+                      </div>
                       <div className="flex items-center">
                         <span className="bg-[hsl(var(--vb-blue))] text-white text-xs py-1 px-2 rounded-full">
                           Court {match.courtNumber}
@@ -365,6 +415,9 @@ const CreateSchedule = () => {
                       </div>
                       <div className="font-medium text-sm">
                         {teams[match.teamB]?.teamName || 'Unknown Team'}
+                      </div>
+                      <div className="font-medium text-sm text-gray-600">
+                        {teams[match.trackerTeam]?.teamName || 'Not assigned'}
                       </div>
                       <div className="text-sm text-gray-600 flex items-center">
                         <Clock className="h-3 w-3 mr-1 text-gray-400" />
@@ -403,6 +456,21 @@ const CreateSchedule = () => {
           Schedule New Match
         </h3>
         <div className="space-y-4 max-w-lg border rounded-md p-4 bg-gray-50">
+          <div>
+            <label htmlFor="gameNumber" className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+              <Hash className="h-4 w-4 mr-1" />
+              Game Number
+            </label>
+            <input 
+              type="number" 
+              id="gameNumber" 
+              name="gameNumber" 
+              min="1"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-[hsl(var(--vb-blue))] focus:border-[hsl(var(--vb-blue))]"
+              value={gameNumber}
+              onChange={(e) => setGameNumber(parseInt(e.target.value) || 1)}
+            />
+          </div>
           <div>
             <label htmlFor="courtNumber" className="block text-sm font-medium text-gray-700 mb-1">Court Number</label>
             <select 
@@ -449,6 +517,24 @@ const CreateSchedule = () => {
               onChange={(e) => setTeamB(e.target.value)}
             >
               <option value="">Select Team B</option>
+              {Object.entries(teams).map(([id, team]) => (
+                <option key={id} value={id}>{team.teamName}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="trackerTeam" className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+              <Users className="h-4 w-4 mr-1" />
+              Tracker Team
+            </label>
+            <select 
+              id="trackerTeam" 
+              name="trackerTeam" 
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-[hsl(var(--vb-blue))] focus:border-[hsl(var(--vb-blue))]"
+              value={trackerTeam}
+              onChange={(e) => setTrackerTeam(e.target.value)}
+            >
+              <option value="">Select Tracker Team</option>
               {Object.entries(teams).map(([id, team]) => (
                 <option key={id} value={id}>{team.teamName}</option>
               ))}

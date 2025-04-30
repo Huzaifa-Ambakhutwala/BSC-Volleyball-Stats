@@ -218,9 +218,11 @@ export const updateMatchScore = async (matchId: string, scoreA: number, scoreB: 
 export const updateMatch = async (
   matchId: string, 
   updates: {
+    gameNumber?: number;
     courtNumber?: number;
     teamA?: string;
     teamB?: string;
+    trackerTeam?: string;
     startTime?: string;
     scoreA?: number;
     scoreB?: number;
@@ -552,9 +554,8 @@ export const getStatLogs = async (matchId: string): Promise<StatLog[]> => {
   const logs = snapshot.val() || {};
   
   // Convert to array and sort by timestamp (newest first)
-  return Object.values(logs).sort((a: StatLog, b: StatLog) => 
-    b.timestamp - a.timestamp
-  );
+  return Object.values(logs).map((log: any) => log as StatLog)
+    .sort((a: StatLog, b: StatLog) => b.timestamp - a.timestamp);
 };
 
 export const listenToStatLogs = (matchId: string, callback: (logs: StatLog[]) => void) => {
@@ -565,9 +566,9 @@ export const listenToStatLogs = (matchId: string, callback: (logs: StatLog[]) =>
     const logs = snapshot.val() || {};
     
     // Convert to array and sort by timestamp (newest first)
-    const logArray: StatLog[] = Object.values(logs).sort((a: StatLog, b: StatLog) => 
-      b.timestamp - a.timestamp
-    );
+    const logArray: StatLog[] = Object.values(logs)
+      .map((log: any) => log as StatLog)
+      .sort((a: StatLog, b: StatLog) => b.timestamp - a.timestamp);
     
     console.log(`Stat logs received for match ID: ${matchId}:`, logArray);
     callback(logArray);

@@ -1,19 +1,39 @@
 import { useState, useEffect } from 'react';
 import type { Player, PlayerStats } from '@shared/schema';
-import { updatePlayerStat, listenToPlayerStats, createEmptyPlayerStats } from '@/lib/firebase';
+import { updatePlayerStat, listenToPlayerStats, createEmptyPlayerStats, getTeamById } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, CheckCircle2 } from 'lucide-react';
+import { Loader2, CheckCircle2, Award } from 'lucide-react';
 
 interface PlayerStatActionsProps {
   player: Player;
   playerId: string;
   matchId: string;
+  teamId?: string;
   isSelected: boolean;
   onSelect: () => void;
 }
 
-const PlayerStatActions = ({ player, playerId, matchId, isSelected, onSelect }: PlayerStatActionsProps) => {
+// Helper function to get emoji for most significant stat
+const getPlayerStatEmoji = (stats: PlayerStats): string => {
+  if (stats.aces > 0) return '🔥';
+  if (stats.spikes > 0) return '💥';
+  if (stats.blocks > 0) return '🧱';
+  if (stats.digs > 0) return '🛡️';
+  if (stats.tips > 0) return '👆';
+  if (stats.serveErrors > 0) return '❌';
+  return '';
+};
+
+// Helper to calculate total points earned
+const getTotalPointsContribution = (stats: PlayerStats): number => {
+  const earned = stats.aces + stats.spikes + stats.blocks;
+  const faults = stats.serveErrors + stats.spikeErrors + stats.netTouches + stats.footFaults + stats.carries;
+  return earned - faults;
+};
+
+const PlayerStatActions = ({ player, playerId, matchId, teamId, isSelected, onSelect }: PlayerStatActionsProps) => {
   const [stats, setStats] = useState<PlayerStats>(createEmptyPlayerStats());
+  const [teamColor, setTeamColor] = useState<string | null>(null);
   
   useEffect(() => {
     if (!matchId || !playerId) return;
@@ -25,18 +45,67 @@ const PlayerStatActions = ({ player, playerId, matchId, isSelected, onSelect }: 
     return () => unsubscribe();
   }, [matchId, playerId]);
   
-  // Display the player's name only, without stats
+  // Load team color if teamId is provided
+  useEffect(() => {
+    if (teamId) {
+      getTeamById(teamId).then(team => {
+        if (team && team.teamColor) {
+          setTeamColor(team.teamColor);
+        }
+      });
+    }
+  }, [teamId]);
+  
+  const totalPoints = getTotalPointsContribution(stats);
+  const statEmoji = getPlayerStatEmoji(stats);
+  
+  // Get text color based on background color
+  const getTextColor = (hexColor: string): string => {
+    const color = hexColor.replace('#', '');
+    const r = parseInt(color.substr(0, 2), 16);
+    const g = parseInt(color.substr(2, 2), 16);
+    const b = parseInt(color.substr(4, 2), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 128 ? 'text-black' : 'text-white';
+  };
+  
   return (
     <div 
       className={`w-full cursor-pointer rounded-lg p-2 transition-colors ${
         isSelected 
-          ? 'bg-blue-100 border-2 border-[hsl(var(--vb-blue))]' 
-          : 'bg-white border border-gray-200 hover:bg-gray-50'
+          ? 'border-2 border-[hsl(var(--vb-blue))]' 
+          : 'border border-gray-200 hover:bg-gray-50'
       }`}
+      style={teamColor && !isSelected ? { backgroundColor: teamColor + '30' } : {}} 
       onClick={onSelect}
     >
-      <div className="text-center">
-        <h4 className="font-semibold text-sm text-[hsl(var(--vb-blue))]">{player.name}</h4>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-1">
+          {teamColor && (
+            <div 
+              className="w-3 h-3 rounded-full" 
+              style={{ backgroundColor: teamColor }}
+            />
+          )}
+          <h4 
+            className={`font-semibold text-sm ${teamColor && !isSelected ? getTextColor(teamColor) : 'text-[hsl(var(--vb-blue))]'}`}
+            style={isSelected && teamColor ? { color: teamColor } : {}}
+          >
+            {player.name}
+          </h4>
+        </div>
+        
+        {/* Show emoji indicator and points if player has stats */}
+        {(totalPoints !== 0 || statEmoji) && (
+          <div className="flex items-center space-x-1">
+            {statEmoji && <span className="text-xs">{statEmoji}</span>}
+            {totalPoints !== 0 && (
+              <span className={`text-xs font-semibold ${totalPoints > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {totalPoints > 0 ? '+' : ''}{totalPoints}
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,15 +1,52 @@
 import { useState, useEffect } from 'react';
-import type { Player, PlayerStats } from '@shared/schema';
-import { updatePlayerStat, listenToPlayerStats, createEmptyPlayerStats } from '@/lib/firebase';
+import type { Player, PlayerStats, Team } from '@shared/schema';
+import { updatePlayerStat, listenToPlayerStats, createEmptyPlayerStats, getTeamById } from '@/lib/firebase';
 
 interface PlayerStatCardProps {
   player: Player;
   playerId: string;
   matchId: string;
+  teamId?: string;
 }
 
-const PlayerStatCard = ({ player, playerId, matchId }: PlayerStatCardProps) => {
+// Helper function to get emoji for stat type
+const getStatEmoji = (statName: keyof PlayerStats): string => {
+  const emojiMap: Record<keyof PlayerStats, string> = {
+    aces: '🔥',
+    serveErrors: '❌',
+    spikes: '💥',
+    spikeErrors: '❌',
+    digs: '🛡️',
+    blocks: '🧱',
+    netTouches: '🔗',
+    tips: '👆',
+    dumps: '🧮',
+    footFaults: '👣',
+    reaches: '🙋',
+    carries: '🤲'
+  };
+  return emojiMap[statName] || '📊';
+};
+
+// Helper function for stat category color
+const getStatCategoryColor = (statName: keyof PlayerStats): string => {
+  // Earned points - Green
+  if (['aces', 'spikes', 'blocks'].includes(statName)) {
+    return 'bg-green-500';
+  }
+  // Faults - Red
+  else if (['serveErrors', 'spikeErrors', 'netTouches', 'footFaults', 'carries'].includes(statName)) {
+    return 'bg-red-500';
+  }
+  // Neutral plays - Yellow
+  else {
+    return 'bg-yellow-400';
+  }
+};
+
+const PlayerStatCard = ({ player, playerId, matchId, teamId }: PlayerStatCardProps) => {
   const [stats, setStats] = useState<PlayerStats>(createEmptyPlayerStats());
+  const [teamColor, setTeamColor] = useState<string>('#3B82F6'); // Default blue
   const [pendingStat, setPendingStat] = useState<{ statName: keyof PlayerStats, element: HTMLButtonElement | null } | null>(null);
   
   useEffect(() => {
@@ -19,6 +56,17 @@ const PlayerStatCard = ({ player, playerId, matchId }: PlayerStatCardProps) => {
     
     return () => unsubscribe();
   }, [matchId, playerId]);
+  
+  // Load team color if teamId is provided
+  useEffect(() => {
+    if (teamId) {
+      getTeamById(teamId).then(team => {
+        if (team && team.teamColor) {
+          setTeamColor(team.teamColor);
+        }
+      });
+    }
+  }, [teamId]);
   
   const handleStatButtonClick = (statName: keyof PlayerStats, e: React.MouseEvent<HTMLButtonElement>) => {
     if (pendingStat && pendingStat.statName === statName) {
@@ -36,12 +84,45 @@ const PlayerStatCard = ({ player, playerId, matchId }: PlayerStatCardProps) => {
     }
   };
   
+  // Calculate total stats
+  const totalEarnedPoints = stats.aces + stats.spikes + stats.blocks;
+  const totalFaults = stats.serveErrors + stats.spikeErrors + stats.netTouches + stats.footFaults + stats.carries;
+  const totalNeutralPlays = stats.digs + stats.tips + stats.dumps + stats.reaches;
+  
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-      <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+      <div 
+        className="px-4 py-3 border-b border-gray-200 flex items-center justify-between"
+        style={{ backgroundColor: teamColor, color: parseInt(teamColor.replace('#', ''), 16) > 0xffffff / 2 ? 'black' : 'white' }}
+      >
         <h4 className="font-semibold">{player.name}</h4>
+        <div className="flex space-x-1">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-green-500 bg-opacity-90 text-white">{totalEarnedPoints}</span>
+          <span className="text-xs px-2 py-0.5 rounded-full bg-red-500 bg-opacity-90 text-white">{totalFaults}</span>
+          <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-400 bg-opacity-90 text-white">{totalNeutralPlays}</span>
+        </div>
       </div>
       <div className="p-4">
+        {/* Stat circles display */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {Object.entries(stats).map(([key, value]) => {
+            if (value > 0) {
+              const statName = key as keyof PlayerStats;
+              return (
+                <div 
+                  key={key} 
+                  className={`flex items-center justify-center rounded-full w-8 h-8 text-white ${getStatCategoryColor(statName)}`}
+                  title={`${statName}: ${value}`}
+                >
+                  <span className="text-xs">{getStatEmoji(statName)}</span>
+                </div>
+              );
+            }
+            return null;
+          })}
+        </div>
+        
+        {/* Stats summary */}
         <div className="grid grid-cols-2 gap-2 mb-4">
           <div className="text-sm text-gray-600">Aces: <span className="font-semibold">{stats.aces}</span></div>
           <div className="text-sm text-gray-600">Blocks: <span className="font-semibold">{stats.blocks}</span></div>

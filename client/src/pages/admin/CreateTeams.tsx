@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { getPlayers, createTeam, getTeams, updateTeam, deleteTeam, listenToPlayers, listenToTeams } from '@/lib/firebase';
 import type { Player, Team } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
-import { Pencil, Trash2, Save, X, Loader2, PlusCircle, Users } from 'lucide-react';
+import { Pencil, Trash2, Save, X, Loader2, PlusCircle, Users, Palette } from 'lucide-react';
 
 const CreateTeams = () => {
   const [teamName, setTeamName] = useState('');
+  const [teamColor, setTeamColor] = useState('#3B82F6'); // Default to blue
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [players, setPlayers] = useState<Record<string, Player>>({});
   const [teams, setTeams] = useState<Record<string, Team>>({});
@@ -15,6 +16,7 @@ const CreateTeams = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
   const [editTeamName, setEditTeamName] = useState('');
+  const [editTeamColor, setEditTeamColor] = useState('#3B82F6'); // Default to blue
   const [editSelectedPlayers, setEditSelectedPlayers] = useState<string[]>([]);
   const { toast } = useToast();
 
@@ -74,7 +76,7 @@ const CreateTeams = () => {
     setIsSubmitting(true);
 
     try {
-      await createTeam(teamName, selectedPlayers);
+      await createTeam(teamName, selectedPlayers, teamColor);
       
       // No need to update local state - Firebase listener will handle it
       
@@ -86,6 +88,7 @@ const CreateTeams = () => {
       // Reset form
       setTeamName('');
       setSelectedPlayers([]);
+      setTeamColor('#3B82F6'); // Reset to default blue
     } catch (error) {
       toast({
         title: "Error",

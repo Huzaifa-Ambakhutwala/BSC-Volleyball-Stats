@@ -14,6 +14,7 @@ export type Team = {
   id: string;
   teamName: string;
   players: string[]; // Array of player IDs
+  teamColor?: string; // Hex color code for the team
 };
 
 export type Match = {

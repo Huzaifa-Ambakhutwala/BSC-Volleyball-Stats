@@ -94,10 +94,10 @@ export const deletePlayer = async (playerId: string) => {
 };
 
 // Teams API
-export const createTeam = async (teamName: string, playerIds: string[]) => {
+export const createTeam = async (teamName: string, playerIds: string[], teamColor?: string) => {
   const teamsRef = ref(database, 'teams');
   const newTeamRef = push(teamsRef);
-  await set(newTeamRef, { teamName, players: playerIds });
+  await set(newTeamRef, { teamName, players: playerIds, teamColor });
   return newTeamRef.key;
 };
 
@@ -133,11 +133,11 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
   return snapshot.val();
 };
 
-export const updateTeam = async (teamId: string, teamName: string, playerIds: string[]) => {
+export const updateTeam = async (teamId: string, teamName: string, playerIds: string[], teamColor?: string) => {
   try {
     console.log(`Updating team with ID: ${teamId}, name: ${teamName}, players:`, playerIds);
     const teamRef = ref(database, `teams/${teamId}`);
-    await update(teamRef, { teamName, players: playerIds });
+    await update(teamRef, { teamName, players: playerIds, ...(teamColor && { teamColor }) });
     console.log('Team update completed successfully');
     return true;
   } catch (error) {

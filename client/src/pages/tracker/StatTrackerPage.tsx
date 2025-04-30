@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from 'react';
-import { getTeamById, getPlayers, updateMatchScore, listenToMatchById, logoutStatTracker, getMatchesForTracker, listenToMatchesForTracker, getStatLogs, listenToStatLogs, deleteStatLog, type StatLog } from '@/lib/firebase';
+import { getTeamById, getPlayers, updateMatchScore, listenToMatchById, logoutStatTracker, listenToMatchesForTracker, listenToStatLogs, deleteStatLog, type StatLog } from '@/lib/firebase';
 import type { Match, Team, Player } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
 import PlayerStatActions, { StatActions } from '@/components/PlayerStatActions';
@@ -39,6 +39,7 @@ const StatTrackerPage = () => {
   // Logout handler
   const handleLogout = () => {
     logoutStatTracker();
+    setTrackerUser(null);
     setLocation('/tracker/login');
   };
 

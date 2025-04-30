@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { loginStatTracker } from '@/lib/firebase';
 import type { Team } from '@shared/schema';
@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { listenToTeams } from '@/lib/firebase';
 import { useLocation } from 'wouter';
 import { Users, Loader2, Lock } from 'lucide-react';
+import { TrackerUserContext } from '@/App';
 
 const StatTrackerLogin = () => {
   const [teams, setTeams] = useState<Record<string, Team>>({});
@@ -15,6 +16,7 @@ const StatTrackerLogin = () => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const { toast } = useToast();
   const [_, setLocation] = useLocation();
+  const { setTrackerUser } = useContext(TrackerUserContext);
 
   // Load teams
   useEffect(() => {
@@ -55,6 +57,9 @@ const StatTrackerLogin = () => {
       const trackerUser = await loginStatTracker(selectedTeam, password);
       
       if (trackerUser) {
+        // Set the user in context
+        setTrackerUser(trackerUser);
+        
         toast({
           title: "Success",
           description: `Logged in as ${trackerUser.teamName}`,

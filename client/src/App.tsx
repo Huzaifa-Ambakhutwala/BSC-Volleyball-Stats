@@ -71,7 +71,12 @@ function Router() {
           <Route path="/admin" component={LoginPage} />
           <Route path="/admin/dashboard" component={AdminDashboard} />
           <Route path="/tracker" component={TrackerRoute} />
-          <Route path="/tracker/login" component={StatTrackerLogin} />
+          <Route path="/tracker/login">
+            {() => {
+              const user = getTrackerUser();
+              return user ? <Redirect to="/tracker" /> : <StatTrackerLogin />;
+            }}
+          </Route>
           <Route path="/scoreboard/all" component={AllCourtsScoreboard} />
           <Route path="/scoreboard/:courtId" component={ScoreboardPage} />
           <Route path="/history" component={GameHistoryPage} />

@@ -20,8 +20,8 @@ const Header = () => {
               </Link>
             </li>
             <li>
-              <Link href="/track"
-                className={`hover:text-[hsl(var(--vb-yellow))] transition ${location === '/track' ? 'text-[hsl(var(--vb-yellow))]' : ''}`}>
+              <Link href="/tracker/login"
+                className={`hover:text-[hsl(var(--vb-yellow))] transition ${location.startsWith('/tracker') ? 'text-[hsl(var(--vb-yellow))]' : ''}`}>
                 Stat Tracker
               </Link>
             </li>

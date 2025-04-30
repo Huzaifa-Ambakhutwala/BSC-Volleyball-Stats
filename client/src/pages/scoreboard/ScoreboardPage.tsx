@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'wouter';
-import { listenToMatchesByCourtNumber, getTeamById } from '@/lib/firebase';
-import type { Match, Team } from '@shared/schema';
+import { listenToMatchesByCourtNumber, getTeamById, getPlayers, listenToPlayerStats } from '@/lib/firebase';
+import type { Match, Team, Player, PlayerStats } from '@shared/schema';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import PlayerStatCard from '@/components/PlayerStatCard';
 
 const ScoreboardPage = () => {
   const { courtId } = useParams<{ courtId: string }>();
@@ -13,7 +14,10 @@ const ScoreboardPage = () => {
   const [currentMatch, setCurrentMatch] = useState<Match | null>(null);
   const [teamA, setTeamA] = useState<Team | null>(null);
   const [teamB, setTeamB] = useState<Team | null>(null);
+  const [playersA, setPlayersA] = useState<Player[]>([]);
+  const [playersB, setPlayersB] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [allPlayers, setAllPlayers] = useState<Record<string, Player>>({});
   const { toast } = useToast();
 
   // Listen for matches on the specified court
@@ -65,6 +69,44 @@ const ScoreboardPage = () => {
     loadTeams();
   }, [currentMatch, toast]);
 
+  // Load all players data
+  useEffect(() => {
+    const loadPlayers = async () => {
+      try {
+        const players = await getPlayers();
+        setAllPlayers(players);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to load player information",
+          variant: "destructive",
+        });
+      }
+    };
+    
+    loadPlayers();
+  }, [toast]);
+
+  // Filter players for each team
+  useEffect(() => {
+    if (!teamA || !teamB || !allPlayers || Object.keys(allPlayers).length === 0) {
+      setPlayersA([]);
+      setPlayersB([]);
+      return;
+    }
+
+    const teamAPlayers = teamA.players
+      .map(playerId => allPlayers[playerId])
+      .filter(Boolean);
+      
+    const teamBPlayers = teamB.players
+      .map(playerId => allPlayers[playerId])
+      .filter(Boolean);
+
+    setPlayersA(teamAPlayers);
+    setPlayersB(teamBPlayers);
+  }, [teamA, teamB, allPlayers]);
+
   const formatTime = (timeString: string) => {
     try {
       return format(new Date(timeString), 'h:mm a');
@@ -109,26 +151,74 @@ const ScoreboardPage = () => {
             </div>
           </div>
         ) : (
-          <div className="bg-[hsl(var(--vb-dark-gray))] text-white rounded-lg shadow-md overflow-hidden">
-            <div className="p-8 text-center">
-              <h3 className="text-2xl font-bold mb-6">Court {courtNumber}</h3>
-              <div className="flex justify-center items-center space-x-8">
-                <div className="text-center">
-                  <div className="text-[hsl(var(--vb-blue))] font-bold text-3xl mb-2">
-                    {teamA?.teamName || 'Team A'}
+          <div>
+            <div className="bg-[hsl(var(--vb-dark-gray))] text-white rounded-lg shadow-md overflow-hidden">
+              <div className="p-8 text-center">
+                <h3 className="text-2xl font-bold mb-6">Court {courtNumber}</h3>
+                <div className="flex justify-center items-center space-x-8">
+                  <div className="text-center">
+                    <div className="text-[hsl(var(--vb-blue))] font-bold text-3xl mb-2">
+                      {teamA?.teamName || 'Team A'}
+                    </div>
+                    <div className="font-mono text-7xl font-bold">{currentMatch.scoreA}</div>
                   </div>
-                  <div className="font-mono text-7xl font-bold">{currentMatch.scoreA}</div>
+                  <div className="text-4xl font-bold">vs</div>
+                  <div className="text-center">
+                    <div className="text-[hsl(var(--vb-yellow))] font-bold text-3xl mb-2">
+                      {teamB?.teamName || 'Team B'}
+                    </div>
+                    <div className="font-mono text-7xl font-bold">{currentMatch.scoreB}</div>
+                  </div>
                 </div>
-                <div className="text-4xl font-bold">vs</div>
-                <div className="text-center">
-                  <div className="text-[hsl(var(--vb-yellow))] font-bold text-3xl mb-2">
-                    {teamB?.teamName || 'Team B'}
-                  </div>
-                  <div className="font-mono text-7xl font-bold">{currentMatch.scoreB}</div>
+                <div className="mt-8 text-lg text-gray-400">
+                  Start Time: {formatTime(currentMatch.startTime)}
                 </div>
               </div>
-              <div className="mt-8 text-lg text-gray-400">
-                Start Time: {formatTime(currentMatch.startTime)}
+            </div>
+            
+            {/* Player Stats Section */}
+            <div className="mt-8">
+              <h3 className="text-xl font-bold mb-4">Player Statistics</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Team A Players */}
+                <div>
+                  <h4 className="text-lg font-bold mb-3" style={{color: teamA?.teamColor}}>
+                    {teamA?.teamName || 'Team A'} Players
+                  </h4>
+                  <div className="grid grid-cols-1 gap-4">
+                    {playersA.map(player => (
+                      <div key={player.id} className="w-full">
+                        {/* Simple readonly version of player card */}
+                        <PlayerStatCard 
+                          player={player}
+                          playerId={player.id}
+                          matchId={currentMatch.id}
+                          teamId={teamA?.id}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Team B Players */}
+                <div>
+                  <h4 className="text-lg font-bold mb-3" style={{color: teamB?.teamColor}}>
+                    {teamB?.teamName || 'Team B'} Players
+                  </h4>
+                  <div className="grid grid-cols-1 gap-4">
+                    {playersB.map(player => (
+                      <div key={player.id} className="w-full">
+                        <PlayerStatCard 
+                          player={player}
+                          playerId={player.id}
+                          matchId={currentMatch.id}
+                          teamId={teamB?.id}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>

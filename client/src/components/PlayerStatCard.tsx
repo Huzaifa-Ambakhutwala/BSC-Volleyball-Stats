@@ -81,9 +81,8 @@ const PlayerStatCard = ({ player, playerId, matchId, teamId }: PlayerStatCardPro
   };
   
   // Calculate total stats
-  const totalEarnedPoints = stats.aces + stats.spikes + stats.blocks;
-  const totalFaults = stats.serveErrors + stats.spikeErrors + stats.netTouches + stats.footFaults + stats.carries;
-  const totalNeutralPlays = stats.digs + stats.tips + stats.dumps + stats.reaches;
+  const totalEarnedPoints = stats.aces + stats.spikes + stats.blocks + stats.tips + stats.dumps + stats.digs;
+  const totalFaults = stats.serveErrors + stats.spikeErrors + stats.netTouches + stats.footFaults + stats.carries + stats.reaches;
   
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
@@ -93,9 +92,8 @@ const PlayerStatCard = ({ player, playerId, matchId, teamId }: PlayerStatCardPro
       >
         <h4 className="font-semibold">{player.name}</h4>
         <div className="flex space-x-1">
-          <span className="text-xs px-2 py-0.5 rounded-full bg-green-500 bg-opacity-90 text-white">{totalEarnedPoints}</span>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-red-500 bg-opacity-90 text-white">{totalFaults}</span>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-400 bg-opacity-90 text-white">{totalNeutralPlays}</span>
+          <span className="text-xs px-2 py-0.5 rounded-full bg-green-500 bg-opacity-90 text-white">+{totalEarnedPoints}</span>
+          <span className="text-xs px-2 py-0.5 rounded-full bg-red-500 bg-opacity-90 text-white">-{totalFaults}</span>
         </div>
       </div>
       <div className="p-4">
@@ -126,21 +124,7 @@ const PlayerStatCard = ({ player, playerId, matchId, teamId }: PlayerStatCardPro
           <div className="text-sm text-gray-600">Digs: <span className="font-semibold">{stats.digs}</span></div>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          {/* Grey Action Buttons */}
-          <button 
-            className="btn-neutral"
-            onClick={(e) => handleStatButtonClick('digs', e)}
-          >
-            Dig
-          </button>
-          <button 
-            className="btn-neutral"
-            onClick={(e) => handleStatButtonClick('dumps', e)}
-          >
-            Regular Serve
-          </button>
-          
-          {/* Green Action Buttons */}
+          {/* Green Action Buttons - Earned points */}
           <button 
             className="btn-success"
             onClick={(e) => handleStatButtonClick('aces', e)}
@@ -153,33 +137,43 @@ const PlayerStatCard = ({ player, playerId, matchId, teamId }: PlayerStatCardPro
           >
             Kill
           </button>
-          
-          {/* Yellow Action Buttons */}
           <button 
-            className="btn-warning"
+            className="btn-success"
+            onClick={(e) => handleStatButtonClick('blocks', e)}
+          >
+            Block
+          </button>
+          <button 
+            className="btn-success"
             onClick={(e) => handleStatButtonClick('tips', e)}
           >
-            Overpass
-          </button>
-          <button 
-            className="btn-warning"
-            onClick={(e) => handleStatButtonClick('netTouches', e)}
-          >
-            Net Violation
+            Tip
           </button>
           
-          {/* Red Action Buttons */}
+          {/* Red Action Buttons - Faults */}
+          <button 
+            className="btn-error"
+            onClick={(e) => handleStatButtonClick('serveErrors', e)}
+          >
+            Serve Error
+          </button>
+          <button 
+            className="btn-error"
+            onClick={(e) => handleStatButtonClick('spikeErrors', e)}
+          >
+            Spike Error
+          </button>
+          <button 
+            className="btn-error"
+            onClick={(e) => handleStatButtonClick('netTouches', e)}
+          >
+            Net Touch
+          </button>
           <button 
             className="btn-error"
             onClick={(e) => handleStatButtonClick('footFaults', e)}
           >
             Foot Fault
-          </button>
-          <button 
-            className="btn-error"
-            onClick={(e) => handleStatButtonClick('serveErrors', e)}
-          >
-            Service Error
           </button>
         </div>
       </div>

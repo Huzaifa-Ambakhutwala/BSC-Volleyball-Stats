@@ -31,6 +31,12 @@ const Header = () => {
                 Scoreboard
               </Link>
             </li>
+            <li>
+              <Link href="/history"
+                className={`hover:text-[hsl(var(--vb-yellow))] transition ${location.startsWith('/history') ? 'text-[hsl(var(--vb-yellow))]' : ''}`}>
+                History
+              </Link>
+            </li>
           </ul>
         </nav>
       </div>

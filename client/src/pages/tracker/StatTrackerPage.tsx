@@ -5,8 +5,18 @@ import { useToast } from '@/hooks/use-toast';
 import PlayerStatActions, { StatActions } from '@/components/PlayerStatActions';
 import { Button } from '@/components/ui/button';
 import { useLocation } from 'wouter';
-import { LogOut, Clock, Trash2, Loader2 } from 'lucide-react';
+import { LogOut, Clock, Trash2, Loader2, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const StatTrackerPage = () => {
   const [matches, setMatches] = useState<Record<string, Match>>({});

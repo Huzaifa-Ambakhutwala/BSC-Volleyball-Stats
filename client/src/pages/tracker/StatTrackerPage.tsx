@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
-import { getMatches, getTeamById, getPlayers, updateMatchScore, listenToMatchById } from '@/lib/firebase';
+import { getTeamById, getPlayers, updateMatchScore, listenToMatchById, getTrackerUser, logoutStatTracker, getMatchesForTracker, listenToMatchesForTracker, getStatLogs, listenToStatLogs, deleteStatLog, type StatLog } from '@/lib/firebase';
 import type { Match, Team, Player } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
 import PlayerStatActions, { StatActions } from '@/components/PlayerStatActions';
 import { Button } from '@/components/ui/button';
+import { useLocation } from 'wouter';
+import { LogOut, Clock, Trash2, Loader2 } from 'lucide-react';
+import { format } from 'date-fns';
 
 const StatTrackerPage = () => {
   const [matches, setMatches] = useState<Record<string, Match>>({});
@@ -15,33 +18,50 @@ const StatTrackerPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [statLogs, setStatLogs] = useState<StatLog[]>([]);
+  const [isDeletingLog, setIsDeletingLog] = useState(false);
   const { toast } = useToast();
+  const [_, setLocation] = useLocation();
+  const trackerUser = getTrackerUser();
 
-  // Load all matches
+  // Logout handler
+  const handleLogout = () => {
+    logoutStatTracker();
+    setLocation('/tracker/login');
+  };
+
+  // Load assigned matches
   useEffect(() => {
+    if (!trackerUser) return;
+    
     const loadMatches = async () => {
       try {
-        const matchesData = await getMatches();
-        setMatches(matchesData);
+        // Listen for matches assigned to this tracker team
+        const unsubscribe = listenToMatchesForTracker(trackerUser.teamId, (matchesData) => {
+          setMatches(matchesData);
+          
+          // If there are matches, select the first one by default
+          const matchIds = Object.keys(matchesData);
+          if (matchIds.length > 0 && !selectedMatchId) {
+            setSelectedMatchId(matchIds[0]);
+          }
+          
+          setIsLoading(false);
+        });
         
-        // If there are matches, select the first one by default
-        const matchIds = Object.keys(matchesData);
-        if (matchIds.length > 0) {
-          setSelectedMatchId(matchIds[0]);
-        }
+        return () => unsubscribe();
       } catch (error) {
         toast({
           title: "Error",
-          description: "Failed to load matches",
+          description: "Failed to load assigned matches",
           variant: "destructive",
         });
-      } finally {
         setIsLoading(false);
       }
     };
 
     loadMatches();
-  }, [toast]);
+  }, [toast, trackerUser]);
 
   // Load all players
   useEffect(() => {
@@ -65,16 +85,24 @@ const StatTrackerPage = () => {
   useEffect(() => {
     if (!selectedMatchId) return;
     
-    const unsubscribe = listenToMatchById(selectedMatchId, (match) => {
+    const matchUnsubscribe = listenToMatchById(selectedMatchId, (match) => {
       if (match) {
         setCurrentMatch(match);
       }
     });
     
+    // Listen for stat logs for this match
+    const logsUnsubscribe = listenToStatLogs(selectedMatchId, (logs) => {
+      setStatLogs(logs);
+    });
+    
     // Reset selected player when match changes
     setSelectedPlayerId(null);
     
-    return () => unsubscribe();
+    return () => {
+      matchUnsubscribe();
+      logsUnsubscribe();
+    };
   }, [selectedMatchId]);
 
   // Load teams when match changes

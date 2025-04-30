@@ -2,6 +2,20 @@ import { initializeApp } from "firebase/app";
 import { getDatabase, ref, set, get, update, push, onValue, off, remove } from "firebase/database";
 import type { Player, Team, Match, PlayerStats, MatchStats } from "@shared/schema";
 
+// Type definition for StatLog with explicit ID field
+export type StatLog = {
+  id: string;
+  matchId: string;
+  playerId: string;
+  playerName: string;
+  teamId: string;
+  teamName: string;
+  statName: keyof PlayerStats;
+  value: number;
+  timestamp: number;
+  category: 'earned' | 'fault';
+};
+
 // Firebase configuration from environment variables
 // Use temp-project as a placeholder to ensure URL format is correct
 const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID || "temp-project";
@@ -311,19 +325,7 @@ export const initializeMatchStats = async (matchId: string) => {
   await set(statsRef, {});
 };
 
-// Type definitions for stat logs
-export type StatLog = {
-  id: string;
-  matchId: string;
-  playerId: string;
-  playerName: string;
-  teamId: string;
-  teamName: string;
-  statName: keyof PlayerStats;
-  value: number;
-  timestamp: number;
-  category: 'earned' | 'fault';
-}
+// Type definition for TrackerUser
 
 export type TrackerUser = {
   teamId: string;
@@ -595,15 +597,19 @@ export const listenToMatchStats = (
   };
 };
 
-// Helper function to create an empty player stats object
+// Helper function to get stat logs with proper ID handling
 export const getStatLogs = async (matchId: string): Promise<StatLog[]> => {
   const logsRef = ref(database, `statLogs/${matchId}`);
   const snapshot = await get(logsRef);
   const logs = snapshot.val() || {};
   
-  // Convert to array and sort by timestamp (newest first)
-  return Object.values(logs).map((log: any) => log as StatLog)
-    .sort((a: StatLog, b: StatLog) => b.timestamp - a.timestamp);
+  // Convert to array with IDs and sort by timestamp (newest first)
+  return Object.entries(logs)
+    .map(([logId, logData]) => ({ 
+      ...(logData as StatLog), 
+      id: logId 
+    }))
+    .sort((a, b) => b.timestamp - a.timestamp);
 };
 
 export const listenToStatLogs = (matchId: string, callback: (logs: StatLog[]) => void) => {

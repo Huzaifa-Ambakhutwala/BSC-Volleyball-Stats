@@ -704,6 +704,51 @@ export type AdminUser = {
   password: string;
 };
 
+// Authentication
+export const loginAdmin = async (username: string, password: string): Promise<boolean> => {
+  try {
+    // Get all admin users from Firebase
+    const adminUsersRef = ref(database, 'adminUsers');
+    const snapshot = await get(adminUsersRef);
+    const adminUsers = snapshot.val() || {};
+    
+    // Check if username/password match an admin user
+    for (const key in adminUsers) {
+      const admin = adminUsers[key];
+      if (admin.username === username && admin.password === password) {
+        // Store admin session data in localStorage
+        localStorage.setItem('adminAuthenticated', 'true');
+        localStorage.setItem('adminUsername', username);
+        return true;
+      }
+    }
+    
+    // If no admin users exist yet and using default credentials, create the default admin
+    if (Object.keys(adminUsers).length === 0 && username === 'Mehdi' && password === '0000') {
+      // Store admin session data in localStorage
+      localStorage.setItem('adminAuthenticated', 'true');
+      localStorage.setItem('adminUsername', username);
+      
+      // Create this default admin in Firebase
+      await addAdminUser(username, password);
+      return true;
+    }
+    
+    return false;
+  } catch (error) {
+    console.error('Error logging in admin:', error);
+    
+    // Fall back to hardcoded credentials if Firebase fails
+    if (username === 'Mehdi' && password === '0000') {
+      localStorage.setItem('adminAuthenticated', 'true');
+      localStorage.setItem('adminUsername', username);
+      return true;
+    }
+    
+    return false;
+  }
+};
+
 // Admin user management
 export const getAdminUsers = async (): Promise<AdminUser[]> => {
   try {
@@ -799,3 +844,5 @@ export const deleteAdminUser = async (username: string): Promise<boolean> => {
     return false;
   }
 };
+
+

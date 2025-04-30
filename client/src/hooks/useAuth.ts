@@ -39,18 +39,26 @@ export const useAuth = () => {
   }, [authState]);
 
   const login = async (username: string, password: string): Promise<boolean> => {
-    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-      // Set the state first
-      setAuthState({ isAuthenticated: true, username, id: 1 });
+    try {
+      // Import dynamically to avoid circular dependencies
+      const { loginAdmin } = await import('../lib/firebase');
+      const success = await loginAdmin(username, password);
       
-      // Force a small delay to ensure state is updated before returning
-      return new Promise(resolve => {
-        setTimeout(() => {
-          resolve(true);
-        }, 50);
-      });
+      if (success) {
+        // Set the state
+        setAuthState({ isAuthenticated: true, username, id: 1 });
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error logging in:', error);
+      // Fall back to hardcoded credentials if firebase fails
+      if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+        setAuthState({ isAuthenticated: true, username, id: 1 });
+        return true;
+      }
+      return false;
     }
-    return false;
   };
 
   const logout = () => {

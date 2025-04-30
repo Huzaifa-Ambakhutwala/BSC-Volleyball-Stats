@@ -1,21 +1,27 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { getTeams, listenToTeams, getTeamPassword, setTeamPassword } from '@/lib/firebase';
+import { 
+  getTeams, 
+  listenToTeams, 
+  getTeamPassword, 
+  setTeamPassword, 
+  getAdminUsers, 
+  addAdminUser, 
+  updateAdminUser, 
+  deleteAdminUser,
+  AdminUser as FirebaseAdminUser
+} from '@/lib/firebase';
 import type { Team } from '@shared/schema';
-import { Lock, Edit, Check, X, Loader2, KeyRound, PlusCircle, Eye, EyeOff, User, Users } from 'lucide-react';
+import { Lock, Edit, Check, X, Loader2, KeyRound, PlusCircle, Eye, EyeOff, User, Users, Trash2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useLocation } from 'wouter';
 
-// Type for admin users
-type AdminUser = {
-  username: string;
-  password: string;
-};
+// Using the Firebase admin user type instead of creating a new one
 
 const ManagePasswords = () => {
   const [teams, setTeams] = useState<Record<string, Team>>({});
   const [teamPasswords, setTeamPasswords] = useState<Record<string, string>>({});
-  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [adminUsers, setAdminUsers] = useState<FirebaseAdminUser[]>([]);
   const [showPasswordMap, setShowPasswordMap] = useState<Record<string, boolean>>({});
   const [showAdminPasswordMap, setShowAdminPasswordMap] = useState<Record<string, boolean>>({});
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
@@ -293,17 +299,229 @@ const ManagePasswords = () => {
 
   return (
     <div className="container mx-auto py-8 px-4">
+      {/* Admin Users Section */}
       <h1 className="text-2xl font-bold mb-6 flex items-center">
-        <KeyRound className="w-6 h-6 mr-2" />
-        Manage Team Passwords
+        <User className="w-6 h-6 mr-2" />
+        Manage Admin Credentials
+      </h1>
+      
+      <div className="bg-white rounded-lg shadow mb-8">
+        <div className="flex justify-between items-center p-4 border-b">
+          <div className="grid grid-cols-12 gap-4 w-full font-medium text-gray-600">
+            <div className="col-span-4">Username</div>
+            <div className="col-span-5">Password</div>
+            <div className="col-span-3">Actions</div>
+          </div>
+          <button 
+            onClick={() => setShowAddAdminForm(!showAddAdminForm)}
+            className="flex items-center text-sm bg-[hsl(var(--vb-blue))] text-white px-3 py-2 rounded-md hover:bg-opacity-90"
+          >
+            <PlusCircle className="w-4 h-4 mr-1" />
+            Add Admin
+          </button>
+        </div>
+
+        {showAddAdminForm && (
+          <div className="grid grid-cols-12 gap-4 p-4 items-center border-b bg-gray-50">
+            <div className="col-span-4">
+              <input
+                type="text"
+                value={newAdminUsername}
+                onChange={(e) => setNewAdminUsername(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[hsl(var(--vb-blue))] focus:border-[hsl(var(--vb-blue))]"
+                placeholder="Enter admin username"
+              />
+            </div>
+            <div className="col-span-5">
+              <input
+                type="text"
+                value={newAdminPassword}
+                onChange={(e) => setNewAdminPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[hsl(var(--vb-blue))] focus:border-[hsl(var(--vb-blue))]"
+                placeholder="Enter admin password"
+              />
+            </div>
+            <div className="col-span-3 flex space-x-2">
+              <button
+                onClick={handleAddAdmin}
+                className="p-2 text-green-600 hover:bg-green-50 rounded-full"
+                title="Save"
+              >
+                <Check className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => {
+                  setShowAddAdminForm(false);
+                  setNewAdminUsername('');
+                  setNewAdminPassword('');
+                }}
+                className="p-2 text-red-600 hover:bg-red-50 rounded-full"
+                title="Cancel"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {adminUsers.length === 0 ? (
+          <div className="p-8 text-center text-gray-500">
+            No admin users found. Add an admin user to get started.
+          </div>
+        ) : (
+          adminUsers.map((admin, index) => (
+            <div key={index} className="grid grid-cols-12 gap-4 p-4 items-center border-b last:border-b-0 hover:bg-gray-50">
+              <div className="col-span-4 font-medium">{admin.username}</div>
+              
+              <div className="col-span-5">
+                {editingAdminIndex === index ? (
+                  <input
+                    type="text"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[hsl(var(--vb-blue))] focus:border-[hsl(var(--vb-blue))]"
+                    placeholder="Enter new password"
+                    autoFocus
+                  />
+                ) : (
+                  <div className="flex items-center">
+                    <Lock className="w-4 h-4 mr-2 text-gray-400" />
+                    {showAdminPasswordMap[index] ? (
+                      <span>{admin.password}</span>
+                    ) : (
+                      <span>••••••••</span>
+                    )}
+                    <button
+                      onClick={() => toggleAdminPasswordVisibility(index)}
+                      className="ml-2 p-1 text-gray-400 hover:text-gray-600 rounded-full"
+                      title={showAdminPasswordMap[index] ? "Hide Password" : "Show Password"}
+                    >
+                      {showAdminPasswordMap[index] ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+              
+              <div className="col-span-3 flex space-x-2">
+                {editingAdminIndex === index ? (
+                  <>
+                    <button
+                      onClick={() => handleSaveAdminPassword(admin.username)}
+                      className="p-2 text-green-600 hover:bg-green-50 rounded-full"
+                      title="Save"
+                    >
+                      <Check className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingAdminIndex(null);
+                        setNewPassword('');
+                      }}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-full"
+                      title="Cancel"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => handleEditAdmin(index)}
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-full"
+                      title="Edit Password"
+                    >
+                      <Edit className="w-5 h-5" />
+                    </button>
+                    {admin.username !== username && (
+                      <button
+                        onClick={() => handleDeleteAdmin(admin.username)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-full"
+                        title="Delete Admin"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+      
+      {/* Team Passwords Section */}
+      <h1 className="text-2xl font-bold mb-6 flex items-center">
+        <Users className="w-6 h-6 mr-2" />
+        Manage Team Credentials
       </h1>
       
       <div className="bg-white rounded-lg shadow">
-        <div className="grid grid-cols-12 gap-4 p-4 font-medium text-gray-600 border-b">
-          <div className="col-span-4">Team</div>
-          <div className="col-span-5">Password</div>
-          <div className="col-span-3">Actions</div>
+        <div className="flex justify-between items-center p-4 border-b">
+          <div className="grid grid-cols-12 gap-4 w-full font-medium text-gray-600">
+            <div className="col-span-4">Team</div>
+            <div className="col-span-5">Password</div>
+            <div className="col-span-3">Actions</div>
+          </div>
+          <button 
+            onClick={() => setShowAddTeamForm(!showAddTeamForm)}
+            className="flex items-center text-sm bg-[hsl(var(--vb-blue))] text-white px-3 py-2 rounded-md hover:bg-opacity-90"
+          >
+            <PlusCircle className="w-4 h-4 mr-1" />
+            Add Team Password
+          </button>
         </div>
+
+        {showAddTeamForm && (
+          <div className="grid grid-cols-12 gap-4 p-4 items-center border-b bg-gray-50">
+            <div className="col-span-4">
+              <select
+                value={newTeamId}
+                onChange={(e) => setNewTeamId(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[hsl(var(--vb-blue))] focus:border-[hsl(var(--vb-blue))]"
+              >
+                <option value="">Select Team</option>
+                {Object.entries(teams)
+                  .filter(([id, _]) => !teamPasswords[id])
+                  .map(([id, team]) => (
+                    <option key={id} value={id}>{team.teamName}</option>
+                  ))}
+              </select>
+            </div>
+            <div className="col-span-5">
+              <input
+                type="text"
+                value={newTeamPassword}
+                onChange={(e) => setNewTeamPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[hsl(var(--vb-blue))] focus:border-[hsl(var(--vb-blue))]"
+                placeholder="Enter team password"
+              />
+            </div>
+            <div className="col-span-3 flex space-x-2">
+              <button
+                onClick={handleAddTeam}
+                className="p-2 text-green-600 hover:bg-green-50 rounded-full"
+                title="Save"
+              >
+                <Check className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => {
+                  setShowAddTeamForm(false);
+                  setNewTeamId('');
+                  setNewTeamPassword('');
+                }}
+                className="p-2 text-red-600 hover:bg-red-50 rounded-full"
+                title="Cancel"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {Object.entries(teams).length === 0 ? (
           <div className="p-8 text-center text-gray-500">
@@ -327,7 +545,26 @@ const ManagePasswords = () => {
                 ) : (
                   <div className="flex items-center">
                     <Lock className="w-4 h-4 mr-2 text-gray-400" />
-                    <span>{teamPasswords[teamId] ? '••••••••' : 'No password set'}</span>
+                    {!teamPasswords[teamId] ? (
+                      <span className="text-gray-400 italic">No password set</span>
+                    ) : showPasswordMap[teamId] ? (
+                      <span>{teamPasswords[teamId]}</span>
+                    ) : (
+                      <span>••••••••</span>
+                    )}
+                    {teamPasswords[teamId] && (
+                      <button
+                        onClick={() => togglePasswordVisibility(teamId)}
+                        className="ml-2 p-1 text-gray-400 hover:text-gray-600 rounded-full"
+                        title={showPasswordMap[teamId] ? "Hide Password" : "Show Password"}
+                      >
+                        {showPasswordMap[teamId] ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

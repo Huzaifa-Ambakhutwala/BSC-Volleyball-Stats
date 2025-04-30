@@ -149,7 +149,12 @@ export const deleteTeam = async (teamId: string) => {
 export const createMatch = async (match: Omit<Match, "id" | "scoreA" | "scoreB">) => {
   const matchesRef = ref(database, 'matches');
   const newMatchRef = push(matchesRef);
-  await set(newMatchRef, { ...match, scoreA: 0, scoreB: 0 });
+  await set(newMatchRef, { 
+    ...match, 
+    scoreA: 0, 
+    scoreB: 0,
+    gameNumber: match.gameNumber || 0
+  });
   return newMatchRef.key;
 };
 
@@ -304,19 +309,187 @@ export const initializeMatchStats = async (matchId: string) => {
   await set(statsRef, {});
 };
 
+// Type definitions for stat logs
+export type StatLog = {
+  id: string;
+  matchId: string;
+  playerId: string;
+  playerName: string;
+  teamId: string;
+  teamName: string;
+  statName: keyof PlayerStats;
+  value: number;
+  timestamp: number;
+  category: 'earned' | 'fault';
+}
+
+export type TrackerUser = {
+  teamId: string;
+  teamName: string;
+}
+
+// Authentication for stat trackers
+export const loginStatTracker = async (teamId: string): Promise<TrackerUser | null> => {
+  try {
+    const teamRef = ref(database, `teams/${teamId}`);
+    const snapshot = await get(teamRef);
+    const team = snapshot.val();
+    
+    if (team) {
+      const trackerUser: TrackerUser = {
+        teamId,
+        teamName: team.teamName
+      };
+      
+      // Store tracker session in localStorage
+      localStorage.setItem('trackerUser', JSON.stringify(trackerUser));
+      return trackerUser;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error logging in stat tracker:', error);
+    return null;
+  }
+};
+
+export const getTrackerUser = (): TrackerUser | null => {
+  const userJson = localStorage.getItem('trackerUser');
+  return userJson ? JSON.parse(userJson) : null;
+};
+
+export const logoutStatTracker = (): void => {
+  localStorage.removeItem('trackerUser');
+};
+
+export const getMatchesForTracker = async (teamId: string): Promise<Record<string, Match>> => {
+  const matchesRef = ref(database, 'matches');
+  const snapshot = await get(matchesRef);
+  const matches = snapshot.val() || {};
+  
+  // Filter matches where this team is assigned as the tracker
+  const filteredMatches: Record<string, Match> = {};
+  Object.entries(matches).forEach(([key, match]) => {
+    if ((match as Match).trackerTeam === teamId) {
+      filteredMatches[key] = match as Match;
+    }
+  });
+  
+  return filteredMatches;
+};
+
+export const listenToMatchesForTracker = (teamId: string, callback: (matches: Record<string, Match>) => void) => {
+  const matchesRef = ref(database, 'matches');
+  console.log(`Setting up matches for tracker team ${teamId} listener`);
+  
+  const unsubscribe = onValue(matchesRef, (snapshot) => {
+    const matches = snapshot.val() || {};
+    
+    // Filter matches where this team is assigned as the tracker
+    const filteredMatches: Record<string, Match> = {};
+    Object.entries(matches).forEach(([key, match]) => {
+      if ((match as Match).trackerTeam === teamId) {
+        filteredMatches[key] = match as Match;
+      }
+    });
+    
+    console.log(`Matches for tracker team ${teamId} received:`, filteredMatches);
+    callback(filteredMatches);
+  }, (error) => {
+    console.error(`Error in matches for tracker team ${teamId} listener:`, error);
+  });
+  
+  return () => {
+    console.log(`Removing matches for tracker team ${teamId} listener`);
+    unsubscribe();
+  };
+};
+
 export const updatePlayerStat = async (
   matchId: string, 
   playerId: string, 
   statName: keyof PlayerStats, 
-  value: number
+  value: number,
+  category: 'earned' | 'fault' = 'earned'
 ) => {
+  // Get player and team info for the log
+  const playerRef = ref(database, `players/${playerId}`);
+  const playerSnapshot = await get(playerRef);
+  const player = playerSnapshot.val();
+  
+  // Update player stats
   const playerStatsRef = ref(database, `stats/${matchId}/${playerId}`);
-  const snapshot = await get(playerStatsRef);
-  const currentStats = snapshot.val() || createEmptyPlayerStats();
+  const statsSnapshot = await get(playerStatsRef);
+  const currentStats = statsSnapshot.val() || createEmptyPlayerStats();
   
   await update(playerStatsRef, {
     [statName]: (currentStats[statName] || 0) + value
   });
+  
+  // Find which team this player belongs to and update score
+  const matchRef = ref(database, `matches/${matchId}`);
+  const matchSnapshot = await get(matchRef);
+  const match = matchSnapshot.val() as Match;
+  
+  // Determine player's team
+  let playerTeamId = '';
+  let playerTeamName = '';
+  let isTeamA = false;
+
+  // Check team A players
+  const teamARef = ref(database, `teams/${match.teamA}`);
+  const teamASnapshot = await get(teamARef);
+  const teamA = teamASnapshot.val();
+  
+  if (teamA && teamA.players && teamA.players.includes(playerId)) {
+    playerTeamId = match.teamA;
+    playerTeamName = teamA.teamName;
+    isTeamA = true;
+  } else {
+    // Check team B players
+    const teamBRef = ref(database, `teams/${match.teamB}`);
+    const teamBSnapshot = await get(teamBRef);
+    const teamB = teamBSnapshot.val();
+    
+    if (teamB && teamB.players && teamB.players.includes(playerId)) {
+      playerTeamId = match.teamB;
+      playerTeamName = teamB.teamName;
+      isTeamA = false;
+    }
+  }
+  
+  // Update score based on the stat category and team
+  if (category === 'earned' && isTeamA) {
+    // Team A earned a point
+    await updateMatchScore(matchId, match.scoreA + 1, match.scoreB);
+  } else if (category === 'earned' && !isTeamA) {
+    // Team B earned a point
+    await updateMatchScore(matchId, match.scoreA, match.scoreB + 1);
+  } else if (category === 'fault' && isTeamA) {
+    // Team A fault gives point to Team B
+    await updateMatchScore(matchId, match.scoreA, match.scoreB + 1);
+  } else if (category === 'fault' && !isTeamA) {
+    // Team B fault gives point to Team A
+    await updateMatchScore(matchId, match.scoreA + 1, match.scoreB);
+  }
+  
+  // Log the stat action
+  const statLogsRef = ref(database, `statLogs/${matchId}`);
+  const newLogRef = push(statLogsRef);
+  const log: StatLog = {
+    id: newLogRef.key || '',
+    matchId,
+    playerId,
+    playerName: player ? player.name : 'Unknown Player',
+    teamId: playerTeamId,
+    teamName: playerTeamName,
+    statName,
+    value,
+    timestamp: Date.now(),
+    category
+  };
+  
+  await set(newLogRef, log);
+  return log;
 };
 
 export const getPlayerStats = async (matchId: string, playerId: string): Promise<PlayerStats> => {
@@ -373,6 +546,94 @@ export const listenToMatchStats = (
 };
 
 // Helper function to create an empty player stats object
+export const getStatLogs = async (matchId: string): Promise<StatLog[]> => {
+  const logsRef = ref(database, `statLogs/${matchId}`);
+  const snapshot = await get(logsRef);
+  const logs = snapshot.val() || {};
+  
+  // Convert to array and sort by timestamp (newest first)
+  return Object.values(logs).sort((a: StatLog, b: StatLog) => 
+    b.timestamp - a.timestamp
+  );
+};
+
+export const listenToStatLogs = (matchId: string, callback: (logs: StatLog[]) => void) => {
+  const logsRef = ref(database, `statLogs/${matchId}`);
+  console.log(`Setting up stat logs listener for match ID: ${matchId}`);
+  
+  const unsubscribe = onValue(logsRef, (snapshot) => {
+    const logs = snapshot.val() || {};
+    
+    // Convert to array and sort by timestamp (newest first)
+    const logArray: StatLog[] = Object.values(logs).sort((a: StatLog, b: StatLog) => 
+      b.timestamp - a.timestamp
+    );
+    
+    console.log(`Stat logs received for match ID: ${matchId}:`, logArray);
+    callback(logArray);
+  }, (error) => {
+    console.error(`Error in stat logs listener for match ID: ${matchId}:`, error);
+  });
+  
+  return () => {
+    console.log(`Removing stat logs listener for match ID: ${matchId}`);
+    unsubscribe();
+  };
+};
+
+export const deleteStatLog = async (matchId: string, logId: string): Promise<boolean> => {
+  try {
+    const logRef = ref(database, `statLogs/${matchId}/${logId}`);
+    
+    // Get the log first to determine which stat needs to be decremented
+    const snapshot = await get(logRef);
+    const log = snapshot.val() as StatLog;
+    
+    if (log) {
+      // Get current player stats
+      const playerStatsRef = ref(database, `stats/${matchId}/${log.playerId}`);
+      const statsSnapshot = await get(playerStatsRef);
+      const currentStats = statsSnapshot.val() || createEmptyPlayerStats();
+      
+      // Decrement the stat
+      await update(playerStatsRef, {
+        [log.statName]: Math.max(0, (currentStats[log.statName] || 0) - log.value)
+      });
+      
+      // Get current match for score adjustment
+      const matchRef = ref(database, `matches/${matchId}`);
+      const matchSnapshot = await get(matchRef);
+      const match = matchSnapshot.val() as Match;
+      
+      // Determine if player is on Team A or Team B
+      const isTeamA = log.teamId === match.teamA;
+      
+      // Adjust score based on the original action
+      if (log.category === 'earned' && isTeamA) {
+        // Undo Team A earned point
+        await updateMatchScore(matchId, Math.max(0, match.scoreA - 1), match.scoreB);
+      } else if (log.category === 'earned' && !isTeamA) {
+        // Undo Team B earned point
+        await updateMatchScore(matchId, match.scoreA, Math.max(0, match.scoreB - 1));
+      } else if (log.category === 'fault' && isTeamA) {
+        // Undo Team A fault (point for Team B)
+        await updateMatchScore(matchId, match.scoreA, Math.max(0, match.scoreB - 1));
+      } else if (log.category === 'fault' && !isTeamA) {
+        // Undo Team B fault (point for Team A)
+        await updateMatchScore(matchId, Math.max(0, match.scoreA - 1), match.scoreB);
+      }
+      
+      // Delete the log
+      await remove(logRef);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error deleting stat log:', error);
+    return false;
+  }
+};
+
 export const createEmptyPlayerStats = (): PlayerStats => ({
   aces: 0,
   serveErrors: 0,

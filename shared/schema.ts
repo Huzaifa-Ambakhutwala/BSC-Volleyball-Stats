@@ -18,9 +18,11 @@ export type Team = {
 
 export type Match = {
   id: string;
+  gameNumber: number;
   courtNumber: number;
   teamA: string; // Team ID
   teamB: string; // Team ID
+  trackerTeam: string; // Team ID for tracking stats
   startTime: string;
   scoreA: number;
   scoreB: number;

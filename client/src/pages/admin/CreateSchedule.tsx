@@ -11,13 +11,15 @@ import {
 } from '@/lib/firebase';
 import type { Team, Match } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, Clock, Trophy, PlusCircle, Pencil, Trash2, Save, X, Loader2 } from 'lucide-react';
+import { Calendar, Clock, Trophy, PlusCircle, Pencil, Trash2, Save, X, Loader2, Users, Hash } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 
 const CreateSchedule = () => {
+  const [gameNumber, setGameNumber] = useState<number>(1);
   const [courtNumber, setCourtNumber] = useState<number>(1);
   const [teamA, setTeamA] = useState<string>('');
   const [teamB, setTeamB] = useState<string>('');
+  const [trackerTeam, setTrackerTeam] = useState<string>('');
   const [startTime, setStartTime] = useState<string>('');
   const [teams, setTeams] = useState<Record<string, Team>>({});
   const [matches, setMatches] = useState<Record<string, Match>>({});
@@ -26,9 +28,11 @@ const CreateSchedule = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
+  const [editGameNumber, setEditGameNumber] = useState<number>(1);
   const [editCourtNumber, setEditCourtNumber] = useState<number>(1);
   const [editTeamA, setEditTeamA] = useState<string>('');
   const [editTeamB, setEditTeamB] = useState<string>('');
+  const [editTrackerTeam, setEditTrackerTeam] = useState<string>('');
   const [editStartTime, setEditStartTime] = useState<string>('');
   const { toast } = useToast();
 

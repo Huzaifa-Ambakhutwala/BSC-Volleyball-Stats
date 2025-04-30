@@ -42,7 +42,7 @@ const MatchDetailsPage = () => {
     if (['aces', 'spikes', 'blocks', 'tips', 'dumps', 'digs'].includes(statName)) {
       return 'bg-green-500';
     }
-    // Faults - Red
+    // Faults - Red (including reaches now)
     else {
       return 'bg-red-500';
     }

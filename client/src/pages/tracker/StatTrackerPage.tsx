@@ -445,7 +445,7 @@ const StatTrackerPage = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {statLogs.map(log => (
+                      {statLogs.map((log, index) => (
                         <tr key={log.id} className="hover:bg-gray-50">
                           <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
                             <div className="flex items-center">
@@ -470,13 +470,17 @@ const StatTrackerPage = () => {
                             </span>
                           </td>
                           <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
-                            <button
-                              onClick={() => handleDeleteLog(log.id)}
-                              disabled={isDeletingLog}
-                              className="text-red-500 hover:text-red-700 focus:outline-none disabled:opacity-50"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            {/* Only show delete button for the most recent log (first in the array) */}
+                            {index === 0 && (
+                              <button
+                                onClick={() => handleDeleteLog(log.id)}
+                                disabled={isDeletingLog}
+                                className="text-red-500 hover:text-red-700 focus:outline-none disabled:opacity-50"
+                                title="Delete this log entry"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))}

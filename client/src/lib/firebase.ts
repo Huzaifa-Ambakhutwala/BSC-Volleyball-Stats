@@ -639,7 +639,7 @@ export const deleteStatLog = async (matchId: string, logId: string): Promise<boo
     
     // Convert logs to an array and sort by timestamp (newest first)
     const sortedLogs = Object.entries(logs)
-      .map(([id, logData]) => ({ id, ...(logData as StatLog) }))
+      .map(([logId, logData]) => ({ id: logId, ...(logData as StatLog) }))
       .sort((a, b) => b.timestamp - a.timestamp);
     
     // Check if the requested log is the most recent one

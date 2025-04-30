@@ -80,7 +80,7 @@ const PlayerStatCard = ({ player, playerId, matchId, teamId }: PlayerStatCardPro
     }
   };
   
-  // Calculate total stats (digs, tips, dumps now count as earned points; reaches as faults)
+  // Calculate total stats
   const totalEarnedPoints = stats.aces + stats.spikes + stats.blocks + stats.tips + stats.dumps + stats.digs;
   const totalFaults = stats.serveErrors + stats.spikeErrors + stats.netTouches + stats.footFaults + stats.carries + stats.reaches;
   

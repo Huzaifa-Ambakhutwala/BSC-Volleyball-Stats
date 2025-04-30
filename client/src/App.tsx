@@ -17,29 +17,48 @@ import MatchDetailsPage from "@/pages/history/MatchDetailsPage";
 import Home from "@/pages/Home";
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { getTrackerUser } from "@/lib/firebase";
+import { getTrackerUser, type TrackerUser } from "@/lib/firebase";
+
+// Context for tracker authentication
+import { createContext } from "react";
+
+// Create context for tracker user
+export const TrackerUserContext = createContext<{
+  trackerUser: TrackerUser | null;
+  setTrackerUser: (user: TrackerUser | null) => void;
+}>({
+  trackerUser: null,
+  setTrackerUser: () => {},
+});
 
 // Protected route for stat tracker
 const TrackerRoute = () => {
-  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
+  const [trackerUser, setTrackerUser] = useState<TrackerUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [, setLocation] = useLocation();
 
   useEffect(() => {
     // Check if user is logged in as a tracker
-    const trackerUser = getTrackerUser();
-    setAuthenticated(!!trackerUser);
-    if (!trackerUser) {
+    const user = getTrackerUser();
+    setTrackerUser(user);
+    setIsLoading(false);
+    
+    if (!user) {
       setLocation('/tracker/login');
     }
   }, [setLocation]);
 
   // Show loading state while checking authentication
-  if (authenticated === null) {
+  if (isLoading) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
   }
 
-  // Render the StatTrackerPage if authenticated
-  return authenticated ? <StatTrackerPage /> : null;
+  // Render the StatTrackerPage with context if authenticated
+  return trackerUser ? (
+    <TrackerUserContext.Provider value={{ trackerUser, setTrackerUser }}>
+      <StatTrackerPage />
+    </TrackerUserContext.Provider>
+  ) : null;
 };
 
 function Router() {

@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
-import { getTeamById, getPlayers, updateMatchScore, listenToMatchById, getTrackerUser, logoutStatTracker, getMatchesForTracker, listenToMatchesForTracker, getStatLogs, listenToStatLogs, deleteStatLog, type StatLog } from '@/lib/firebase';
+import { useState, useEffect, useContext } from 'react';
+import { getTeamById, getPlayers, updateMatchScore, listenToMatchById, logoutStatTracker, getMatchesForTracker, listenToMatchesForTracker, getStatLogs, listenToStatLogs, deleteStatLog, type StatLog } from '@/lib/firebase';
 import type { Match, Team, Player } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
 import PlayerStatActions, { StatActions } from '@/components/PlayerStatActions';
 import { Button } from '@/components/ui/button';
 import { useLocation } from 'wouter';
 import { LogOut, Clock, Trash2, Loader2, AlertTriangle } from 'lucide-react';
+import { TrackerUserContext } from '@/App';
 import { format } from 'date-fns';
 import {
   AlertDialog,
@@ -32,7 +33,7 @@ const StatTrackerPage = () => {
   const [isDeletingLog, setIsDeletingLog] = useState(false);
   const { toast } = useToast();
   const [_, setLocation] = useLocation();
-  const [trackerUser] = useState(() => getTrackerUser());
+  const { trackerUser, setTrackerUser } = useContext(TrackerUserContext);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   // Logout handler

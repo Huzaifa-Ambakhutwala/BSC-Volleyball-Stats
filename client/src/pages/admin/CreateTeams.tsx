@@ -104,6 +104,7 @@ const CreateTeams = () => {
     setEditingTeamId(team.id);
     setEditTeamName(team.teamName);
     setEditSelectedPlayers(team.players || []);
+    setEditTeamColor(team.teamColor || '#3B82F6');
   };
 
   const handleCancelEdit = () => {
@@ -125,7 +126,7 @@ const CreateTeams = () => {
     setIsSubmitting(true);
     
     try {
-      await updateTeam(editingTeamId, editTeamName, editSelectedPlayers);
+      await updateTeam(editingTeamId, editTeamName, editSelectedPlayers, editTeamColor);
       
       // No need to update local state - Firebase listener will handle it
       
@@ -138,6 +139,7 @@ const CreateTeams = () => {
       setEditingTeamId(null);
       setEditTeamName('');
       setEditSelectedPlayers([]);
+      setEditTeamColor('#3B82F6'); // Reset to default blue
     } catch (error) {
       toast({
         title: "Error",
@@ -203,6 +205,21 @@ const CreateTeams = () => {
       .map(id => players[id]?.name || 'Unknown Player')
       .join(', ');
   };
+  
+  // Helper function to determine brightness of a color (for text contrast)
+  const getBrightness = (hexColor: string): number => {
+    // Remove # if present
+    const hex = hexColor.replace('#', '');
+    
+    // Convert hex to RGB
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    
+    // Calculate brightness using the formula
+    // (0.299*R + 0.587*G + 0.114*B)
+    return (0.299 * r + 0.587 * g + 0.114 * b);
+  };
 
   return (
     <div className="space-y-8">
@@ -257,6 +274,26 @@ const CreateTeams = () => {
                           <X className="h-5 w-5" />
                         </button>
                       </div>
+                      <div className="flex items-center space-x-2">
+                        <label className="text-sm font-medium text-gray-700 flex items-center">
+                          <Palette className="h-4 w-4 mr-1" />
+                          Team Color:
+                        </label>
+                        <div className="flex items-center">
+                          <input
+                            type="color"
+                            value={editTeamColor}
+                            onChange={(e) => setEditTeamColor(e.target.value)}
+                            className="w-8 h-8 p-0 border-0 rounded-md cursor-pointer"
+                          />
+                          <div 
+                            className="ml-2 px-3 py-1 rounded" 
+                            style={{ backgroundColor: editTeamColor, color: getBrightness(editTeamColor) < 128 ? 'white' : 'black' }}
+                          >
+                            {editTeamColor}
+                          </div>
+                        </div>
+                      </div>
                       <select 
                         multiple 
                         className="w-full h-32 px-3 py-1 border border-gray-300 rounded-md text-sm"
@@ -272,7 +309,16 @@ const CreateTeams = () => {
                   ) : (
                     // Display mode
                     <div className="flex items-center">
-                      <div className="w-1/3 font-medium">{team.teamName}</div>
+                      <div className="w-1/3 flex items-center font-medium">
+                        {team.teamColor && (
+                          <div 
+                            className="w-4 h-4 rounded-full mr-2" 
+                            style={{ backgroundColor: team.teamColor }}
+                            title={team.teamColor}
+                          />
+                        )}
+                        {team.teamName}
+                      </div>
                       <div className="w-1/2 text-sm text-gray-600 truncate" title={getPlayerNames(team.players || [])}>
                         {getPlayerNames(team.players || [])}
                       </div>
@@ -319,6 +365,33 @@ const CreateTeams = () => {
               value={teamName}
               onChange={(e) => setTeamName(e.target.value)}
             />
+          </div>
+          <div>
+            <label htmlFor="teamColor" className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+              <Palette className="h-4 w-4 mr-1" />
+              Team Color
+            </label>
+            <div className="flex items-center space-x-2 mb-4">
+              <input
+                type="color"
+                id="teamColor"
+                name="teamColor"
+                value={teamColor}
+                onChange={(e) => setTeamColor(e.target.value)}
+                className="w-10 h-10 p-0 border-0 rounded-md cursor-pointer"
+              />
+              <div 
+                className="px-3 py-1 rounded text-sm"
+                style={{ 
+                  backgroundColor: teamColor, 
+                  color: getBrightness(teamColor) < 128 ? 'white' : 'black',
+                  minWidth: '80px',
+                  textAlign: 'center'
+                }}
+              >
+                {teamColor}
+              </div>
+            </div>
           </div>
           <div>
             <label htmlFor="players" className="block text-sm font-medium text-gray-700 mb-1 flex items-center">

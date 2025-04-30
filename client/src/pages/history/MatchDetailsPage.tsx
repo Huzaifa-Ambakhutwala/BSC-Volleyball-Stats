@@ -39,16 +39,12 @@ const MatchDetailsPage = () => {
   // Helper function for stat category color
   const getStatCategoryColor = (statName: keyof PlayerStats): string => {
     // Earned points - Green
-    if (['aces', 'spikes', 'blocks'].includes(statName)) {
+    if (['aces', 'spikes', 'blocks', 'tips', 'dumps', 'digs'].includes(statName)) {
       return 'bg-green-500';
     }
     // Faults - Red
-    else if (['serveErrors', 'spikeErrors', 'netTouches', 'footFaults', 'carries'].includes(statName)) {
-      return 'bg-red-500';
-    }
-    // Neutral plays - Yellow
     else {
-      return 'bg-yellow-400';
+      return 'bg-red-500';
     }
   };
 

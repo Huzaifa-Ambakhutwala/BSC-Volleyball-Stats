@@ -187,6 +187,37 @@ const StatTrackerPage = () => {
     }
   };
 
+  // Handler for deleting logs
+  const handleDeleteLog = async (logId: string) => {
+    if (!selectedMatchId || isDeletingLog) return;
+    
+    setIsDeletingLog(true);
+    try {
+      const success = await deleteStatLog(selectedMatchId, logId);
+      
+      if (success) {
+        toast({
+          title: "Success",
+          description: "Stat log deleted successfully",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to delete the stat log",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeletingLog(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <section className="py-8 bg-gray-50">
@@ -201,8 +232,22 @@ const StatTrackerPage = () => {
     <section className="py-8 bg-gray-50">
       <div className="container mx-auto px-4">
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="bg-[hsl(var(--vb-blue))] text-white px-6 py-4">
+          <div className="bg-[hsl(var(--vb-blue))] text-white px-6 py-4 flex justify-between items-center">
             <h2 className="text-xl font-bold">Stat Tracker</h2>
+            <div className="flex items-center">
+              {trackerUser && (
+                <div className="mr-4 text-sm">
+                  Logged in as: <span className="font-semibold">{trackerUser.teamName}</span>
+                </div>
+              )}
+              <button
+                onClick={handleLogout}
+                className="px-3 py-1 bg-white text-[hsl(var(--vb-blue))] rounded-md hover:bg-gray-100 transition flex items-center gap-1"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Logout</span>
+              </button>
+            </div>
           </div>
 
           {/* Match Selection */}
@@ -379,6 +424,71 @@ const StatTrackerPage = () => {
                 </div>
               </div>
             </>
+          )}
+
+          {/* Stat Logs Section */}
+          {currentMatch && selectedMatchId && (
+            <div className="p-6 border-t border-gray-200">
+              <h3 className="text-lg font-semibold mb-4">Recent Actions</h3>
+              
+              {statLogs.length > 0 ? (
+                <div className="overflow-auto max-h-[300px] border border-gray-200 rounded-md">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50 sticky top-0">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Player</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Team</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {statLogs.map(log => (
+                        <tr key={log.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                            <div className="flex items-center">
+                              <Clock className="w-3 h-3 mr-1 text-gray-400" />
+                              {format(new Date(log.timestamp), 'HH:mm:ss')}
+                            </div>
+                          </td>
+                          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {log.playerName}
+                          </td>
+                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                            {log.teamName}
+                          </td>
+                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                            <span className="capitalize">{log.statName}</span> (+{log.value})
+                          </td>
+                          <td className="px-4 py-2 whitespace-nowrap text-sm">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              log.category === 'earned' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            }`}>
+                              {log.category}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
+                            <button
+                              onClick={() => handleDeleteLog(log.id)}
+                              disabled={isDeletingLog}
+                              className="text-red-500 hover:text-red-700 focus:outline-none disabled:opacity-50"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="p-6 text-center border border-gray-200 rounded-md">
+                  <p className="text-gray-500">No stat actions recorded yet.</p>
+                </div>
+              )}
+            </div>
           )}
 
           {!selectedMatchId && (

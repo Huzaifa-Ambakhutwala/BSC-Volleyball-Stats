@@ -4,7 +4,7 @@ import { listenToMatchesByCourtNumber, getTeamById, getPlayers, listenToPlayerSt
 import type { Match, Team, Player, PlayerStats } from '@shared/schema';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import PlayerStatCard from '@/components/PlayerStatCard';
+import ScoreboardPlayerCard from '@/components/ScoreboardPlayerCard';
 
 const ScoreboardPage = () => {
   const { courtId } = useParams<{ courtId: string }>();
@@ -189,8 +189,8 @@ const ScoreboardPage = () => {
                   <div className="grid grid-cols-1 gap-4">
                     {playersA.map(player => (
                       <div key={player.id} className="w-full">
-                        {/* Simple readonly version of player card */}
-                        <PlayerStatCard 
+                        {/* Read-only player card for scoreboard */}
+                        <ScoreboardPlayerCard 
                           player={player}
                           playerId={player.id}
                           matchId={currentMatch.id}
@@ -209,7 +209,7 @@ const ScoreboardPage = () => {
                   <div className="grid grid-cols-1 gap-4">
                     {playersB.map(player => (
                       <div key={player.id} className="w-full">
-                        <PlayerStatCard 
+                        <ScoreboardPlayerCard 
                           player={player}
                           playerId={player.id}
                           matchId={currentMatch.id}

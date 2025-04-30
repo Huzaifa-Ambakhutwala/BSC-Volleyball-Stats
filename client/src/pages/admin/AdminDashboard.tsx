@@ -4,8 +4,9 @@ import { useAuth } from '@/hooks/useAuth';
 import AddPlayers from './AddPlayers';
 import CreateTeams from './CreateTeams';
 import CreateSchedule from './CreateSchedule';
+import ManagePasswords from './ManagePasswords';
 
-type AdminTab = 'players' | 'teams' | 'schedule';
+type AdminTab = 'players' | 'teams' | 'schedule' | 'passwords';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('players');
@@ -33,13 +34,13 @@ const AdminDashboard = () => {
           {/* Admin Tabs Section */}
           <div className="px-6 py-4 bg-gray-50">
             <div className="border-b border-gray-200">
-              <nav className="flex -mb-px">
+              <nav className="flex -mb-px overflow-x-auto">
                 <button 
                   className={`px-6 py-3 border-b-2 font-medium ${
                     activeTab === 'players' 
                       ? 'border-[hsl(var(--vb-blue))] text-[hsl(var(--vb-blue))]' 
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  } transition`}
+                  } transition whitespace-nowrap`}
                   onClick={() => setActiveTab('players')}
                 >
                   Add Players
@@ -49,7 +50,7 @@ const AdminDashboard = () => {
                     activeTab === 'teams' 
                       ? 'border-[hsl(var(--vb-blue))] text-[hsl(var(--vb-blue))]' 
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  } transition`}
+                  } transition whitespace-nowrap`}
                   onClick={() => setActiveTab('teams')}
                 >
                   Create Teams
@@ -59,10 +60,20 @@ const AdminDashboard = () => {
                     activeTab === 'schedule' 
                       ? 'border-[hsl(var(--vb-blue))] text-[hsl(var(--vb-blue))]' 
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  } transition`}
+                  } transition whitespace-nowrap`}
                   onClick={() => setActiveTab('schedule')}
                 >
                   Create Schedule
+                </button>
+                <button 
+                  className={`px-6 py-3 border-b-2 font-medium ${
+                    activeTab === 'passwords' 
+                      ? 'border-[hsl(var(--vb-blue))] text-[hsl(var(--vb-blue))]' 
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  } transition whitespace-nowrap`}
+                  onClick={() => setActiveTab('passwords')}
+                >
+                  Manage Passwords
                 </button>
               </nav>
             </div>
@@ -73,6 +84,7 @@ const AdminDashboard = () => {
             {activeTab === 'players' && <AddPlayers />}
             {activeTab === 'teams' && <CreateTeams />}
             {activeTab === 'schedule' && <CreateSchedule />}
+            {activeTab === 'passwords' && <ManagePasswords />}
           </div>
         </div>
       </div>

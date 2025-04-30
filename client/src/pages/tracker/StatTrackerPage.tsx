@@ -22,7 +22,7 @@ const StatTrackerPage = () => {
   const [isDeletingLog, setIsDeletingLog] = useState(false);
   const { toast } = useToast();
   const [_, setLocation] = useLocation();
-  const trackerUser = getTrackerUser();
+  const [trackerUser] = useState(() => getTrackerUser());
 
   // Logout handler
   const handleLogout = () => {

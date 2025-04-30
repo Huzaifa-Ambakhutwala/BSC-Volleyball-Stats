@@ -614,9 +614,12 @@ export const listenToStatLogs = (matchId: string, callback: (logs: StatLog[]) =>
     const logs = snapshot.val() || {};
     
     // Convert to array and sort by timestamp (newest first)
-    const logArray: StatLog[] = Object.values(logs)
-      .map((log: any) => log as StatLog)
-      .sort((a: StatLog, b: StatLog) => b.timestamp - a.timestamp);
+    const logArray = Object.entries(logs)
+      .map(([logId, logData]) => ({ 
+        ...(logData as StatLog), 
+        id: logId 
+      }))
+      .sort((a, b) => b.timestamp - a.timestamp);
     
     console.log(`Stat logs received for match ID: ${matchId}:`, logArray);
     callback(logArray);
@@ -639,7 +642,13 @@ export const deleteStatLog = async (matchId: string, logId: string): Promise<boo
     
     // Convert logs to an array and sort by timestamp (newest first)
     const sortedLogs = Object.entries(logs)
-      .map(([logId, logData]) => ({ id: logId, ...(logData as StatLog) }))
+      .map(([logId, logData]) => {
+        // Create a new object with log data
+        const logWithId = { ...(logData as StatLog) };
+        // Add the id property separately
+        logWithId.id = logId;
+        return logWithId;
+      })
       .sort((a, b) => b.timestamp - a.timestamp);
     
     // Check if the requested log is the most recent one

@@ -632,9 +632,24 @@ export const listenToStatLogs = (matchId: string, callback: (logs: StatLog[]) =>
 
 export const deleteStatLog = async (matchId: string, logId: string): Promise<boolean> => {
   try {
-    const logRef = ref(database, `statLogs/${matchId}/${logId}`);
+    // Get all logs first to check if this is the most recent
+    const logsRef = ref(database, `statLogs/${matchId}`);
+    const logsSnapshot = await get(logsRef);
+    const logs = logsSnapshot.val() || {};
     
-    // Get the log first to determine which stat needs to be decremented
+    // Convert logs to an array and sort by timestamp (newest first)
+    const sortedLogs = Object.entries(logs)
+      .map(([id, logData]) => ({ id, ...(logData as StatLog) }))
+      .sort((a, b) => b.timestamp - a.timestamp);
+    
+    // Check if the requested log is the most recent one
+    if (sortedLogs.length === 0 || sortedLogs[0].id !== logId) {
+      console.error('Cannot delete log: not the most recent one. Only the most recent log can be deleted.');
+      return false;
+    }
+    
+    // Get the log to delete
+    const logRef = ref(database, `statLogs/${matchId}/${logId}`);
     const snapshot = await get(logRef);
     const log = snapshot.val() as StatLog;
     
@@ -674,6 +689,7 @@ export const deleteStatLog = async (matchId: string, logId: string): Promise<boo
       
       // Delete the log
       await remove(logRef);
+      console.log(`Successfully deleted the most recent stat log: ${logId}`);
       return true;
     }
     return false;

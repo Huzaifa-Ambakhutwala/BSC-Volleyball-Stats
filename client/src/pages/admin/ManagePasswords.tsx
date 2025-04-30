@@ -9,7 +9,7 @@ import {
   addAdminUser, 
   updateAdminUser, 
   deleteAdminUser,
-  AdminUser as FirebaseAdminUser
+  AdminUser
 } from '@/lib/firebase';
 import type { Team } from '@shared/schema';
 import { Lock, Edit, Check, X, Loader2, KeyRound, PlusCircle, Eye, EyeOff, User, Users, Trash2 } from 'lucide-react';
@@ -21,7 +21,7 @@ import { useLocation } from 'wouter';
 const ManagePasswords = () => {
   const [teams, setTeams] = useState<Record<string, Team>>({});
   const [teamPasswords, setTeamPasswords] = useState<Record<string, string>>({});
-  const [adminUsers, setAdminUsers] = useState<FirebaseAdminUser[]>([]);
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [showPasswordMap, setShowPasswordMap] = useState<Record<string, boolean>>({});
   const [showAdminPasswordMap, setShowAdminPasswordMap] = useState<Record<string, boolean>>({});
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);

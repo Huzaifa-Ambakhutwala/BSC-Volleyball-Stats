@@ -13,15 +13,16 @@ interface PlayerStatActionsProps {
   onSelect: () => void;
 }
 
-// Helper to calculate total points earned
+// Helper to calculate total points earned - now includes digs, tips, and dumps
 const getTotalPointsContribution = (stats: PlayerStats): number => {
-  const earned = stats.aces + stats.spikes + stats.blocks;
+  const earned = stats.aces + stats.spikes + stats.blocks + stats.digs + stats.tips + stats.dumps;
   return earned;
 };
 
-// Helper to calculate total faults
+// Helper to calculate total faults - now includes reaches
 const getTotalFaults = (stats: PlayerStats): number => {
-  return stats.serveErrors + stats.spikeErrors + stats.netTouches + stats.footFaults + stats.carries;
+  return stats.serveErrors + stats.spikeErrors + stats.netTouches + 
+    stats.footFaults + stats.carries + stats.reaches;
 };
 
 const PlayerStatActions = ({ player, playerId, matchId, teamId, isSelected, onSelect }: PlayerStatActionsProps) => {

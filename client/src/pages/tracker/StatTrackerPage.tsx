@@ -47,6 +47,7 @@ const StatTrackerPage = () => {
   useEffect(() => {
     if (!trackerUser) {
       console.log("No tracker user found in context, cannot load matches");
+      setIsLoading(false); // Set loading to false even if no tracker user
       return;
     }
     
@@ -68,10 +69,20 @@ const StatTrackerPage = () => {
             setSelectedMatchId(matchIds[0]);
           }
           
+          // Always set loading to false when we get data, even if empty
           setIsLoading(false);
         });
         
-        return () => unsubscribe();
+        // Set a timeout to prevent infinite loading
+        const timeoutId = setTimeout(() => {
+          setIsLoading(false);
+          console.log("Timeout reached, stopping loading state");
+        }, 5000); // 5 second timeout
+        
+        return () => {
+          unsubscribe();
+          clearTimeout(timeoutId);
+        };
       } catch (error) {
         console.error("Error loading matches:", error);
         toast({
@@ -84,7 +95,7 @@ const StatTrackerPage = () => {
     };
 
     loadMatches();
-  }, [toast, trackerUser, selectedMatchId]);
+  }, [toast, trackerUser]);
 
   // Load all players
   useEffect(() => {
@@ -257,7 +268,15 @@ const StatTrackerPage = () => {
     return (
       <section className="py-8 bg-gray-50">
         <div className="container mx-auto px-4">
-          <div className="text-center py-8">Loading match data...</div>
+          <div className="text-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+            <p>Loading match data...</p>
+            <p className="text-sm text-gray-500 mt-2">
+              {Object.keys(matches).length > 0 ? 
+                "Matches available but still loading details..." :
+                "Waiting for assigned matches..."}
+            </p>
+          </div>
         </div>
       </section>
     );

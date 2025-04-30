@@ -64,8 +64,8 @@ const ScoreboardPlayerCard = ({ player, playerId, matchId, teamId }: ScoreboardP
   }, [teamId]);
   
   // Calculate total stats - only count earned points and faults, no neutral
-  const totalEarnedPoints = stats.aces + stats.spikes + stats.blocks + stats.tips + stats.dumps;
-  const totalFaults = stats.serveErrors + stats.spikeErrors + stats.netTouches + stats.footFaults + stats.carries;
+  const totalEarnedPoints = stats.aces + stats.spikes + stats.blocks + stats.tips + stats.dumps + stats.digs;
+  const totalFaults = stats.serveErrors + stats.spikeErrors + stats.netTouches + stats.footFaults + stats.carries + stats.reaches;
   
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">

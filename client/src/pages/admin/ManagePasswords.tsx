@@ -2,17 +2,33 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { getTeams, listenToTeams, getTeamPassword, setTeamPassword } from '@/lib/firebase';
 import type { Team } from '@shared/schema';
-import { Lock, Edit, Check, X, Loader2, KeyRound } from 'lucide-react';
+import { Lock, Edit, Check, X, Loader2, KeyRound, PlusCircle, Eye, EyeOff, User, Users } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useLocation } from 'wouter';
+
+// Type for admin users
+type AdminUser = {
+  username: string;
+  password: string;
+};
 
 const ManagePasswords = () => {
   const [teams, setTeams] = useState<Record<string, Team>>({});
   const [teamPasswords, setTeamPasswords] = useState<Record<string, string>>({});
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [showPasswordMap, setShowPasswordMap] = useState<Record<string, boolean>>({});
+  const [showAdminPasswordMap, setShowAdminPasswordMap] = useState<Record<string, boolean>>({});
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
+  const [editingAdminIndex, setEditingAdminIndex] = useState<number | null>(null);
   const [newPassword, setNewPassword] = useState<string>('');
+  const [newAdminUsername, setNewAdminUsername] = useState<string>('');
+  const [newAdminPassword, setNewAdminPassword] = useState<string>('');
+  const [showAddAdminForm, setShowAddAdminForm] = useState<boolean>(false);
+  const [showAddTeamForm, setShowAddTeamForm] = useState<boolean>(false);
+  const [newTeamId, setNewTeamId] = useState<string>('');
+  const [newTeamPassword, setNewTeamPassword] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, username } = useAuth();
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -23,9 +39,21 @@ const ManagePasswords = () => {
     }
   }, [isAuthenticated, setLocation]);
 
-  // Load teams
+  // Load teams and admin users
   useEffect(() => {
     setLoading(true);
+    
+    // Load admin users
+    const loadAdminUsers = async () => {
+      try {
+        const admins = await getAdminUsers();
+        setAdminUsers(admins);
+      } catch (error) {
+        console.error('Error loading admin users:', error);
+      }
+    };
+    
+    loadAdminUsers();
     
     const unsubscribe = listenToTeams((teamsData) => {
       setTeams(teamsData);
@@ -91,6 +119,168 @@ const ManagePasswords = () => {
   const handleCancelEdit = () => {
     setEditingTeamId(null);
     setNewPassword('');
+  };
+  
+  const togglePasswordVisibility = (teamId: string) => {
+    setShowPasswordMap(prev => ({
+      ...prev,
+      [teamId]: !prev[teamId]
+    }));
+  };
+  
+  const toggleAdminPasswordVisibility = (index: number) => {
+    setShowAdminPasswordMap(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
+  };
+  
+  const handleAddAdmin = async () => {
+    if (!newAdminUsername || !newAdminPassword) {
+      toast({
+        title: "Error",
+        description: "Username and password cannot be empty",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const success = await addAdminUser(newAdminUsername, newAdminPassword);
+    
+    if (success) {
+      // Refresh admin users
+      const admins = await getAdminUsers();
+      setAdminUsers(admins);
+      
+      setNewAdminUsername('');
+      setNewAdminPassword('');
+      setShowAddAdminForm(false);
+      
+      toast({
+        title: "Success",
+        description: `Admin ${newAdminUsername} added successfully`,
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to add admin. Username may already exist.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleEditAdmin = (index: number) => {
+    setEditingAdminIndex(index);
+    setNewPassword(adminUsers[index].password);
+  };
+  
+  const handleSaveAdminPassword = async (username: string) => {
+    if (!newPassword) {
+      toast({
+        title: "Error",
+        description: "Password cannot be empty",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const success = await updateAdminUser(username, newPassword);
+    
+    if (success) {
+      // Refresh admin users
+      const admins = await getAdminUsers();
+      setAdminUsers(admins);
+      
+      toast({
+        title: "Success",
+        description: `Password updated for ${username}`,
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to update password",
+        variant: "destructive",
+      });
+    }
+    
+    setEditingAdminIndex(null);
+    setNewPassword('');
+  };
+  
+  const handleDeleteAdmin = async (username: string) => {
+    // Cannot delete the currently logged in admin
+    if (username === username) {
+      toast({
+        title: "Error",
+        description: "You cannot delete your own account",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const success = await deleteAdminUser(username);
+    
+    if (success) {
+      // Refresh admin users
+      const admins = await getAdminUsers();
+      setAdminUsers(admins);
+      
+      toast({
+        title: "Success",
+        description: `Admin ${username} deleted successfully`,
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to delete admin. Cannot delete the last admin account.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleAddTeam = async () => {
+    if (!newTeamId || !newTeamPassword) {
+      toast({
+        title: "Error",
+        description: "Team and password cannot be empty",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Check if team exists
+    if (!teams[newTeamId]) {
+      toast({
+        title: "Error",
+        description: "Team ID not found",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const success = await setTeamPassword(newTeamId, newTeamPassword);
+    
+    if (success) {
+      setTeamPasswords(prev => ({
+        ...prev,
+        [newTeamId]: newTeamPassword
+      }));
+      
+      setNewTeamId('');
+      setNewTeamPassword('');
+      setShowAddTeamForm(false);
+      
+      toast({
+        title: "Success",
+        description: `Password set for ${teams[newTeamId].teamName}`,
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to set team password",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {

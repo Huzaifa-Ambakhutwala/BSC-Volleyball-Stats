@@ -697,3 +697,105 @@ export const createEmptyPlayerStats = (): PlayerStats => ({
   reaches: 0,
   carries: 0
 });
+
+// Admin user type
+export type AdminUser = {
+  username: string;
+  password: string;
+};
+
+// Admin user management
+export const getAdminUsers = async (): Promise<AdminUser[]> => {
+  try {
+    const adminUsersRef = ref(database, 'adminUsers');
+    const snapshot = await get(adminUsersRef);
+    const adminUsers = snapshot.val() || {};
+    
+    // If no admins exist yet, create the default admin
+    if (Object.keys(adminUsers).length === 0) {
+      await addAdminUser('Mehdi', '0000');
+      return [{ username: 'Mehdi', password: '0000' }];
+    }
+    
+    return Object.values(adminUsers);
+  } catch (error) {
+    console.error('Error getting admin users:', error);
+    return [];
+  }
+};
+
+export const addAdminUser = async (username: string, password: string): Promise<boolean> => {
+  try {
+    // Check if username already exists
+    const adminUsersRef = ref(database, 'adminUsers');
+    const snapshot = await get(adminUsersRef);
+    const adminUsers = snapshot.val() || {};
+    
+    for (const id in adminUsers) {
+      if (adminUsers[id].username === username) {
+        return false; // Username already exists
+      }
+    }
+    
+    const newAdminRef = push(adminUsersRef);
+    await set(newAdminRef, { username, password });
+    return true;
+  } catch (error) {
+    console.error('Error adding admin user:', error);
+    return false;
+  }
+};
+
+export const updateAdminUser = async (username: string, newPassword: string): Promise<boolean> => {
+  try {
+    const adminUsersRef = ref(database, 'adminUsers');
+    const snapshot = await get(adminUsersRef);
+    const adminUsers = snapshot.val() || {};
+    
+    let adminId = null;
+    for (const id in adminUsers) {
+      if (adminUsers[id].username === username) {
+        adminId = id;
+        break;
+      }
+    }
+    
+    if (!adminId) return false;
+    
+    await update(ref(database, `adminUsers/${adminId}`), { password: newPassword });
+    return true;
+  } catch (error) {
+    console.error('Error updating admin user:', error);
+    return false;
+  }
+};
+
+export const deleteAdminUser = async (username: string): Promise<boolean> => {
+  try {
+    // Don't allow deleting the last admin
+    const admins = await getAdminUsers();
+    if (admins.length <= 1) {
+      return false;
+    }
+    
+    const adminUsersRef = ref(database, 'adminUsers');
+    const snapshot = await get(adminUsersRef);
+    const adminUsers = snapshot.val() || {};
+    
+    let adminId = null;
+    for (const id in adminUsers) {
+      if (adminUsers[id].username === username) {
+        adminId = id;
+        break;
+      }
+    }
+    
+    if (!adminId) return false;
+    
+    await remove(ref(database, `adminUsers/${adminId}`));
+    return true;
+  } catch (error) {
+    console.error('Error deleting admin user:', error);
+    return false;
+  }
+};

@@ -116,14 +116,14 @@ export const StatActions = ({ matchId, selectedPlayerId }: StatActionsProps) => 
     );
   }
 
-  const handleStatUpdate = (statName: keyof PlayerStats, label: string) => {
+  const handleStatUpdate = (statName: keyof PlayerStats, label: string, category: 'earned' | 'fault' = 'earned') => {
     if (!selectedPlayerId || !matchId) return;
     
     // Set loading state
     setIsUpdating(true);
     
-    // Update the stat
-    updatePlayerStat(matchId, selectedPlayerId, statName, 1)
+    // Update the stat with category to properly handle scoring
+    updatePlayerStat(matchId, selectedPlayerId, statName, 1, category)
       .then(() => {
         // Show success toast
         toast({
@@ -152,114 +152,68 @@ export const StatActions = ({ matchId, selectedPlayerId }: StatActionsProps) => 
         </div>
       )}
       
-      <ActionCategory title="In-Rally" className="bg-gray-200 text-gray-800">
-        <ActionButton 
-          label="Dig" 
-          onClick={() => handleStatUpdate('digs', 'Dig')} 
-          className="btn-neutral"
-        />
-        <ActionButton 
-          label="Block" 
-          onClick={() => handleStatUpdate('blocks', 'Block')} 
-          className="btn-neutral"
-        />
-        <ActionButton 
-          label="Spike" 
-          onClick={() => handleStatUpdate('spikes', 'Spike')} 
-          className="btn-neutral"
-        />
-      </ActionCategory>
-      
       <ActionCategory title="Earned" className="bg-[hsl(var(--vb-success))] text-white">
         <ActionButton 
           label="Ace" 
-          onClick={() => handleStatUpdate('aces', 'Ace')} 
+          onClick={() => handleStatUpdate('aces', 'Ace', 'earned')} 
           className="btn-success"
         />
         <ActionButton 
           label="Kill" 
-          onClick={() => handleStatUpdate('spikes', 'Kill')} 
+          onClick={() => handleStatUpdate('spikes', 'Kill', 'earned')} 
           className="btn-success"
         />
         <ActionButton 
           label="Tip" 
-          onClick={() => handleStatUpdate('tips', 'Tip')} 
+          onClick={() => handleStatUpdate('tips', 'Tip', 'earned')} 
           className="btn-success"
         />
         <ActionButton 
           label="Dump" 
-          onClick={() => handleStatUpdate('dumps', 'Dump')} 
+          onClick={() => handleStatUpdate('dumps', 'Dump', 'earned')} 
           className="btn-success"
         />
         <ActionButton 
           label="Block" 
-          onClick={() => handleStatUpdate('blocks', 'Block')} 
+          onClick={() => handleStatUpdate('blocks', 'Block', 'earned')} 
           className="btn-success"
         />
-      </ActionCategory>
-      
-      <ActionCategory title="Error" className="bg-[hsl(var(--vb-warning))] text-white">
         <ActionButton 
-          label="Serve" 
-          onClick={() => handleStatUpdate('serveErrors', 'Serve Error')} 
-          className="btn-warning"
-        />
-        <ActionButton 
-          label="Spike" 
-          onClick={() => handleStatUpdate('spikeErrors', 'Spike Error')} 
-          className="btn-warning"
-        />
-        <ActionButton 
-          label="Receive" 
-          onClick={() => handleStatUpdate('digs', 'Receive Error')} 
-          className="btn-warning"
-        />
-        <ActionButton 
-          label="Set" 
-          onClick={() => handleStatUpdate('dumps', 'Set Error')} 
-          className="btn-warning"
-        />
-        <ActionButton 
-          label="Whose Ball?" 
-          onClick={() => handleStatUpdate('digs', 'Coverage Error')} 
-          className="btn-warning"
-        />
-        <ActionButton 
-          label="Block" 
-          onClick={() => handleStatUpdate('blocks', 'Block Error')} 
-          className="btn-warning"
+          label="Dig" 
+          onClick={() => handleStatUpdate('digs', 'Dig', 'earned')} 
+          className="btn-success"
         />
       </ActionCategory>
       
       <ActionCategory title="Fault" className="bg-[hsl(var(--vb-error))] text-white">
         <ActionButton 
           label="Serve" 
-          onClick={() => handleStatUpdate('serveErrors', 'Serve Fault')} 
+          onClick={() => handleStatUpdate('serveErrors', 'Serve Fault', 'fault')} 
           className="btn-error"
         />
         <ActionButton 
           label="Spike" 
-          onClick={() => handleStatUpdate('spikeErrors', 'Spike Fault')} 
+          onClick={() => handleStatUpdate('spikeErrors', 'Spike Fault', 'fault')} 
           className="btn-error"
         />
         <ActionButton 
           label="Net Touch" 
-          onClick={() => handleStatUpdate('netTouches', 'Net Touch')} 
+          onClick={() => handleStatUpdate('netTouches', 'Net Touch', 'fault')} 
           className="btn-error"
         />
         <ActionButton 
           label="Foot Fault" 
-          onClick={() => handleStatUpdate('footFaults', 'Foot Fault')} 
+          onClick={() => handleStatUpdate('footFaults', 'Foot Fault', 'fault')} 
           className="btn-error"
         />
         <ActionButton 
           label="Reach" 
-          onClick={() => handleStatUpdate('reaches', 'Reach')} 
+          onClick={() => handleStatUpdate('reaches', 'Reach', 'fault')} 
           className="btn-error"
         />
         <ActionButton 
           label="Carry" 
-          onClick={() => handleStatUpdate('carries', 'Carry')} 
+          onClick={() => handleStatUpdate('carries', 'Carry', 'fault')} 
           className="btn-error"
         />
       </ActionCategory>

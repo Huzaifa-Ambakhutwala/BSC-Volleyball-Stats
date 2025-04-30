@@ -45,17 +45,26 @@ const StatTrackerPage = () => {
 
   // Load assigned matches
   useEffect(() => {
-    if (!trackerUser) return;
+    if (!trackerUser) {
+      console.log("No tracker user found in context, cannot load matches");
+      return;
+    }
+    
+    console.log("Loading matches for team ID:", trackerUser.teamId);
     
     const loadMatches = async () => {
       try {
         // Listen for matches assigned to this tracker team
         const unsubscribe = listenToMatchesForTracker(trackerUser.teamId, (matchesData) => {
+          console.log("Received matches data:", matchesData);
           setMatches(matchesData);
           
           // If there are matches, select the first one by default
           const matchIds = Object.keys(matchesData);
+          console.log("Available match IDs:", matchIds);
+          
           if (matchIds.length > 0 && !selectedMatchId) {
+            console.log("Setting first match as selected:", matchIds[0]);
             setSelectedMatchId(matchIds[0]);
           }
           
@@ -64,6 +73,7 @@ const StatTrackerPage = () => {
         
         return () => unsubscribe();
       } catch (error) {
+        console.error("Error loading matches:", error);
         toast({
           title: "Error",
           description: "Failed to load assigned matches",
@@ -74,7 +84,7 @@ const StatTrackerPage = () => {
     };
 
     loadMatches();
-  }, [toast, trackerUser]);
+  }, [toast, trackerUser, selectedMatchId]);
 
   // Load all players
   useEffect(() => {

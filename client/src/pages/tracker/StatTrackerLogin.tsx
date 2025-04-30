@@ -5,11 +5,12 @@ import type { Team } from '@shared/schema';
 import { useEffect } from 'react';
 import { listenToTeams } from '@/lib/firebase';
 import { useLocation } from 'wouter';
-import { Users, Loader2 } from 'lucide-react';
+import { Users, Loader2, Lock } from 'lucide-react';
 
 const StatTrackerLogin = () => {
   const [teams, setTeams] = useState<Record<string, Team>>({});
   const [selectedTeam, setSelectedTeam] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const { toast } = useToast();

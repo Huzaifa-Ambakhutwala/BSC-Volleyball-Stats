@@ -328,26 +328,67 @@ export type StatLog = {
 export type TrackerUser = {
   teamId: string;
   teamName: string;
+  isAuthenticated: boolean;
 }
 
-// Authentication for stat trackers
-export const loginStatTracker = async (teamId: string): Promise<TrackerUser | null> => {
+// Team password management
+export const setTeamPassword = async (teamId: string, password: string): Promise<boolean> => {
   try {
-    const teamRef = ref(database, `teams/${teamId}`);
-    const snapshot = await get(teamRef);
-    const team = snapshot.val();
-    
-    if (team) {
-      const trackerUser: TrackerUser = {
-        teamId,
-        teamName: team.teamName
-      };
-      
-      // Store tracker session in localStorage
-      localStorage.setItem('trackerUser', JSON.stringify(trackerUser));
-      return trackerUser;
-    }
+    const teamPasswordRef = ref(database, `teamPasswords/${teamId}`);
+    await set(teamPasswordRef, password);
+    return true;
+  } catch (error) {
+    console.error('Error setting team password:', error);
+    return false;
+  }
+};
+
+export const getTeamPassword = async (teamId: string): Promise<string | null> => {
+  try {
+    const teamPasswordRef = ref(database, `teamPasswords/${teamId}`);
+    const snapshot = await get(teamPasswordRef);
+    return snapshot.val();
+  } catch (error) {
+    console.error('Error getting team password:', error);
     return null;
+  }
+};
+
+// Authentication for stat trackers
+export const loginStatTracker = async (teamId: string, password: string): Promise<TrackerUser | null> => {
+  try {
+    // Get team info
+    const teamRef = ref(database, `teams/${teamId}`);
+    const teamSnapshot = await get(teamRef);
+    const team = teamSnapshot.val();
+    
+    if (!team) {
+      console.error('Team not found');
+      return null;
+    }
+    
+    // Verify password
+    const teamPasswordRef = ref(database, `teamPasswords/${teamId}`);
+    const passwordSnapshot = await get(teamPasswordRef);
+    const storedPassword = passwordSnapshot.val();
+    
+    // If no password is set yet, set it
+    if (!storedPassword) {
+      await set(teamPasswordRef, password);
+    } else if (password !== storedPassword) {
+      console.error('Incorrect password');
+      return null;
+    }
+    
+    const trackerUser: TrackerUser = {
+      teamId,
+      teamName: team.teamName,
+      isAuthenticated: true
+    };
+    
+    // Store tracker session in localStorage
+    localStorage.setItem('trackerUser', JSON.stringify(trackerUser));
+    return trackerUser;
   } catch (error) {
     console.error('Error logging in stat tracker:', error);
     return null;
@@ -356,7 +397,14 @@ export const loginStatTracker = async (teamId: string): Promise<TrackerUser | nu
 
 export const getTrackerUser = (): TrackerUser | null => {
   const userJson = localStorage.getItem('trackerUser');
-  return userJson ? JSON.parse(userJson) : null;
+  if (!userJson) return null;
+  
+  const user = JSON.parse(userJson);
+  // Ensure the user object has all required properties
+  if (!user.isAuthenticated) {
+    user.isAuthenticated = true; // Add missing property for backward compatibility
+  }
+  return user;
 };
 
 export const logoutStatTracker = (): void => {

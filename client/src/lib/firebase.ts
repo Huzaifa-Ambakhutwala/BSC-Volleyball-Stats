@@ -433,16 +433,18 @@ export const getMatchesForTracker = async (teamId: string): Promise<Record<strin
   const snapshot = await get(matchesRef);
   const matches = snapshot.val() || {};
   
-  // Filter matches where this team is assigned as the tracker OR where this team is playing
+  // Filter matches where this team is assigned as the tracker
   const filteredMatches: Record<string, Match> = {};
   Object.entries(matches).forEach(([key, match]) => {
     const typedMatch = match as Match;
     console.log(`Checking match ${key} - Tracker: ${typedMatch.trackerTeam}, TeamA: ${typedMatch.teamA}, TeamB: ${typedMatch.teamB}`);
     
-    // Include matches where team is the tracker OR is playing as TeamA or TeamB
-    if (typedMatch.trackerTeam === teamId || 
-        typedMatch.teamA === teamId || 
-        typedMatch.teamB === teamId) {
+    // Convert IDs to strings to ensure proper comparison
+    const trackerTeamId = String(typedMatch.trackerTeam);
+    const currentTeamId = String(teamId);
+    
+    // Primarily match where team is the assigned tracker
+    if (trackerTeamId === currentTeamId) {
       console.log(`Match ${key} is relevant for team ${teamId}`);
       filteredMatches[key] = typedMatch;
     }
@@ -462,26 +464,58 @@ export const listenToMatchesForTracker = (teamId: string, callback: (matches: Re
   const matchesRef = ref(database, 'matches');
   console.log(`Setting up matches for tracker team ${teamId} listener`);
   
+  // First, check for matches directly (not using the listener yet)
+  get(matchesRef).then((snapshot) => {
+    console.log("Initial check for matches data");
+    const allMatches = snapshot.val() || {};
+    
+    // Filter for this team
+    const directMatches: Record<string, Match> = {};
+    Object.entries(allMatches).forEach(([key, matchData]) => {
+      const match = matchData as Match;
+      console.log(`Direct check match ${key} - Tracker: ${match.trackerTeam}, Current: ${teamId}`);
+      
+      // Compare as strings to ensure proper matching
+      if (String(match.trackerTeam) === String(teamId)) {
+        console.log(`Direct match found: ${key} is assigned to team ${teamId} for tracking`);
+        directMatches[key] = match;
+      }
+    });
+    
+    console.log(`Direct database check found ${Object.keys(directMatches).length} matches:`, directMatches);
+    
+    // Immediately deliver these matches to the UI
+    if (Object.keys(directMatches).length > 0) {
+      callback(directMatches);
+    }
+  }).catch((error) => {
+    console.error("Error in direct match check:", error);
+  });
+  
+  // Set up the real-time listener
   const unsubscribe = onValue(matchesRef, (snapshot) => {
     const matches = snapshot.val() || {};
     
     // Filter matches where this team is assigned as the tracker
     const filteredMatches: Record<string, Match> = {};
+    let count = 0;
+    
     Object.entries(matches).forEach(([key, match]) => {
       const typedMatch = match as Match;
       console.log(`Checking match ${key} - Tracker Team: ${typedMatch.trackerTeam}, Current Team: ${teamId}`);
       
-      if (typedMatch.trackerTeam === teamId) {
+      // Convert IDs to strings to ensure proper comparison
+      const trackerTeamId = String(typedMatch.trackerTeam);
+      const currentTeamId = String(teamId);
+      
+      if (trackerTeamId === currentTeamId) {
         console.log(`Match ${key} is assigned to team ${teamId} for tracking`);
         filteredMatches[key] = typedMatch;
-      } else if (typedMatch.teamA === teamId || typedMatch.teamB === teamId) {
-        // Also include matches where this team is playing
-        console.log(`Match ${key} includes team ${teamId} as a participant`);
-        filteredMatches[key] = typedMatch;
+        count++;
       }
     });
     
-    console.log(`Matches for tracker team ${teamId} received:`, filteredMatches);
+    console.log(`Found ${count} matches for tracker team ${teamId}:`, filteredMatches);
     callback(filteredMatches);
   }, (error) => {
     console.error(`Error in matches for tracker team ${teamId} listener:`, error);

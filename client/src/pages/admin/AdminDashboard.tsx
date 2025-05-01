@@ -5,8 +5,9 @@ import AddPlayers from './AddPlayers';
 import CreateTeams from './CreateTeams';
 import CreateSchedule from './CreateSchedule';
 import ManagePasswords from './ManagePasswords';
+import AllPlayerStats from './AllPlayerStats';
 
-type AdminTab = 'players' | 'teams' | 'schedule' | 'passwords';
+type AdminTab = 'players' | 'teams' | 'schedule' | 'passwords' | 'stats';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('players');

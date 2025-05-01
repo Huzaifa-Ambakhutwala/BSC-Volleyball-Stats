@@ -53,12 +53,17 @@ const TrackerRoute = () => {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
   }
 
+  // Redirect to login if not authenticated
+  if (!trackerUser) {
+    return <Redirect to="/tracker/login" />;
+  }
+
   // Render the StatTrackerPage with context if authenticated
-  return trackerUser ? (
+  return (
     <TrackerUserContext.Provider value={{ trackerUser, setTrackerUser }}>
       <StatTrackerPage />
     </TrackerUserContext.Provider>
-  ) : null;
+  );
 };
 
 function Router() {

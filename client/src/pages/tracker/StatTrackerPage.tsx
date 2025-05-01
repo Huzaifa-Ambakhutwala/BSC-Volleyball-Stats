@@ -8,7 +8,8 @@ import {
   listenToMatchesForTracker, 
   getMatchesForTracker,
   listenToStatLogs, 
-  deleteStatLog, 
+  deleteStatLog,
+  getTrackerUser,
   type StatLog 
 } from '@/lib/firebase';
 import type { Match, Team, Player } from '@shared/schema';
@@ -45,6 +46,23 @@ const StatTrackerPage = () => {
   const { toast } = useToast();
   const [_, setLocation] = useLocation();
   const { trackerUser, setTrackerUser } = useContext(TrackerUserContext);
+  
+  // Add fallback to localStorage if context is not available
+  useEffect(() => {
+    if (!trackerUser) {
+      console.log("[StatTrackerPage] No tracker user in context, attempting to get from localStorage");
+      const localUser = getTrackerUser();
+      if (localUser) {
+        console.log("[StatTrackerPage] Found user in localStorage:", localUser);
+        setTrackerUser(localUser);
+      } else {
+        console.log("[StatTrackerPage] No user found in localStorage either, redirecting to login");
+        setLocation('/tracker/login');
+      }
+    } else {
+      console.log("[StatTrackerPage] Using tracker user from context:", trackerUser);
+    }
+  }, [trackerUser, setTrackerUser, setLocation]);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   // Logout handler
@@ -137,7 +155,7 @@ const StatTrackerPage = () => {
       unsubscribe();
       clearTimeout(timeoutId);
     };
-  }, [toast, trackerUser]);
+  }, [toast, trackerUser, selectedMatchId, matches, isLoading]);
 
   // Load all players
   useEffect(() => {

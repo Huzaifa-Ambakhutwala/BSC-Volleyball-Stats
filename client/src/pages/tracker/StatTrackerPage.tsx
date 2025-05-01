@@ -1,5 +1,16 @@
 import { useState, useEffect, useContext } from 'react';
-import { getTeamById, getPlayers, updateMatchScore, listenToMatchById, logoutStatTracker, listenToMatchesForTracker, listenToStatLogs, deleteStatLog, type StatLog } from '@/lib/firebase';
+import { 
+  getTeamById, 
+  getPlayers, 
+  updateMatchScore, 
+  listenToMatchById, 
+  logoutStatTracker, 
+  listenToMatchesForTracker, 
+  getMatchesForTracker,
+  listenToStatLogs, 
+  deleteStatLog, 
+  type StatLog 
+} from '@/lib/firebase';
 import type { Match, Team, Player } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
 import PlayerStatActions, { StatActions } from '@/components/PlayerStatActions';
@@ -53,49 +64,59 @@ const StatTrackerPage = () => {
     
     console.log("Loading matches for team ID:", trackerUser.teamId);
     
-    const loadMatches = async () => {
-      try {
-        // Listen for matches assigned to this tracker team
-        const unsubscribe = listenToMatchesForTracker(trackerUser.teamId, (matchesData) => {
-          console.log("Received matches data:", matchesData);
-          setMatches(matchesData);
-          
-          // If there are matches, select the first one by default
-          const matchIds = Object.keys(matchesData);
-          console.log("Available match IDs:", matchIds);
-          
-          if (matchIds.length > 0 && !selectedMatchId) {
-            console.log("Setting first match as selected:", matchIds[0]);
-            setSelectedMatchId(matchIds[0]);
-          }
-          
-          // Always set loading to false when we get data, even if empty
-          setIsLoading(false);
-        });
-        
-        // Set a timeout to prevent infinite loading
-        const timeoutId = setTimeout(() => {
-          setIsLoading(false);
-          console.log("Timeout reached, stopping loading state");
-        }, 5000); // 5 second timeout
-        
-        return () => {
-          unsubscribe();
-          clearTimeout(timeoutId);
-        };
-      } catch (error) {
-        console.error("Error loading matches:", error);
+    // Set loading to true to show loading state
+    setIsLoading(true);
+    
+    // Force direct match lookup from database to verify matches exist
+    getMatchesForTracker(trackerUser.teamId).then((directMatches) => {
+      console.log("Direct database check found matches:", directMatches);
+      
+      if (Object.keys(directMatches).length === 0) {
+        console.log("Warning: No matches found directly in database for team", trackerUser.teamId);
+        // Keep loading true to continue with real-time listener
+      }
+    }).catch(err => {
+      console.error("Error in direct match check:", err);
+    });
+    
+    // Listen for matches assigned to this tracker team
+    const unsubscribe = listenToMatchesForTracker(trackerUser.teamId, (matchesData) => {
+      console.log("Received matches data from real-time listener:", matchesData);
+      setMatches(matchesData);
+      
+      // If there are matches, select the first one by default
+      const matchIds = Object.keys(matchesData);
+      console.log("Available match IDs:", matchIds);
+      
+      if (matchIds.length > 0 && !selectedMatchId) {
+        console.log("Setting first match as selected:", matchIds[0]);
+        setSelectedMatchId(matchIds[0]);
+      }
+      
+      // Always set loading to false when we get data, even if empty
+      setIsLoading(false);
+    });
+      
+    // Set a timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      setIsLoading(false);
+      console.log("Timeout reached, stopping loading state");
+      
+      if (Object.keys(matches).length === 0) {
         toast({
-          title: "Error",
-          description: "Failed to load assigned matches",
+          title: "No Matches Found",
+          description: "No matches are assigned to your team for tracking. Please contact the administrator.",
           variant: "destructive",
         });
-        setIsLoading(false);
       }
+    }, 5000); // 5 second timeout
+      
+    return () => {
+      console.log("Cleaning up match listener");
+      unsubscribe();
+      clearTimeout(timeoutId);
     };
-
-    loadMatches();
-  }, [toast, trackerUser]);
+  }, [toast, trackerUser, selectedMatchId]);
 
   // Load all players
   useEffect(() => {

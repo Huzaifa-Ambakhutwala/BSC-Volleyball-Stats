@@ -40,11 +40,15 @@ const TrackerRoute = () => {
   useEffect(() => {
     // Check if user is logged in as a tracker
     const user = getTrackerUser();
+    console.log("TrackerRoute - Retrieved tracker user from localStorage:", user);
     setTrackerUser(user);
     setIsLoading(false);
     
     if (!user) {
+      console.log("TrackerRoute - No user found, redirecting to login");
       setLocation('/tracker/login');
+    } else {
+      console.log("TrackerRoute - User found, team ID:", user.teamId);
     }
   }, [setLocation]);
 

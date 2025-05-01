@@ -423,18 +423,32 @@ export const logoutStatTracker = (): void => {
 };
 
 export const getMatchesForTracker = async (teamId: string): Promise<Record<string, Match>> => {
+  if (!teamId) {
+    console.error('Invalid teamId provided to getMatchesForTracker');
+    return {};
+  }
+
+  console.log(`Getting matches for tracker team ${teamId}`);
   const matchesRef = ref(database, 'matches');
   const snapshot = await get(matchesRef);
   const matches = snapshot.val() || {};
   
-  // Filter matches where this team is assigned as the tracker
+  // Filter matches where this team is assigned as the tracker OR where this team is playing
   const filteredMatches: Record<string, Match> = {};
   Object.entries(matches).forEach(([key, match]) => {
-    if ((match as Match).trackerTeam === teamId) {
-      filteredMatches[key] = match as Match;
+    const typedMatch = match as Match;
+    console.log(`Checking match ${key} - Tracker: ${typedMatch.trackerTeam}, TeamA: ${typedMatch.teamA}, TeamB: ${typedMatch.teamB}`);
+    
+    // Include matches where team is the tracker OR is playing as TeamA or TeamB
+    if (typedMatch.trackerTeam === teamId || 
+        typedMatch.teamA === teamId || 
+        typedMatch.teamB === teamId) {
+      console.log(`Match ${key} is relevant for team ${teamId}`);
+      filteredMatches[key] = typedMatch;
     }
   });
   
+  console.log(`Found ${Object.keys(filteredMatches).length} matches for team ${teamId}:`, filteredMatches);
   return filteredMatches;
 };
 

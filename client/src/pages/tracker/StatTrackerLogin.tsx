@@ -55,11 +55,30 @@ const StatTrackerLogin = () => {
     setIsSubmitting(true);
 
     try {
+      // Get the selected team from the local teams state to include team color
+      const selectedTeamData = teams[selectedTeam];
+      console.log("Selected team data:", selectedTeamData);
+      
+      if (!selectedTeamData) {
+        console.error("Selected team not found in teams data");
+        throw new Error("Team data not found");
+      }
+      
       const trackerUser = await loginStatTracker(selectedTeam, password);
       
       if (trackerUser) {
+        console.log("Login successful, user data:", trackerUser);
+        
         // Set the user in context
         setTrackerUser(trackerUser);
+        
+        // Force a check for matches immediately
+        const matches = await getMatchesForTracker(selectedTeam);
+        console.log("Available matches for this team:", matches);
+        
+        if (Object.keys(matches).length === 0) {
+          console.warn("No matches found for this team. User may not see any matches.");
+        }
         
         toast({
           title: "Success",
@@ -69,6 +88,7 @@ const StatTrackerLogin = () => {
         // Navigate to the stat tracking page
         setLocation('/tracker');
       } else {
+        console.error("Login failed, no user returned");
         toast({
           title: "Error",
           description: "Failed to login. Please check your team password and try again.",

@@ -7,6 +7,7 @@ interface ScoreboardStatCardProps {
   playerId: string;
   matchId: string;
   teamId?: string;
+  stats?: PlayerStats; // Optional stats passed from parent
 }
 
 // Helper function to get emoji for stat type
@@ -40,11 +41,20 @@ const getStatCategoryColor = (statName: keyof PlayerStats): string => {
   }
 };
 
-const ScoreboardStatCard = ({ player, playerId, matchId, teamId }: ScoreboardStatCardProps) => {
-  const [stats, setStats] = useState<PlayerStats>(createEmptyPlayerStats());
+const ScoreboardStatCard = ({ player, playerId, matchId, teamId, stats: propStats }: ScoreboardStatCardProps) => {
+  const [localStats, setLocalStats] = useState<PlayerStats>(createEmptyPlayerStats());
   const [teamColor, setTeamColor] = useState<string | null>(null);
   
+  // If the component receives stats as a prop, use those - otherwise use the local state
+  const stats = propStats || localStats;
+  
+  // Only set up the listener if stats weren't provided as props
   useEffect(() => {
+    // If stats are provided as props, don't set up the listener
+    if (propStats) {
+      return;
+    }
+    
     if (!matchId || !playerId) {
       console.log('Missing matchId or playerId:', { matchId, playerId });
       return;
@@ -54,11 +64,11 @@ const ScoreboardStatCard = ({ player, playerId, matchId, teamId }: ScoreboardSta
     
     const unsubscribe = listenToPlayerStats(matchId, playerId, (playerStats) => {
       console.log(`ScoreboardStatCard: Received stats for ${playerId}:`, playerStats);
-      setStats(playerStats);
+      setLocalStats(playerStats);
     });
     
     return () => unsubscribe();
-  }, [matchId, playerId]);
+  }, [matchId, playerId, propStats]);
   
   // Load team color if teamId is provided
   useEffect(() => {

@@ -119,14 +119,19 @@ const ScoreboardPage = () => {
       return;
     }
     
-    console.log(`[ScoreboardPage] Loading match stats for match ID: ${currentMatch.id}`);
+    console.log(`[SCOREBOARD] Loading match stats for match ID: ${currentMatch.id}`);
     setStatsLoading(true);
     
     // Set up a real-time listener for stat logs
     // This will update the UI whenever a new stat is recorded
     const unsubscribeStatLogs = listenToStatLogs(currentMatch.id, async (logs) => {
-      console.log(`[ScoreboardPage] Stat logs updated, refreshing match stats`);
-      console.log(`[ScoreboardPage] Received ${logs.length} stat logs:`, logs);
+      console.log(`[SCOREBOARD] Stat logs listener updated, ${logs.length} logs received`);
+      
+      if (logs.length > 0) {
+        console.log(`[SCOREBOARD] First log sample:`, logs[0]);
+      } else {
+        console.warn(`[SCOREBOARD] WARNING: No logs received for match ${currentMatch.id}`);
+      }
       
       try {
         setStatsLoading(true);
@@ -137,6 +142,12 @@ const ScoreboardPage = () => {
         
         // Process each log to build up player stats
         logs.forEach((log: StatLog) => {
+          // Make sure the log has a valid playerId and statName
+          if (!log.playerId || !log.statName) {
+            console.warn(`[SCOREBOARD] Invalid log encountered:`, log);
+            return; // Skip this log
+          }
+          
           // Initialize player stats if this is the first log for this player
           if (!calculatedStats[log.playerId]) {
             calculatedStats[log.playerId] = createEmptyPlayerStats();
@@ -148,41 +159,48 @@ const ScoreboardPage = () => {
           calculatedStats[log.playerId][statName] = currentValue + log.value;
         });
         
-        console.log(`[ScoreboardPage] Calculated player stats from logs:`, calculatedStats);
+        console.log(`[SCOREBOARD] Calculated player stats from ${logs.length} logs:`, calculatedStats);
         
         // Debug output to help diagnose if stats are being calculated
         if (Object.keys(calculatedStats).length === 0) {
-          console.log(`[ScoreboardPage] WARNING: No player stats calculated for match ${currentMatch.id}`);
+          console.warn(`[SCOREBOARD] WARNING: No player stats calculated for match ${currentMatch.id}`);
           
-          // As a fallback, try to fetch from Firebase stats path
+          // Direct database check as fallback
           try {
+            // First try direct logs path check
+            console.log(`[SCOREBOARD] Attempting direct check of statLogs/${currentMatch.id}`);
+            
+            // Fallback to Firebase stats path
             const stats = await getMatchStats(currentMatch.id);
-            console.log(`[ScoreboardPage] Attempting fallback to Firebase stats:`, stats);
+            console.log(`[SCOREBOARD] Fallback to Firebase stats path returned:`, stats);
             
             if (Object.keys(stats).length > 0) {
-              console.log(`[ScoreboardPage] SUCCESS: Fetched stats from Firebase as fallback`);
+              console.log(`[SCOREBOARD] SUCCESS: Fetched stats from Firebase stats path as fallback`);
               setPlayerStats(stats);
             } else {
-              console.log(`[ScoreboardPage] ALERT: Both calculation and Firebase fetch returned no stats`);
+              console.error(`[SCOREBOARD] CRITICAL: Both calculation and Firebase stats failed`);
               setPlayerStats({});
             }
           } catch (error) {
-            console.error(`[ScoreboardPage] Fallback to Firebase stats failed:`, error);
+            console.error(`[SCOREBOARD] Fallback to Firebase stats failed:`, error);
             setPlayerStats({});
           }
         } else {
-          console.log(`[ScoreboardPage] SUCCESS: Calculated stats for ${Object.keys(calculatedStats).length} players`);
-          // Log each player's stats that we calculated
-          Object.entries(calculatedStats).forEach(([playerId, playerStats]) => {
-            console.log(`Player ${playerId} calculated stats:`, playerStats);
-          });
+          console.log(`[SCOREBOARD] SUCCESS: Calculated stats for ${Object.keys(calculatedStats).length} players`);
           
+          // Log the first player's stats as a sample
+          const firstPlayerId = Object.keys(calculatedStats)[0];
+          if (firstPlayerId) {
+            console.log(`[SCOREBOARD] Sample player ${firstPlayerId} stats:`, calculatedStats[firstPlayerId]);
+          }
+          
+          // Update state with calculated stats
           setPlayerStats(calculatedStats);
         }
         
         setStatsLoading(false);
       } catch (error) {
-        console.error(`[ScoreboardPage] Error processing stat logs:`, error);
+        console.error(`[SCOREBOARD] Error processing stat logs:`, error);
         setStatsLoading(false);
         toast({
           title: "Error",
@@ -192,14 +210,15 @@ const ScoreboardPage = () => {
       }
     });
     
-    // Initial load of match stats
+    // Initial load of match stats (eager loading)
     const loadInitialStats = async () => {
       try {
+        console.log(`[SCOREBOARD] Initial: Starting eager load of stats for match ${currentMatch.id}`);
         setStatsLoading(true);
         
         // First try to get stat logs and calculate stats from those
         const logs = await getStatLogs(currentMatch.id);
-        console.log(`[ScoreboardPage] Initial load: Got ${logs.length} stat logs`);
+        console.log(`[SCOREBOARD] Initial: Got ${logs.length} stat logs directly`);
         
         if (logs.length > 0) {
           // Calculate stats from logs
@@ -207,6 +226,12 @@ const ScoreboardPage = () => {
           
           // Process each log to build up player stats
           logs.forEach((log: StatLog) => {
+            // Skip invalid logs
+            if (!log.playerId || !log.statName) {
+              console.warn(`[SCOREBOARD] Initial: Invalid log encountered:`, log);
+              return;
+            }
+            
             if (!calculatedStats[log.playerId]) {
               calculatedStats[log.playerId] = createEmptyPlayerStats();
             }
@@ -216,26 +241,39 @@ const ScoreboardPage = () => {
             calculatedStats[log.playerId][statName] = currentValue + log.value;
           });
           
-          console.log(`[ScoreboardPage] Initial: Calculated stats from logs:`, calculatedStats);
-          setPlayerStats(calculatedStats);
-        } else {
-          // Fallback to Firebase stats path
-          const stats = await getMatchStats(currentMatch.id);
-          console.log(`[ScoreboardPage] Initial: Firebase stats path returned:`, stats);
+          console.log(`[SCOREBOARD] Initial: Calculated stats from logs:`, calculatedStats);
+          
+          if (Object.keys(calculatedStats).length > 0) {
+            setPlayerStats(calculatedStats);
+            setStatsLoading(false);
+            return; // Exit early if we have stats
+          }
+        }
+        
+        // Fallback to Firebase stats path
+        console.log(`[SCOREBOARD] Initial: No stats from logs, trying Firebase stats path`);
+        const stats = await getMatchStats(currentMatch.id);
+        console.log(`[SCOREBOARD] Initial: Firebase stats path returned:`, stats);
+        
+        if (Object.keys(stats).length > 0) {
           setPlayerStats(stats);
+        } else {
+          console.warn(`[SCOREBOARD] Initial: All stats loading methods failed for match ${currentMatch.id}`);
+          setPlayerStats({});
         }
         
         setStatsLoading(false);
       } catch (error) {
-        console.error(`[ScoreboardPage] Error loading initial match stats:`, error);
+        console.error(`[SCOREBOARD] Error loading initial match stats:`, error);
         setStatsLoading(false);
       }
     };
     
+    // Start eager loading of stats
     loadInitialStats();
     
     return () => {
-      console.log(`[ScoreboardPage] Removing stat logs listener for match ID: ${currentMatch.id}`);
+      console.log(`[SCOREBOARD] Removing stat logs listener for match ID: ${currentMatch.id}`);
       unsubscribeStatLogs();
     };
   }, [currentMatch, toast]);

@@ -201,6 +201,10 @@ const StatTrackerPage = () => {
     
     // Listen for stat logs for this match
     const logsUnsubscribe = listenToStatLogs(selectedMatchId, (logs) => {
+      console.log(`[StatTrackerPage] Received ${logs.length} stat logs for match ID: ${selectedMatchId}`);
+      if (logs.length > 0) {
+        console.log(`[StatTrackerPage] First log:`, logs[0]);
+      }
       setStatLogs(logs);
     });
     

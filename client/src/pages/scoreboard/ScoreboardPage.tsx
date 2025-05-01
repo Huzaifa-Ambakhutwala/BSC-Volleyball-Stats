@@ -179,117 +179,69 @@ const ScoreboardPage = () => {
     console.log(`[SCOREBOARD] Setting up listenToMatchStats for match ID: ${currentMatch.id}`);
     setStatsLoading(true);
     
-    // TEMPORARY TESTING: Add dummy data for the current players to test rendering
-    if (teamA && teamB && playersA.length > 0 && playersB.length > 0) {
-      console.log(`[SCOREBOARD-DEBUG] Creating temporary test data for players`);
+    // Use the direct Firebase data
+    const unsubscribe = listenToMatchStats(currentMatch.id, (stats) => {
+      console.log(`[SCOREBOARD] Received match stats update:`, stats);
+      console.log(`[SCOREBOARD-EXAMINE-DATA] Stats object contents:`, JSON.stringify(stats, null, 2));
       
-      // Create a dummy stats object
-      const testData: MatchStats = {};
+      // Type safety check on the data to ensure we have proper objects
+      const cleanedStats: MatchStats = {};
       
-      // Add stats for Team A players
-      playersA.forEach(player => {
-        testData[player.id] = {
-          aces: 2,
-          serveErrors: 1,
-          spikes: 3,
-          spikeErrors: 0,
-          digs: 1,
-          blocks: 2,
-          netTouches: 0,
-          tips: 1,
-          dumps: 0,
-          footFaults: 0,
-          reaches: 0,
-          carries: 0
-        };
-      });
-      
-      // Add stats for Team B players
-      playersB.forEach(player => {
-        testData[player.id] = {
-          aces: 1,
-          serveErrors: 0,
-          spikes: 2,
-          spikeErrors: 1,
-          digs: 2,
-          blocks: 1,
-          netTouches: 1,
-          tips: 0,
-          dumps: 1,
-          footFaults: 0,
-          reaches: 0,
-          carries: 0
-        };
-      });
-      
-      // Use the test data
-      console.log('[SCOREBOARD-DEBUG] Setting test data:', testData);
-      
-      // We'll also set up the normal listener to compare
-      const unsubscribe = listenToMatchStats(currentMatch.id, (stats) => {
-        console.log(`[SCOREBOARD] Received actual match stats update:`, stats);
-        console.log(`[SCOREBOARD-DEBUG] Is data empty?`, Object.keys(stats).length === 0);
+      // Process each player's stats individually
+      Object.entries(stats).forEach(([playerId, playerStats]) => {
+        // Skip if somehow playerId is not a string
+        if (typeof playerId !== 'string') {
+          console.log(`[SCOREBOARD-WARNING] Invalid player ID:`, playerId);
+          return;
+        }
         
-        // Check if testData and actual data would produce the same "hasStats" result
-        Object.keys(testData).forEach(playerId => {
-          const testPlayerData = testData[playerId];
-          const actualPlayerData = stats[playerId] || {};
-          
-          // Calculate totals from test data
-          const testTotalEarnedPoints = (testPlayerData.aces || 0) + (testPlayerData.spikes || 0) + 
-            (testPlayerData.blocks || 0) + (testPlayerData.digs || 0) + (testPlayerData.tips || 0) + 
-            (testPlayerData.dumps || 0);
-          
-          const testTotalFaults = (testPlayerData.serveErrors || 0) + (testPlayerData.spikeErrors || 0) + 
-            (testPlayerData.netTouches || 0) + (testPlayerData.footFaults || 0) + (testPlayerData.carries || 0) +
-            (testPlayerData.reaches || 0);
-          
-          // Calculate totals from actual data
-          const actualTotalEarnedPoints = (actualPlayerData.aces || 0) + (actualPlayerData.spikes || 0) + 
-            (actualPlayerData.blocks || 0) + (actualPlayerData.digs || 0) + (actualPlayerData.tips || 0) + 
-            (actualPlayerData.dumps || 0);
-          
-          const actualTotalFaults = (actualPlayerData.serveErrors || 0) + (actualPlayerData.spikeErrors || 0) + 
-            (actualPlayerData.netTouches || 0) + (actualPlayerData.footFaults || 0) + (actualPlayerData.carries || 0) +
-            (actualPlayerData.reaches || 0);
-          
-          console.log(`[SCOREBOARD-DEBUG] Player ${playerId}:`, {
-            testHasStats: testTotalEarnedPoints > 0 || testTotalFaults > 0,
-            testEarnedPoints: testTotalEarnedPoints,
-            testFaults: testTotalFaults,
-            actualHasStats: actualTotalEarnedPoints > 0 || actualTotalFaults > 0,
-            actualEarnedPoints: actualTotalEarnedPoints,
-            actualFaults: actualTotalFaults
-          });
+        if (!playerStats || typeof playerStats !== 'object') {
+          console.log(`[SCOREBOARD-WARNING] Invalid player stats for ${playerId}:`, playerStats);
+          return;
+        }
+        
+        // Initialize this player's stats object
+        cleanedStats[playerId] = {};
+        
+        // Copy all valid stat values
+        Object.entries(playerStats).forEach(([statName, value]) => {
+          // Only copy numeric values
+          if (typeof value === 'number') {
+            // Safely cast statName as a key of PlayerStats
+            (cleanedStats[playerId] as any)[statName] = value;
+          }
         });
         
-        // For debugging purposes, we're showing both
-        // Uncomment this when ready to revert to actual data
-        // setMatchStatsData(stats);
+        // Count the stats for this player
+        const earnedPoints = (cleanedStats[playerId].aces || 0) + 
+          (cleanedStats[playerId].spikes || 0) + 
+          (cleanedStats[playerId].blocks || 0) + 
+          (cleanedStats[playerId].digs || 0) + 
+          (cleanedStats[playerId].tips || 0) + 
+          (cleanedStats[playerId].dumps || 0);
+          
+        const faults = (cleanedStats[playerId].serveErrors || 0) + 
+          (cleanedStats[playerId].spikeErrors || 0) + 
+          (cleanedStats[playerId].netTouches || 0) + 
+          (cleanedStats[playerId].footFaults || 0) + 
+          (cleanedStats[playerId].carries || 0) +
+          (cleanedStats[playerId].reaches || 0);
+          
+        console.log(`[SCOREBOARD-PLAYER-STATS] Player ${playerId}: Points=${earnedPoints}, Faults=${faults}`);
       });
       
-      // During testing we'll use our test data
-      setMatchStatsData(testData);
+      console.log(`[SCOREBOARD-STATS-SUMMARY] Total players with stats: ${Object.keys(cleanedStats).length}`);
+      
+      // Set the cleaned data
+      setMatchStatsData(cleanedStats);
       setStatsLoading(false);
-      
-      return () => {
-        console.log(`[SCOREBOARD] Removing match stats listener for match ${currentMatch.id}`);
-        unsubscribe();
-      };
-    } else {
-      // If teams or players aren't loaded yet, set up the normal listener
-      const unsubscribe = listenToMatchStats(currentMatch.id, (stats) => {
-        console.log(`[SCOREBOARD] Received match stats update:`, stats);
-        setMatchStatsData(stats);
-        setStatsLoading(false);
-      });
-      
-      return () => {
-        console.log(`[SCOREBOARD] Removing match stats listener for match ${currentMatch.id}`);
-        unsubscribe();
-      };
-    }
-  }, [currentMatch, teamA, teamB, playersA, playersB]);
+    });
+    
+    return () => {
+      console.log(`[SCOREBOARD] Removing match stats listener for match ${currentMatch.id}`);
+      unsubscribe();
+    };
+  }, [currentMatch]);
 
   const formatTime = (timeString: string) => {
     try {

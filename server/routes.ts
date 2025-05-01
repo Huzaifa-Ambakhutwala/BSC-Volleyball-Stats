@@ -65,6 +65,131 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: String(error) });
     }
   });
+  
+  // Special debug route to test matches for a specific team
+  app.get("/api/debug/team-matches/:teamId", async (req, res) => {
+    try {
+      // Import necessary Firebase functions
+      const { initializeApp, getApps } = await import('firebase/app');
+      const { getDatabase, ref, get } = await import('firebase/database');
+      
+      // Get team ID from request params
+      const teamId = req.params.teamId;
+      
+      if (!teamId) {
+        return res.status(400).json({ error: "No team ID provided" });
+      }
+      
+      // Initialize Firebase if not already initialized
+      if (!getApps().length) {
+        const firebaseConfig = {
+          apiKey: process.env.VITE_FIREBASE_API_KEY,
+          authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
+          databaseURL: process.env.VITE_FIREBASE_DATABASE_URL,
+          projectId: process.env.VITE_FIREBASE_PROJECT_ID,
+          storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
+          messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+          appId: process.env.VITE_FIREBASE_APP_ID,
+        };
+        
+        initializeApp(firebaseConfig);
+      }
+      
+      // Access the database
+      const database = getDatabase();
+      
+      // Fetch all matches
+      const matchesRef = ref(database, 'matches');
+      const matchesSnapshot = await get(matchesRef);
+      const allMatches = matchesSnapshot.val() || {};
+      
+      // Fetch all teams for reference (to display names)
+      const teamsRef = ref(database, 'teams');
+      const teamsSnapshot = await get(teamsRef);
+      const allTeams = teamsSnapshot.val() || {};
+      
+      // Collect detailed match information for the requested team
+      const matchSummary = {};
+      const matchesAsTeamA = [];
+      const matchesAsTeamB = [];
+      const matchesAsTracker = [];
+      
+      // Loop through matches and categorize them
+      Object.entries(allMatches).forEach(([matchId, matchData]) => {
+        const match = matchData as any;
+        const teamAName = allTeams[match.teamA]?.teamName || 'Unknown Team';
+        const teamBName = allTeams[match.teamB]?.teamName || 'Unknown Team';
+        const trackerTeamName = allTeams[match.trackerTeam]?.teamName || 'Unknown Team';
+        
+        // Create a match summary with readable info
+        const matchInfo = {
+          id: matchId,
+          courtNumber: match.courtNumber,
+          gameNumber: match.gameNumber,
+          teamA: {
+            id: match.teamA,
+            name: teamAName
+          },
+          teamB: {
+            id: match.teamB,
+            name: teamBName
+          },
+          trackerTeam: {
+            id: match.trackerTeam,
+            name: trackerTeamName
+          },
+          startTime: match.startTime,
+          score: `${match.scoreA}-${match.scoreB}`
+        };
+        
+        // Add match to the appropriate category
+        if (String(match.teamA) === String(teamId)) {
+          matchesAsTeamA.push(matchInfo);
+        }
+        
+        if (String(match.teamB) === String(teamId)) {
+          matchesAsTeamB.push(matchInfo);
+        }
+        
+        // Check for tracker team using both direct and looser comparison
+        if (
+          String(match.trackerTeam) === String(teamId) || 
+          (match.trackerTeam && teamId && 
+           (String(match.trackerTeam).includes(teamId) || 
+            String(teamId).includes(match.trackerTeam)))
+        ) {
+          matchesAsTracker.push(matchInfo);
+        }
+      });
+      
+      // Check for any exact string matches in the raw data
+      const exactStringMatches = Object.entries(allMatches)
+        .filter(([_, match]) => String((match as any).trackerTeam) === String(teamId))
+        .map(([id]) => id);
+      
+      // Compile results
+      matchSummary['asTeamA'] = matchesAsTeamA;
+      matchSummary['asTeamB'] = matchesAsTeamB;
+      matchSummary['asTracker'] = matchesAsTracker;
+      
+      res.json({
+        teamId,
+        matchCounts: {
+          asTeamA: matchesAsTeamA.length,
+          asTeamB: matchesAsTeamB.length,
+          asTracker: matchesAsTracker.length,
+          total: Object.keys(allMatches).length
+        },
+        matches: matchSummary,
+        teamInfo: allTeams[teamId] || null,
+        exactMatches: exactStringMatches,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Error in team matches debug route:", error);
+      res.status(500).json({ error: String(error) });
+    }
+  });
 
   // Players API
   app.get("/api/players", async (req, res) => {

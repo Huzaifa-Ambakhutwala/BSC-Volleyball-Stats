@@ -92,7 +92,7 @@ const StatTrackerLogin = () => {
           toast({
             title: "Warning",
             description: "No matches are currently assigned to your team for tracking.",
-            variant: "warning",
+            variant: "destructive",
           });
         }
         

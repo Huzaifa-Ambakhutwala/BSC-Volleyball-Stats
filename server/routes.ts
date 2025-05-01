@@ -39,6 +39,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: String(error) });
     }
   });
+  
+  // Debug route to check Firebase configuration (redacted to avoid exposing secrets)
+  app.get("/api/debug/firebase", async (req, res) => {
+    try {
+      const firebaseConfigStatus = {
+        apiKey: process.env.VITE_FIREBASE_API_KEY ? "AVAILABLE" : "MISSING",
+        authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN ? "AVAILABLE" : "MISSING",
+        databaseURL: process.env.VITE_FIREBASE_DATABASE_URL ? "AVAILABLE" : "MISSING",
+        projectId: process.env.VITE_FIREBASE_PROJECT_ID ? "AVAILABLE" : "MISSING",
+        storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET ? "AVAILABLE" : "MISSING",
+        messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID ? "AVAILABLE" : "MISSING",
+        appId: process.env.VITE_FIREBASE_APP_ID ? "AVAILABLE" : "MISSING",
+      };
+      
+      res.json({
+        firebaseConfig: firebaseConfigStatus,
+        timestamp: new Date().toISOString(),
+        databaseUrlFormat: process.env.VITE_FIREBASE_DATABASE_URL ? 
+          "Appears to be a " + (process.env.VITE_FIREBASE_DATABASE_URL.includes("firebaseio.com") ? "valid" : "suspicious") + " Firebase URL" : 
+          "Missing database URL"
+      });
+    } catch (error) {
+      console.error("Error in Firebase debug route:", error);
+      res.status(500).json({ error: String(error) });
+    }
+  });
 
   // Players API
   app.get("/api/players", async (req, res) => {

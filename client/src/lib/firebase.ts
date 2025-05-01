@@ -428,101 +428,133 @@ export const getMatchesForTracker = async (teamId: string): Promise<Record<strin
     return {};
   }
 
-  console.log(`Getting matches for tracker team ${teamId}`);
+  console.log(`[getMatchesForTracker] Getting matches for tracker team ${teamId}`);
   const matchesRef = ref(database, 'matches');
   const snapshot = await get(matchesRef);
   const matches = snapshot.val() || {};
   
+  console.log(`[getMatchesForTracker] All matches:`, matches);
+  
   // Filter matches where this team is assigned as the tracker
   const filteredMatches: Record<string, Match> = {};
-  Object.entries(matches).forEach(([key, match]) => {
-    const typedMatch = match as Match;
-    console.log(`Checking match ${key} - Tracker: ${typedMatch.trackerTeam}, TeamA: ${typedMatch.teamA}, TeamB: ${typedMatch.teamB}`);
-    
-    // Convert IDs to strings to ensure proper comparison
-    const trackerTeamId = String(typedMatch.trackerTeam);
-    const currentTeamId = String(teamId);
-    
-    // Primarily match where team is the assigned tracker
-    if (trackerTeamId === currentTeamId) {
-      console.log(`Match ${key} is relevant for team ${teamId}`);
-      filteredMatches[key] = typedMatch;
-    }
-  });
   
-  console.log(`Found ${Object.keys(filteredMatches).length} matches for team ${teamId}:`, filteredMatches);
+  for (const [matchId, matchData] of Object.entries(matches)) {
+    const match = matchData as Match;
+    
+    console.log(`[getMatchesForTracker] Checking match ${matchId}:`);
+    console.log(`[getMatchesForTracker] - trackerTeam: "${match.trackerTeam}" (${typeof match.trackerTeam})`);
+    console.log(`[getMatchesForTracker] - current teamId: "${teamId}" (${typeof teamId})`);
+    
+    // Create normalized strings for comparison
+    const trackerTeamId = String(match.trackerTeam).trim();
+    const currentTeamId = String(teamId).trim();
+    
+    const isTrackerTeam = trackerTeamId === currentTeamId;
+    console.log(`[getMatchesForTracker] - isTrackerTeam: ${isTrackerTeam}`);
+    
+    if (isTrackerTeam) {
+      console.log(`[getMatchesForTracker] MATCH FOUND! Match ${matchId} is assigned to team ${teamId} for tracking`);
+      filteredMatches[matchId] = match;
+    }
+  }
+  
+  const matchCount = Object.keys(filteredMatches).length;
+  console.log(`[getMatchesForTracker] Found ${matchCount} matches for team ${teamId}`);
+  
+  // If no matches were found with the exact method, try a different approach
+  if (matchCount === 0) {
+    console.log(`[getMatchesForTracker] No matches found with direct comparison, trying looser matching`);
+    
+    // Try to match with looser comparison
+    for (const [matchId, matchData] of Object.entries(matches)) {
+      const match = matchData as Match;
+      
+      // Try various matching techniques
+      if (match.trackerTeam && teamId &&
+          (String(match.trackerTeam).includes(teamId) || 
+           String(teamId).includes(match.trackerTeam))) {
+        console.log(`[getMatchesForTracker] Found match with partial ID matching: ${matchId}`);
+        filteredMatches[matchId] = match;
+      }
+    }
+    
+    console.log(`[getMatchesForTracker] After looser matching, found ${Object.keys(filteredMatches).length} matches`);
+  }
+  
   return filteredMatches;
 };
 
 export const listenToMatchesForTracker = (teamId: string, callback: (matches: Record<string, Match>) => void) => {
   if (!teamId) {
-    console.error('Invalid teamId provided to listenToMatchesForTracker:', teamId);
+    console.error('[listenToMatchesForTracker] Invalid teamId provided:', teamId);
     callback({});
     return () => {};
   }
 
   const matchesRef = ref(database, 'matches');
-  console.log(`Setting up matches for tracker team ${teamId} listener`);
+  console.log(`[listenToMatchesForTracker] Setting up listener for team ${teamId}`);
   
-  // First, check for matches directly (not using the listener yet)
-  get(matchesRef).then((snapshot) => {
-    console.log("Initial check for matches data");
-    const allMatches = snapshot.val() || {};
-    
-    // Filter for this team
-    const directMatches: Record<string, Match> = {};
-    Object.entries(allMatches).forEach(([key, matchData]) => {
-      const match = matchData as Match;
-      console.log(`Direct check match ${key} - Tracker: ${match.trackerTeam}, Current: ${teamId}`);
-      
-      // Compare as strings to ensure proper matching
-      if (String(match.trackerTeam) === String(teamId)) {
-        console.log(`Direct match found: ${key} is assigned to team ${teamId} for tracking`);
-        directMatches[key] = match;
-      }
-    });
-    
-    console.log(`Direct database check found ${Object.keys(directMatches).length} matches:`, directMatches);
-    
-    // Immediately deliver these matches to the UI
-    if (Object.keys(directMatches).length > 0) {
-      callback(directMatches);
+  // First, use getMatchesForTracker to get matches immediately
+  getMatchesForTracker(teamId).then(initialMatches => {
+    if (Object.keys(initialMatches).length > 0) {
+      console.log(`[listenToMatchesForTracker] Initial check found ${Object.keys(initialMatches).length} matches`);
+      callback(initialMatches);
+    } else {
+      console.log(`[listenToMatchesForTracker] Initial check found no matches`);
     }
-  }).catch((error) => {
-    console.error("Error in direct match check:", error);
   });
   
-  // Set up the real-time listener
+  // Set up the real-time listener with improved matching logic
   const unsubscribe = onValue(matchesRef, (snapshot) => {
-    const matches = snapshot.val() || {};
+    const allMatches = snapshot.val() || {};
+    console.log(`[listenToMatchesForTracker] Real-time update received with ${Object.keys(allMatches).length} total matches`);
     
-    // Filter matches where this team is assigned as the tracker
+    // Filter matches for this tracker team
     const filteredMatches: Record<string, Match> = {};
-    let count = 0;
     
-    Object.entries(matches).forEach(([key, match]) => {
-      const typedMatch = match as Match;
-      console.log(`Checking match ${key} - Tracker Team: ${typedMatch.trackerTeam}, Current Team: ${teamId}`);
+    // First pass - exact matching
+    for (const [matchId, matchData] of Object.entries(allMatches)) {
+      const match = matchData as Match;
       
-      // Convert IDs to strings to ensure proper comparison
-      const trackerTeamId = String(typedMatch.trackerTeam);
-      const currentTeamId = String(teamId);
+      // Convert both to strings and trim for comparison
+      const trackerTeamId = String(match.trackerTeam).trim();
+      const currentTeamId = String(teamId).trim();
       
       if (trackerTeamId === currentTeamId) {
-        console.log(`Match ${key} is assigned to team ${teamId} for tracking`);
-        filteredMatches[key] = typedMatch;
-        count++;
+        console.log(`[listenToMatchesForTracker] Found exact match: ${matchId}`);
+        filteredMatches[matchId] = match;
       }
-    });
+    }
     
-    console.log(`Found ${count} matches for tracker team ${teamId}:`, filteredMatches);
-    callback(filteredMatches);
+    // If no matches found with exact matching, try looser matching
+    if (Object.keys(filteredMatches).length === 0) {
+      console.log(`[listenToMatchesForTracker] No exact matches, trying looser matching`);
+      
+      for (const [matchId, matchData] of Object.entries(allMatches)) {
+        const match = matchData as Match;
+        
+        // Try matching with includes
+        if (match.trackerTeam && teamId &&
+            (String(match.trackerTeam).includes(teamId) || 
+             String(teamId).includes(match.trackerTeam))) {
+          console.log(`[listenToMatchesForTracker] Found partial match: ${matchId}`);
+          filteredMatches[matchId] = match;
+        }
+      }
+    }
+    
+    console.log(`[listenToMatchesForTracker] Sending ${Object.keys(filteredMatches).length} matches to UI`);
+    
+    // Only invoke callback if we have matches to avoid unnecessary UI updates
+    if (Object.keys(filteredMatches).length > 0) {
+      callback(filteredMatches);
+    }
   }, (error) => {
-    console.error(`Error in matches for tracker team ${teamId} listener:`, error);
+    console.error(`[listenToMatchesForTracker] Error in listener for team ${teamId}:`, error);
   });
   
   return () => {
-    console.log(`Removing matches for tracker team ${teamId} listener`);
+    console.log(`[listenToMatchesForTracker] Removing listener for team ${teamId}`);
     unsubscribe();
   };
 };

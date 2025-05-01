@@ -45,9 +45,15 @@ const ScoreboardStatCard = ({ player, playerId, matchId, teamId }: ScoreboardSta
   const [teamColor, setTeamColor] = useState<string | null>(null);
   
   useEffect(() => {
-    if (!matchId || !playerId) return;
+    if (!matchId || !playerId) {
+      console.log('Missing matchId or playerId:', { matchId, playerId });
+      return;
+    }
+    
+    console.log(`ScoreboardStatCard: Setting up listener for match ${matchId}, player ${playerId}`);
     
     const unsubscribe = listenToPlayerStats(matchId, playerId, (playerStats) => {
+      console.log(`ScoreboardStatCard: Received stats for ${playerId}:`, playerStats);
       setStats(playerStats);
     });
     

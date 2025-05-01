@@ -51,6 +51,7 @@ const StatTrackerLogin = () => {
       return;
     }
 
+    console.log("Attempting login with team ID:", selectedTeam);
     setIsSubmitting(true);
 
     try {

@@ -359,26 +359,33 @@ export const getTeamPassword = async (teamId: string): Promise<string | null> =>
 // Authentication for stat trackers
 export const loginStatTracker = async (teamId: string, password: string): Promise<TrackerUser | null> => {
   try {
+    console.log(`Attempting to login with team ID: ${teamId}`);
+    
     // Get team info
     const teamRef = ref(database, `teams/${teamId}`);
     const teamSnapshot = await get(teamRef);
     const team = teamSnapshot.val();
     
     if (!team) {
-      console.error('Team not found');
+      console.error(`Team not found with ID: ${teamId}`);
       return null;
     }
+    
+    console.log(`Team found: ${team.teamName}`);
     
     // Verify password
     const teamPasswordRef = ref(database, `teamPasswords/${teamId}`);
     const passwordSnapshot = await get(teamPasswordRef);
     const storedPassword = passwordSnapshot.val();
     
+    console.log(`Password check - Stored password exists: ${!!storedPassword}`);
+    
     // If no password is set yet, set it
     if (!storedPassword) {
+      console.log(`Setting new password for team: ${teamId}`);
       await set(teamPasswordRef, password);
     } else if (password !== storedPassword) {
-      console.error('Incorrect password');
+      console.error('Incorrect password provided');
       return null;
     }
     
@@ -387,6 +394,8 @@ export const loginStatTracker = async (teamId: string, password: string): Promis
       teamName: team.teamName,
       isAuthenticated: true
     };
+    
+    console.log(`Login successful, storing user in localStorage:`, trackerUser);
     
     // Store tracker session in localStorage
     localStorage.setItem('trackerUser', JSON.stringify(trackerUser));
@@ -430,6 +439,12 @@ export const getMatchesForTracker = async (teamId: string): Promise<Record<strin
 };
 
 export const listenToMatchesForTracker = (teamId: string, callback: (matches: Record<string, Match>) => void) => {
+  if (!teamId) {
+    console.error('Invalid teamId provided to listenToMatchesForTracker:', teamId);
+    callback({});
+    return () => {};
+  }
+
   const matchesRef = ref(database, 'matches');
   console.log(`Setting up matches for tracker team ${teamId} listener`);
   
@@ -439,8 +454,16 @@ export const listenToMatchesForTracker = (teamId: string, callback: (matches: Re
     // Filter matches where this team is assigned as the tracker
     const filteredMatches: Record<string, Match> = {};
     Object.entries(matches).forEach(([key, match]) => {
-      if ((match as Match).trackerTeam === teamId) {
-        filteredMatches[key] = match as Match;
+      const typedMatch = match as Match;
+      console.log(`Checking match ${key} - Tracker Team: ${typedMatch.trackerTeam}, Current Team: ${teamId}`);
+      
+      if (typedMatch.trackerTeam === teamId) {
+        console.log(`Match ${key} is assigned to team ${teamId} for tracking`);
+        filteredMatches[key] = typedMatch;
+      } else if (typedMatch.teamA === teamId || typedMatch.teamB === teamId) {
+        // Also include matches where this team is playing
+        console.log(`Match ${key} includes team ${teamId} as a participant`);
+        filteredMatches[key] = typedMatch;
       }
     });
     

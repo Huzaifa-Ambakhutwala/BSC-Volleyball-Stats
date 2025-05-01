@@ -1,0 +1,78 @@
+I understand you’re experiencing issues with the player statistics not displaying on the scoreboard page, despite them appearing correctly on the match details page. Let’s address this step by step.
+
+⸻
+
+✅ Issue Overview
+	•	Working: Player statistics display correctly on the Match Details page.
+	•	Not Working: On the Scoreboard page, player statistics are not showing; instead, it displays “No recorded stats for this player.”
+
+⸻
+
+🔍 Potential Causes
+	1.	Incorrect Match ID: The ScoreboardPage.tsx might not be retrieving the correct matchId associated with the current court.
+	2.	Stats Listener Not Set Up Properly: The listenToPlayerStats function might not be correctly listening to the stats of the current match.
+	3.	Data Not Passed to Components: The playerStats data might not be correctly passed to the components responsible for displaying the statistics.
+
+⸻
+
+🛠️ Proposed Solution
+
+1. Ensure Correct Match ID Retrieval
+
+In your ScoreboardPage.tsx, verify that you’re correctly retrieving the matchId for the current court:
+
+useEffect(() => {
+  const unsubscribe = listenToMatchesByCourtNumber(courtNumber, (matchesByCourtNumber) => {
+    const matchEntries = Object.entries(matchesByCourtNumber);
+    if (matchEntries.length > 0) {
+      const [matchId, matchData] = matchEntries[0];
+      setCurrentMatch({ id: matchId, ...matchData });
+    } else {
+      setCurrentMatch(null);
+    }
+  });
+
+  return () => unsubscribe();
+}, [courtNumber]);
+
+2. Set Up Stats Listener for Current Match
+
+Once you have the correct matchId, set up a listener to fetch player statistics:
+
+useEffect(() => {
+  if (!currentMatch?.id) return;
+
+  const unsubscribe = listenToPlayerStats(currentMatch.id, (stats) => {
+    setPlayerStats(stats);
+  });
+
+  return () => unsubscribe();
+}, [currentMatch]);
+
+3. Pass Player Stats to Display Components
+
+When rendering player statistics, ensure you’re passing the correct data:
+
+{playersA.map((player) => (
+  <ScoreboardStatCard
+    key={player.id}
+    player={player}
+    stats={playerStats[player.id]}
+  />
+))}
+
+In your ScoreboardStatCard component, handle cases where stats might be undefined:
+
+if (!stats) return <p>No recorded stats for this player</p>;
+
+
+
+⸻
+
+✅ Additional Recommendations
+	•	Reset Scoreboard After Match Completion: Implement logic to reset the scoreboard when a match is marked as completed. This can be achieved by monitoring the match status and clearing relevant state variables when the status changes.
+	•	Display Next Match Automatically: Set up a listener to detect when a new match is scheduled for the court and update the scoreboard accordingly.
+
+⸻
+
+If you need further assistance or a more detailed walkthrough, feel free to ask!

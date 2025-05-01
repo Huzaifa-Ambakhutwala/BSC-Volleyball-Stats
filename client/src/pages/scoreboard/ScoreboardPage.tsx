@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'wouter';
-import { listenToMatchesByCourtNumber, getTeamById, getPlayers, listenToStatLogs, getMatchStats } from '@/lib/firebase';
+import { listenToMatchesByCourtNumber, getTeamById, getPlayers, listenToMatchStats } from '@/lib/firebase';
 import type { Match, Team, Player, PlayerStats, MatchStats } from '@shared/schema';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -18,7 +18,7 @@ const ScoreboardPage = () => {
   const [playersB, setPlayersB] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [allPlayers, setAllPlayers] = useState<Record<string, Player>>({});
-  const [matchStats, setMatchStats] = useState<MatchStats>({});
+  const [matchStatsData, setMatchStatsData] = useState<MatchStats>({});
   const [statsLoading, setStatsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -66,7 +66,12 @@ const ScoreboardPage = () => {
       if (matchEntries.length > 0) {
         const [matchId, firstMatch] = matchEntries[0];
         console.log(`[SCOREBOARD] Setting current match to: ${matchId}`);
-        setCurrentMatch(firstMatch);
+        
+        // IMPORTANT: Include the ID in the match object
+        setCurrentMatch({ 
+          id: matchId, 
+          ...firstMatch 
+        });
       } else {
         console.log(`[SCOREBOARD] No matches found for court ${courtNumber}`);
         setCurrentMatch(null);
@@ -162,82 +167,27 @@ const ScoreboardPage = () => {
     setPlayersB(teamBPlayers);
   }, [teamA, teamB, allPlayers]);
   
-  // Load match statistics when current match changes
+  // Load match statistics when current match changes - USE listenToMatchStats directly
   useEffect(() => {
-    if (!currentMatch || !currentMatch.id) {
-      setMatchStats({});
+    if (!currentMatch?.id) {
+      console.log(`[SCOREBOARD] No current match ID, skipping stats listener setup`);
+      setMatchStatsData({});
       setStatsLoading(false);
       return;
     }
     
-    console.log(`[SCOREBOARD] Loading stats for match ID: ${currentMatch.id}`);
+    console.log(`[SCOREBOARD] Setting up listenToMatchStats for match ID: ${currentMatch.id}`);
     setStatsLoading(true);
     
-    // Set up a real-time listener for match stats using the logs
-    const unsubscribe = listenToStatLogs(currentMatch.id, (logs) => {
-      console.log(`[SCOREBOARD] Received ${logs.length} stat logs for match ${currentMatch.id}`);
-      
-      // If we have logs, process them into player stats
-      if (logs.length > 0) {
-        try {
-          // Initialize stats object
-          const stats: MatchStats = {};
-          
-          // Process each log to accumulate stats
-          logs.forEach(log => {
-            // Skip invalid logs
-            if (!log.playerId || !log.statName) return;
-            
-            // Initialize player stats if needed
-            if (!stats[log.playerId]) {
-              stats[log.playerId] = {
-                aces: 0,
-                serveErrors: 0,
-                spikes: 0,
-                spikeErrors: 0,
-                digs: 0,
-                blocks: 0,
-                netTouches: 0,
-                tips: 0,
-                dumps: 0,
-                footFaults: 0,
-                reaches: 0,
-                carries: 0
-              };
-            }
-            
-            // Update the specific stat
-            const statName = log.statName as keyof PlayerStats;
-            stats[log.playerId][statName] += log.value;
-          });
-          
-          console.log(`[SCOREBOARD] Processed stats for ${Object.keys(stats).length} players`);
-          setMatchStats(stats);
-        } catch (error) {
-          console.error(`[SCOREBOARD] Error processing logs:`, error);
-        }
-      } else {
-        // If no logs, try to fetch stats directly
-        const fetchDirectStats = async () => {
-          try {
-            const stats = await getMatchStats(currentMatch.id);
-            console.log(`[SCOREBOARD] Fetched direct stats:`, stats);
-            if (Object.keys(stats).length > 0) {
-              setMatchStats(stats);
-            }
-          } catch (error) {
-            console.error(`[SCOREBOARD] Error fetching direct stats:`, error);
-          }
-        };
-        
-        fetchDirectStats();
-      }
-      
+    // This is the key change - use listenToMatchStats instead of processing stat logs manually
+    const unsubscribe = listenToMatchStats(currentMatch.id, (stats) => {
+      console.log(`[SCOREBOARD] Received match stats update:`, stats);
+      setMatchStatsData(stats);
       setStatsLoading(false);
     });
     
     return () => {
-      console.log(`[SCOREBOARD] Removing stat listener for match ${currentMatch.id}`);
+      console.log(`[SCOREBOARD] Removing match stats listener for match ${currentMatch.id}`);
       unsubscribe();
     };
   }, [currentMatch]);
@@ -340,7 +290,7 @@ const ScoreboardPage = () => {
                       </h4>
                       <div className="space-y-4">
                         {playersA.map(player => {
-                          const playerStats = matchStats[player.id] || {};
+                          const playerStats = playerStats[player.id] || {};
                           
                           // Calculate totals
                           const totalEarnedPoints = (playerStats.aces || 0) + (playerStats.spikes || 0) + 
@@ -406,7 +356,7 @@ const ScoreboardPage = () => {
                       </h4>
                       <div className="space-y-4">
                         {playersB.map(player => {
-                          const playerStats = matchStats[player.id] || {};
+                          const playerStats = playerStats[player.id] || {};
                           
                           // Calculate totals
                           const totalEarnedPoints = (playerStats.aces || 0) + (playerStats.spikes || 0) + 

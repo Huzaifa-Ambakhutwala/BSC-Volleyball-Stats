@@ -68,14 +68,14 @@ const StatTrackerPage = () => {
     setIsLoading(true);
     
     // Force direct match lookup from database to verify matches exist
-    getMatchesForTracker(trackerUser.teamId).then((directMatches) => {
+    getMatchesForTracker(trackerUser.teamId).then((directMatches: Record<string, Match>) => {
       console.log("Direct database check found matches:", directMatches);
       
       if (Object.keys(directMatches).length === 0) {
         console.log("Warning: No matches found directly in database for team", trackerUser.teamId);
         // Keep loading true to continue with real-time listener
       }
-    }).catch(err => {
+    }).catch((err: Error) => {
       console.error("Error in direct match check:", err);
     });
     

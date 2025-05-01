@@ -1,9 +1,8 @@
 import { useState, useContext } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { loginStatTracker } from '@/lib/firebase';
-import type { Team } from '@shared/schema';
+import { loginStatTracker, getMatchesForTracker, listenToTeams } from '@/lib/firebase';
+import type { Team, Match } from '@shared/schema';
 import { useEffect } from 'react';
-import { listenToTeams } from '@/lib/firebase';
 import { useLocation } from 'wouter';
 import { Users, Loader2, Lock } from 'lucide-react';
 import { TrackerUserContext } from '@/App';

@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'wouter';
-import { listenToMatchesByCourtNumber, getTeamById, getPlayers, getMatchStats, listenToStatLogs, getStatLogs, type StatLog, createEmptyPlayerStats } from '@/lib/firebase';
+import { listenToMatchesByCourtNumber, getTeamById, getPlayers, listenToStatLogs, getMatchStats } from '@/lib/firebase';
 import type { Match, Team, Player, PlayerStats, MatchStats } from '@shared/schema';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import ScoreboardStatCard from '@/components/ScoreboardStatCard';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Activity } from 'lucide-react';
 
 const ScoreboardPage = () => {
   const { courtId } = useParams<{ courtId: string }>();
@@ -19,28 +18,67 @@ const ScoreboardPage = () => {
   const [playersB, setPlayersB] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [allPlayers, setAllPlayers] = useState<Record<string, Player>>({});
-  const [playerStats, setPlayerStats] = useState<MatchStats>({});
+  const [matchStats, setMatchStats] = useState<MatchStats>({});
   const [statsLoading, setStatsLoading] = useState(false);
   const { toast } = useToast();
 
+  // Helper function to get emoji for stat type
+  const getStatEmoji = (statName: keyof PlayerStats): string => {
+    const emojiMap: Record<keyof PlayerStats, string> = {
+      aces: '🔥',
+      serveErrors: '❌',
+      spikes: '💥',
+      spikeErrors: '❌',
+      digs: '🛡️',
+      blocks: '🧱',
+      netTouches: '🔗',
+      tips: '👆',
+      dumps: '🧮',
+      footFaults: '👣',
+      reaches: '🙋',
+      carries: '🤲'
+    };
+    return emojiMap[statName] || '📊';
+  };
+
+  // Helper function for stat category color
+  const getStatCategoryColor = (statName: keyof PlayerStats): string => {
+    // Earned points - Green
+    if (['aces', 'spikes', 'blocks', 'tips', 'dumps', 'digs'].includes(statName)) {
+      return 'bg-green-500';
+    }
+    // Faults - Red (including reaches now)
+    else {
+      return 'bg-red-500';
+    }
+  };
+
   // Listen for matches on the specified court
   useEffect(() => {
+    console.log(`[SCOREBOARD] Setting up listener for court ${courtNumber}`);
+    
     const unsubscribe = listenToMatchesByCourtNumber(courtNumber, (matchesByCourtNumber) => {
+      console.log(`[SCOREBOARD] Received ${Object.keys(matchesByCourtNumber).length} matches for court ${courtNumber}`);
       setMatches(matchesByCourtNumber);
       
       // Get the first match (or the one that's currently happening)
       const matchEntries = Object.entries(matchesByCourtNumber);
       if (matchEntries.length > 0) {
-        const [, firstMatch] = matchEntries[0];
+        const [matchId, firstMatch] = matchEntries[0];
+        console.log(`[SCOREBOARD] Setting current match to: ${matchId}`);
         setCurrentMatch(firstMatch);
       } else {
+        console.log(`[SCOREBOARD] No matches found for court ${courtNumber}`);
         setCurrentMatch(null);
       }
       
       setIsLoading(false);
     });
     
-    return () => unsubscribe();
+    return () => {
+      console.log(`[SCOREBOARD] Removing listener for court ${courtNumber}`);
+      unsubscribe();
+    };
   }, [courtNumber]);
 
   // Fetch team data when current match changes
@@ -51,6 +89,8 @@ const ScoreboardPage = () => {
       return;
     }
     
+    console.log(`[SCOREBOARD] Loading teams for match`);
+    
     const loadTeams = async () => {
       try {
         const [teamAData, teamBData] = await Promise.all([
@@ -58,9 +98,13 @@ const ScoreboardPage = () => {
           getTeamById(currentMatch.teamB)
         ]);
         
+        console.log(`[SCOREBOARD] Loaded Team A: ${teamAData?.teamName}`);
+        console.log(`[SCOREBOARD] Loaded Team B: ${teamBData?.teamName}`);
+        
         setTeamA(teamAData);
         setTeamB(teamBData);
       } catch (error) {
+        console.error(`[SCOREBOARD] Error loading teams:`, error);
         toast({
           title: "Error",
           description: "Failed to load team information",
@@ -76,9 +120,12 @@ const ScoreboardPage = () => {
   useEffect(() => {
     const loadPlayers = async () => {
       try {
+        console.log(`[SCOREBOARD] Loading all players`);
         const players = await getPlayers();
+        console.log(`[SCOREBOARD] Loaded ${Object.keys(players).length} players`);
         setAllPlayers(players);
       } catch (error) {
+        console.error(`[SCOREBOARD] Error loading players:`, error);
         toast({
           title: "Error",
           description: "Failed to load player information",
@@ -98,6 +145,8 @@ const ScoreboardPage = () => {
       return;
     }
 
+    console.log(`[SCOREBOARD] Filtering players for teams`);
+    
     const teamAPlayers = teamA.players
       .map(playerId => allPlayers[playerId])
       .filter(Boolean);
@@ -106,177 +155,92 @@ const ScoreboardPage = () => {
       .map(playerId => allPlayers[playerId])
       .filter(Boolean);
 
+    console.log(`[SCOREBOARD] Team A has ${teamAPlayers.length} players`);
+    console.log(`[SCOREBOARD] Team B has ${teamBPlayers.length} players`);
+    
     setPlayersA(teamAPlayers);
     setPlayersB(teamBPlayers);
   }, [teamA, teamB, allPlayers]);
   
-  // Load player stats when current match changes
+  // Load match statistics when current match changes
   useEffect(() => {
     if (!currentMatch || !currentMatch.id) {
-      // Clear player stats if no match is selected
-      setPlayerStats({});
+      setMatchStats({});
       setStatsLoading(false);
       return;
     }
     
-    console.log(`[SCOREBOARD] Loading match stats for match ID: ${currentMatch.id}`);
+    console.log(`[SCOREBOARD] Loading stats for match ID: ${currentMatch.id}`);
     setStatsLoading(true);
     
-    // Set up a real-time listener for stat logs
-    // This will update the UI whenever a new stat is recorded
-    const unsubscribeStatLogs = listenToStatLogs(currentMatch.id, async (logs) => {
-      console.log(`[SCOREBOARD] Stat logs listener updated, ${logs.length} logs received`);
+    // Set up a real-time listener for match stats using the logs
+    const unsubscribe = listenToStatLogs(currentMatch.id, (logs) => {
+      console.log(`[SCOREBOARD] Received ${logs.length} stat logs for match ${currentMatch.id}`);
       
+      // If we have logs, process them into player stats
       if (logs.length > 0) {
-        console.log(`[SCOREBOARD] First log sample:`, logs[0]);
-      } else {
-        console.warn(`[SCOREBOARD] WARNING: No logs received for match ${currentMatch.id}`);
-      }
-      
-      try {
-        setStatsLoading(true);
-        
-        // IMPROVEMENT: Calculate stats directly from logs instead of relying on Firebase stats path
-        // This ensures we always have the most up-to-date stats even if the Firebase stats path isn't updating
-        const calculatedStats: MatchStats = {};
-        
-        // Process each log to build up player stats
-        logs.forEach((log: StatLog) => {
-          // Make sure the log has a valid playerId and statName
-          if (!log.playerId || !log.statName) {
-            console.warn(`[SCOREBOARD] Invalid log encountered:`, log);
-            return; // Skip this log
-          }
+        try {
+          // Initialize stats object
+          const stats: MatchStats = {};
           
-          // Initialize player stats if this is the first log for this player
-          if (!calculatedStats[log.playerId]) {
-            calculatedStats[log.playerId] = createEmptyPlayerStats();
-          }
-          
-          // Update the specific stat from the log
-          const statName = log.statName as keyof PlayerStats;
-          const currentValue = calculatedStats[log.playerId][statName] || 0;
-          calculatedStats[log.playerId][statName] = currentValue + log.value;
-        });
-        
-        console.log(`[SCOREBOARD] Calculated player stats from ${logs.length} logs:`, calculatedStats);
-        
-        // Debug output to help diagnose if stats are being calculated
-        if (Object.keys(calculatedStats).length === 0) {
-          console.warn(`[SCOREBOARD] WARNING: No player stats calculated for match ${currentMatch.id}`);
-          
-          // Direct database check as fallback
-          try {
-            // First try direct logs path check
-            console.log(`[SCOREBOARD] Attempting direct check of statLogs/${currentMatch.id}`);
-            
-            // Fallback to Firebase stats path
-            const stats = await getMatchStats(currentMatch.id);
-            console.log(`[SCOREBOARD] Fallback to Firebase stats path returned:`, stats);
-            
-            if (Object.keys(stats).length > 0) {
-              console.log(`[SCOREBOARD] SUCCESS: Fetched stats from Firebase stats path as fallback`);
-              setPlayerStats(stats);
-            } else {
-              console.error(`[SCOREBOARD] CRITICAL: Both calculation and Firebase stats failed`);
-              setPlayerStats({});
-            }
-          } catch (error) {
-            console.error(`[SCOREBOARD] Fallback to Firebase stats failed:`, error);
-            setPlayerStats({});
-          }
-        } else {
-          console.log(`[SCOREBOARD] SUCCESS: Calculated stats for ${Object.keys(calculatedStats).length} players`);
-          
-          // Log the first player's stats as a sample
-          const firstPlayerId = Object.keys(calculatedStats)[0];
-          if (firstPlayerId) {
-            console.log(`[SCOREBOARD] Sample player ${firstPlayerId} stats:`, calculatedStats[firstPlayerId]);
-          }
-          
-          // Update state with calculated stats
-          setPlayerStats(calculatedStats);
-        }
-        
-        setStatsLoading(false);
-      } catch (error) {
-        console.error(`[SCOREBOARD] Error processing stat logs:`, error);
-        setStatsLoading(false);
-        toast({
-          title: "Error",
-          description: "Failed to load player statistics",
-          variant: "destructive",
-        });
-      }
-    });
-    
-    // Initial load of match stats (eager loading)
-    const loadInitialStats = async () => {
-      try {
-        console.log(`[SCOREBOARD] Initial: Starting eager load of stats for match ${currentMatch.id}`);
-        setStatsLoading(true);
-        
-        // First try to get stat logs and calculate stats from those
-        const logs = await getStatLogs(currentMatch.id);
-        console.log(`[SCOREBOARD] Initial: Got ${logs.length} stat logs directly`);
-        
-        if (logs.length > 0) {
-          // Calculate stats from logs
-          const calculatedStats: MatchStats = {};
-          
-          // Process each log to build up player stats
-          logs.forEach((log: StatLog) => {
+          // Process each log to accumulate stats
+          logs.forEach(log => {
             // Skip invalid logs
-            if (!log.playerId || !log.statName) {
-              console.warn(`[SCOREBOARD] Initial: Invalid log encountered:`, log);
-              return;
+            if (!log.playerId || !log.statName) return;
+            
+            // Initialize player stats if needed
+            if (!stats[log.playerId]) {
+              stats[log.playerId] = {
+                aces: 0,
+                serveErrors: 0,
+                spikes: 0,
+                spikeErrors: 0,
+                digs: 0,
+                blocks: 0,
+                netTouches: 0,
+                tips: 0,
+                dumps: 0,
+                footFaults: 0,
+                reaches: 0,
+                carries: 0
+              };
             }
             
-            if (!calculatedStats[log.playerId]) {
-              calculatedStats[log.playerId] = createEmptyPlayerStats();
-            }
-            
+            // Update the specific stat
             const statName = log.statName as keyof PlayerStats;
-            const currentValue = calculatedStats[log.playerId][statName] || 0;
-            calculatedStats[log.playerId][statName] = currentValue + log.value;
+            stats[log.playerId][statName] += log.value;
           });
           
-          console.log(`[SCOREBOARD] Initial: Calculated stats from logs:`, calculatedStats);
-          
-          if (Object.keys(calculatedStats).length > 0) {
-            setPlayerStats(calculatedStats);
-            setStatsLoading(false);
-            return; // Exit early if we have stats
+          console.log(`[SCOREBOARD] Processed stats for ${Object.keys(stats).length} players`);
+          setMatchStats(stats);
+        } catch (error) {
+          console.error(`[SCOREBOARD] Error processing logs:`, error);
+        }
+      } else {
+        // If no logs, try to fetch stats directly
+        const fetchDirectStats = async () => {
+          try {
+            const stats = await getMatchStats(currentMatch.id);
+            console.log(`[SCOREBOARD] Fetched direct stats:`, stats);
+            if (Object.keys(stats).length > 0) {
+              setMatchStats(stats);
+            }
+          } catch (error) {
+            console.error(`[SCOREBOARD] Error fetching direct stats:`, error);
           }
-        }
+        };
         
-        // Fallback to Firebase stats path
-        console.log(`[SCOREBOARD] Initial: No stats from logs, trying Firebase stats path`);
-        const stats = await getMatchStats(currentMatch.id);
-        console.log(`[SCOREBOARD] Initial: Firebase stats path returned:`, stats);
-        
-        if (Object.keys(stats).length > 0) {
-          setPlayerStats(stats);
-        } else {
-          console.warn(`[SCOREBOARD] Initial: All stats loading methods failed for match ${currentMatch.id}`);
-          setPlayerStats({});
-        }
-        
-        setStatsLoading(false);
-      } catch (error) {
-        console.error(`[SCOREBOARD] Error loading initial match stats:`, error);
-        setStatsLoading(false);
+        fetchDirectStats();
       }
-    };
-    
-    // Start eager loading of stats
-    loadInitialStats();
+      
+      setStatsLoading(false);
+    });
     
     return () => {
-      console.log(`[SCOREBOARD] Removing stat logs listener for match ID: ${currentMatch.id}`);
-      unsubscribeStatLogs();
+      console.log(`[SCOREBOARD] Removing stat listener for match ${currentMatch.id}`);
+      unsubscribe();
     };
-  }, [currentMatch, toast]);
+  }, [currentMatch]);
 
   const formatTime = (timeString: string) => {
     try {
@@ -287,7 +251,7 @@ const ScoreboardPage = () => {
   };
 
   return (
-    <section className="py-8">
+    <section className="py-8 bg-gray-50">
       <div className="container mx-auto px-4">
         {/* Court selector */}
         <div className="mb-6">
@@ -313,7 +277,10 @@ const ScoreboardPage = () => {
         </div>
 
         {isLoading ? (
-          <div className="text-center py-8">Loading scoreboard data...</div>
+          <div className="text-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+            <p>Loading scoreboard data...</p>
+          </div>
         ) : !currentMatch ? (
           <div className="bg-[hsl(var(--vb-dark-gray))] text-white rounded-lg shadow-md overflow-hidden">
             <div className="p-8 text-center">
@@ -323,7 +290,8 @@ const ScoreboardPage = () => {
           </div>
         ) : (
           <div>
-            <div className="bg-[hsl(var(--vb-dark-gray))] text-white rounded-lg shadow-md overflow-hidden">
+            {/* Match Scoreboard */}
+            <div className="bg-[hsl(var(--vb-dark-gray))] text-white rounded-lg shadow-md overflow-hidden mb-6">
               <div className="p-8 text-center">
                 <h3 className="text-2xl font-bold mb-6">Court {courtNumber}</h3>
                 <div className="flex justify-center items-center space-x-8">
@@ -348,58 +316,157 @@ const ScoreboardPage = () => {
             </div>
             
             {/* Player Stats Section */}
-            <div className="mt-8">
-              <h3 className="text-xl font-bold mb-4">Player Statistics</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Team A Players */}
-                <div>
-                  <h4 className="text-lg font-bold mb-3" style={{color: teamA?.teamColor}}>
-                    {teamA?.teamName || 'Team A'} Players
-                  </h4>
-                  <div className="grid grid-cols-1 gap-4">
-                    {playersA.map(player => (
-                      <div key={player.id} className="w-full">
-                        {/* Read-only player card for scoreboard with stats */}
-                        <ScoreboardStatCard 
-                          player={player}
-                          playerId={player.id}
-                          matchId={currentMatch.id}
-                          teamId={teamA?.id}
-                          stats={playerStats[player.id]}
-                          isLoading={statsLoading}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <div className="p-6">
+                <h3 className="text-lg font-semibold mb-4 flex items-center">
+                  <Activity className="w-5 h-5 mr-2" />
+                  Player Statistics
+                </h3>
                 
-                {/* Team B Players */}
-                <div>
-                  <h4 className="text-lg font-bold mb-3" style={{color: teamB?.teamColor}}>
-                    {teamB?.teamName || 'Team B'} Players
-                  </h4>
-                  <div className="grid grid-cols-1 gap-4">
-                    {playersB.map(player => (
-                      <div key={player.id} className="w-full">
-                        <ScoreboardStatCard 
-                          player={player}
-                          playerId={player.id}
-                          matchId={currentMatch.id}
-                          teamId={teamB?.id}
-                          stats={playerStats[player.id]}
-                          isLoading={statsLoading}
-                        />
-                      </div>
-                    ))}
+                {statsLoading ? (
+                  <div className="text-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                    <p>Loading player statistics...</p>
                   </div>
-                </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Team A Stats */}
+                    <div>
+                      <h4 
+                        className="text-md font-semibold mb-3 pb-2 border-b"
+                        style={{ color: teamA?.teamColor, borderColor: teamA?.teamColor }}
+                      >
+                        {teamA?.teamName || 'Team A'}
+                      </h4>
+                      <div className="space-y-4">
+                        {playersA.map(player => {
+                          const playerStats = matchStats[player.id] || {};
+                          
+                          // Calculate totals
+                          const totalEarnedPoints = (playerStats.aces || 0) + (playerStats.spikes || 0) + 
+                            (playerStats.blocks || 0) + (playerStats.digs || 0) + (playerStats.tips || 0) + 
+                            (playerStats.dumps || 0);
+                            
+                          const totalFaults = (playerStats.serveErrors || 0) + (playerStats.spikeErrors || 0) + 
+                            (playerStats.netTouches || 0) + (playerStats.footFaults || 0) + (playerStats.carries || 0) +
+                            (playerStats.reaches || 0);
+                          
+                          const hasStats = totalEarnedPoints > 0 || totalFaults > 0;
+                          
+                          return (
+                            <div key={player.id} className="border border-gray-200 rounded-lg p-4">
+                              <h5 className="font-semibold mb-2">{player.name}</h5>
+                              
+                              {hasStats ? (
+                                <>
+                                  <div className="flex space-x-2 mb-3">
+                                    <div className="px-2 py-1 bg-green-100 text-green-800 rounded-md text-xs font-medium">
+                                      Points: {totalEarnedPoints}
+                                    </div>
+                                    <div className="px-2 py-1 bg-red-100 text-red-800 rounded-md text-xs font-medium">
+                                      Faults: {totalFaults}
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="flex flex-wrap gap-2">
+                                    {Object.entries(playerStats).map(([key, value]) => {
+                                      if (value > 0) {
+                                        const statName = key as keyof PlayerStats;
+                                        return (
+                                          <div 
+                                            key={key} 
+                                            className={`flex items-center py-1 px-2 rounded text-white text-xs ${getStatCategoryColor(statName)}`}
+                                            title={`${statName}: ${value}`}
+                                          >
+                                            <span className="mr-1">{getStatEmoji(statName)}</span>
+                                            <span className="capitalize">{statName}: {value}</span>
+                                          </div>
+                                        );
+                                      }
+                                      return null;
+                                    })}
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="text-sm text-gray-500">No recorded stats for this player</div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    
+                    {/* Team B Stats */}
+                    <div>
+                      <h4 
+                        className="text-md font-semibold mb-3 pb-2 border-b"
+                        style={{ color: teamB?.teamColor, borderColor: teamB?.teamColor }}
+                      >
+                        {teamB?.teamName || 'Team B'}
+                      </h4>
+                      <div className="space-y-4">
+                        {playersB.map(player => {
+                          const playerStats = matchStats[player.id] || {};
+                          
+                          // Calculate totals
+                          const totalEarnedPoints = (playerStats.aces || 0) + (playerStats.spikes || 0) + 
+                            (playerStats.blocks || 0) + (playerStats.digs || 0) + (playerStats.tips || 0) + 
+                            (playerStats.dumps || 0);
+                            
+                          const totalFaults = (playerStats.serveErrors || 0) + (playerStats.spikeErrors || 0) + 
+                            (playerStats.netTouches || 0) + (playerStats.footFaults || 0) + (playerStats.carries || 0) +
+                            (playerStats.reaches || 0);
+                          
+                          const hasStats = totalEarnedPoints > 0 || totalFaults > 0;
+                          
+                          return (
+                            <div key={player.id} className="border border-gray-200 rounded-lg p-4">
+                              <h5 className="font-semibold mb-2">{player.name}</h5>
+                              
+                              {hasStats ? (
+                                <>
+                                  <div className="flex space-x-2 mb-3">
+                                    <div className="px-2 py-1 bg-green-100 text-green-800 rounded-md text-xs font-medium">
+                                      Points: {totalEarnedPoints}
+                                    </div>
+                                    <div className="px-2 py-1 bg-red-100 text-red-800 rounded-md text-xs font-medium">
+                                      Faults: {totalFaults}
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="flex flex-wrap gap-2">
+                                    {Object.entries(playerStats).map(([key, value]) => {
+                                      if (value > 0) {
+                                        const statName = key as keyof PlayerStats;
+                                        return (
+                                          <div 
+                                            key={key} 
+                                            className={`flex items-center py-1 px-2 rounded text-white text-xs ${getStatCategoryColor(statName)}`}
+                                            title={`${statName}: ${value}`}
+                                          >
+                                            <span className="mr-1">{getStatEmoji(statName)}</span>
+                                            <span className="capitalize">{statName}: {value}</span>
+                                          </div>
+                                        );
+                                      }
+                                      return null;
+                                    })}
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="text-sm text-gray-500">No recorded stats for this player</div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         )}
-
-
       </div>
     </section>
   );

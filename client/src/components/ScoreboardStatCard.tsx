@@ -8,6 +8,7 @@ interface ScoreboardStatCardProps {
   matchId: string;
   teamId?: string;
   stats?: PlayerStats; // Optional stats passed from parent
+  isLoading?: boolean; // Whether stats are being loaded
 }
 
 // Helper function to get emoji for stat type

@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getDatabase, ref, set, get, update, push, onValue, off, remove } from "firebase/database";
+import { getDatabase, ref, set, get, update, push, onValue, off, remove, child } from "firebase/database";
 import type { Player, Team, Match, PlayerStats, MatchStats } from "@shared/schema";
 
 // Type definition for StatLog with explicit ID field
@@ -725,6 +725,28 @@ export const listenToMatchStats = (
   const unsubscribe = onValue(matchStatsRef, (snapshot) => {
     const data = snapshot.val() || {};
     console.log(`Match stats received for match ID: ${matchId}:`, data);
+    
+    // Enhanced debug information
+    if (Object.keys(data).length === 0) {
+      console.log(`[IMPORTANT] No stats data found for match ID: ${matchId}`);
+      console.log(`Looking up all player stats manually for this match...`);
+      
+      // Attempt to do separate player stat lookups
+      const playerStatsRef = ref(database);
+      get(child(playerStatsRef, `stats/${matchId}`)).then((statsSnapshot) => {
+        if (statsSnapshot.exists()) {
+          const allStats = statsSnapshot.val();
+          console.log(`[DATA CHECK] Direct query found stats:`, allStats);
+        } else {
+          console.log(`[DATA CHECK] No stats found with direct query either. Path checked: stats/${matchId}`);
+        }
+      }).catch((error) => {
+        console.error(`[ERROR] Error checking stats path:`, error);
+      });
+    } else {
+      console.log(`[SUCCESS] Found ${Object.keys(data).length} player stats for match ID: ${matchId}`);
+    }
+    
     callback(data);
   }, (error) => {
     console.error(`Error in match stats listener for match ID: ${matchId}:`, error);

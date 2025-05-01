@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'wouter';
-import { listenToMatchesByCourtNumber, getTeamById, getPlayers, listenToMatchStats } from '@/lib/firebase';
+import { listenToMatchesByCourtNumber, getTeamById, getPlayers, getMatchStats, listenToStatLogs, type StatLog } from '@/lib/firebase';
 import type { Match, Team, Player, PlayerStats, MatchStats } from '@shared/schema';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -109,7 +109,7 @@ const ScoreboardPage = () => {
     setPlayersB(teamBPlayers);
   }, [teamA, teamB, allPlayers]);
   
-  // Listen for player stats when current match changes
+  // Load player stats when current match changes
   useEffect(() => {
     if (!currentMatch || !currentMatch.id) {
       // Clear player stats if no match is selected
@@ -117,32 +117,58 @@ const ScoreboardPage = () => {
       return;
     }
     
-    console.log(`[ScoreboardPage] Setting up stat listener for match ID: ${currentMatch.id}`);
+    console.log(`[ScoreboardPage] Loading match stats for match ID: ${currentMatch.id}`);
     
-    // Listen for all player stats at once using listenToMatchStats
-    // This gets all player stats for the entire match in one go
-    const unsubscribe = listenToMatchStats(currentMatch.id, (stats) => {
-      console.log(`[ScoreboardPage] Received match stats:`, stats);
+    // Set up a real-time listener for stat logs
+    // This will update the UI whenever a new stat is recorded
+    const unsubscribeStatLogs = listenToStatLogs(currentMatch.id, async (logs) => {
+      console.log(`[ScoreboardPage] Stat logs updated, refreshing match stats`);
       
-      // Debug output to help diagnose if stats are being received
-      if (Object.keys(stats).length === 0) {
-        console.log(`[ScoreboardPage] WARNING: No player stats received for match ${currentMatch.id}`);
-      } else {
-        console.log(`[ScoreboardPage] SUCCESS: Received stats for ${Object.keys(stats).length} players`);
-        // Log each player's stats that we received
-        Object.entries(stats).forEach(([playerId, playerStats]) => {
-          console.log(`Player ${playerId} stats:`, playerStats);
+      // When logs change, fetch the latest match stats
+      try {
+        const stats = await getMatchStats(currentMatch.id);
+        console.log(`[ScoreboardPage] Received match stats:`, stats);
+        
+        // Debug output to help diagnose if stats are being received
+        if (Object.keys(stats).length === 0) {
+          console.log(`[ScoreboardPage] WARNING: No player stats received for match ${currentMatch.id}`);
+        } else {
+          console.log(`[ScoreboardPage] SUCCESS: Received stats for ${Object.keys(stats).length} players`);
+          // Log each player's stats that we received
+          Object.entries(stats).forEach(([playerId, playerStats]) => {
+            console.log(`Player ${playerId} stats:`, playerStats);
+          });
+        }
+        
+        setPlayerStats(stats);
+      } catch (error) {
+        console.error(`[ScoreboardPage] Error fetching match stats:`, error);
+        toast({
+          title: "Error",
+          description: "Failed to load player statistics",
+          variant: "destructive",
         });
       }
-      
-      setPlayerStats(stats);
     });
     
-    return () => {
-      console.log(`[ScoreboardPage] Removing stat listener for match ID: ${currentMatch.id}`);
-      unsubscribe();
+    // Initial load of match stats
+    const loadInitialStats = async () => {
+      try {
+        const stats = await getMatchStats(currentMatch.id);
+        console.log(`[ScoreboardPage] Initial match stats:`, stats);
+        setPlayerStats(stats);
+      } catch (error) {
+        console.error(`[ScoreboardPage] Error loading initial match stats:`, error);
+      }
     };
-  }, [currentMatch]);
+    
+    loadInitialStats();
+    
+    return () => {
+      console.log(`[ScoreboardPage] Removing stat logs listener for match ID: ${currentMatch.id}`);
+      unsubscribeStatLogs();
+    };
+  }, [currentMatch, toast]);
 
   const formatTime = (timeString: string) => {
     try {

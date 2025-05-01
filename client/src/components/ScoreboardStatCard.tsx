@@ -42,10 +42,13 @@ const getStatCategoryColor = (statName: keyof PlayerStats): string => {
   }
 };
 
-const ScoreboardStatCard = ({ player, playerId, matchId, teamId, stats: propStats }: ScoreboardStatCardProps) => {
+const ScoreboardStatCard = ({ player, playerId, matchId, teamId, stats: propStats, isLoading: externalLoading }: ScoreboardStatCardProps) => {
   const [localStats, setLocalStats] = useState<PlayerStats>(createEmptyPlayerStats());
   const [teamColor, setTeamColor] = useState<string | null>(null);
-  const [isStatsLoading, setIsStatsLoading] = useState(propStats ? false : true);
+  const [internalLoading, setInternalLoading] = useState(propStats ? false : true);
+  
+  // Use external loading state if provided, otherwise use internal loading state
+  const isLoading = externalLoading !== undefined ? externalLoading : internalLoading;
   
   // If the component receives stats as a prop, use those - otherwise use the local state
   const stats = propStats || localStats;
@@ -54,23 +57,23 @@ const ScoreboardStatCard = ({ player, playerId, matchId, teamId, stats: propStat
   useEffect(() => {
     // If stats are provided as props, we don't need to fetch them
     if (propStats) {
-      setIsStatsLoading(false);
+      setInternalLoading(false);
       return;
     }
     
     if (!matchId || !playerId) {
       console.log('Missing matchId or playerId:', { matchId, playerId });
-      setIsStatsLoading(false);
+      setInternalLoading(false);
       return;
     }
     
-    setIsStatsLoading(true);
+    setInternalLoading(true);
     console.log(`ScoreboardStatCard: Setting up listener for match ${matchId}, player ${playerId}`);
     
     const unsubscribe = listenToPlayerStats(matchId, playerId, (playerStats) => {
       console.log(`ScoreboardStatCard: Received stats for ${playerId}:`, playerStats);
       setLocalStats(playerStats);
-      setIsStatsLoading(false);
+      setInternalLoading(false);
     });
     
     return () => unsubscribe();
@@ -106,7 +109,7 @@ const ScoreboardStatCard = ({ player, playerId, matchId, teamId, stats: propStat
         {player.name}
       </h5>
       
-      {isStatsLoading ? (
+      {isLoading ? (
         <div className="text-center py-2">
           <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></span>
           <span className="ml-2 text-sm text-gray-500">Loading stats...</span>

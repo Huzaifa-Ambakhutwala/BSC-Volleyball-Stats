@@ -20,6 +20,7 @@ const ScoreboardPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [allPlayers, setAllPlayers] = useState<Record<string, Player>>({});
   const [playerStats, setPlayerStats] = useState<MatchStats>({});
+  const [statsLoading, setStatsLoading] = useState(false);
   const { toast } = useToast();
 
   // Listen for matches on the specified court
@@ -114,18 +115,22 @@ const ScoreboardPage = () => {
     if (!currentMatch || !currentMatch.id) {
       // Clear player stats if no match is selected
       setPlayerStats({});
+      setStatsLoading(false);
       return;
     }
     
     console.log(`[ScoreboardPage] Loading match stats for match ID: ${currentMatch.id}`);
+    setStatsLoading(true);
     
     // Set up a real-time listener for stat logs
     // This will update the UI whenever a new stat is recorded
     const unsubscribeStatLogs = listenToStatLogs(currentMatch.id, async (logs) => {
       console.log(`[ScoreboardPage] Stat logs updated, refreshing match stats`);
+      console.log(`[ScoreboardPage] Received ${logs.length} stat logs:`, logs);
       
       // When logs change, fetch the latest match stats
       try {
+        setStatsLoading(true);
         const stats = await getMatchStats(currentMatch.id);
         console.log(`[ScoreboardPage] Received match stats:`, stats);
         
@@ -141,8 +146,10 @@ const ScoreboardPage = () => {
         }
         
         setPlayerStats(stats);
+        setStatsLoading(false);
       } catch (error) {
         console.error(`[ScoreboardPage] Error fetching match stats:`, error);
+        setStatsLoading(false);
         toast({
           title: "Error",
           description: "Failed to load player statistics",
@@ -154,11 +161,14 @@ const ScoreboardPage = () => {
     // Initial load of match stats
     const loadInitialStats = async () => {
       try {
+        setStatsLoading(true);
         const stats = await getMatchStats(currentMatch.id);
         console.log(`[ScoreboardPage] Initial match stats:`, stats);
         setPlayerStats(stats);
+        setStatsLoading(false);
       } catch (error) {
         console.error(`[ScoreboardPage] Error loading initial match stats:`, error);
+        setStatsLoading(false);
       }
     };
     
@@ -259,6 +269,7 @@ const ScoreboardPage = () => {
                           matchId={currentMatch.id}
                           teamId={teamA?.id}
                           stats={playerStats[player.id]}
+                          isLoading={statsLoading}
                         />
                       </div>
                     ))}
@@ -279,6 +290,7 @@ const ScoreboardPage = () => {
                           matchId={currentMatch.id}
                           teamId={teamB?.id}
                           stats={playerStats[player.id]}
+                          isLoading={statsLoading}
                         />
                       </div>
                     ))}

@@ -129,7 +129,7 @@ const StatTrackerPage = () => {
         toast({
           title: "No Matches Found",
           description: "Your team isn't assigned to track any matches. Please verify the match assignments with the administrator.",
-          variant: "warning",
+          variant: "destructive",
         });
         return;
       }

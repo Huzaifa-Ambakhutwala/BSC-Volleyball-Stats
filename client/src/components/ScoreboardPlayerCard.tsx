@@ -1,12 +1,19 @@
 import { useState, useEffect } from 'react';
 import type { Player, PlayerStats } from '@shared/schema';
-import { listenToPlayerStats, createEmptyPlayerStats, getTeamById } from '@/lib/firebase';
+import { 
+  listenToPlayerStats, 
+  createEmptyPlayerStats, 
+  getTeamById, 
+  listenToStatLogs,
+  type StatLog 
+} from '@/lib/firebase';
 
 interface ScoreboardPlayerCardProps {
   player: Player;
   playerId: string;
   matchId: string;
   teamId?: string;
+  stats?: PlayerStats; // Allow passing stats directly
 }
 
 // Helper function to get emoji for stat type
@@ -40,17 +47,66 @@ const getStatCategoryColor = (statName: keyof PlayerStats): string => {
   }
 };
 
-const ScoreboardPlayerCard = ({ player, playerId, matchId, teamId }: ScoreboardPlayerCardProps) => {
-  const [stats, setStats] = useState<PlayerStats>(createEmptyPlayerStats());
-  const [teamColor, setTeamColor] = useState<string>('#3B82F6'); // Default blue
+// Helper function to calculate stats from logs
+const calculateStatsFromLogs = (logs: StatLog[], playerId: string): PlayerStats => {
+  // Initialize empty stats
+  const calculatedStats = createEmptyPlayerStats();
   
+  // Filter logs for this player and aggregate stats
+  logs
+    .filter(log => log.playerId === playerId)
+    .forEach(log => {
+      const statName = log.statName as keyof PlayerStats;
+      calculatedStats[statName] = (calculatedStats[statName] || 0) + log.value;
+    });
+  
+  return calculatedStats;
+};
+
+const ScoreboardPlayerCard = ({ player, playerId, matchId, teamId, stats: propStats }: ScoreboardPlayerCardProps) => {
+  const [statsFromAPI, setStatsFromAPI] = useState<PlayerStats>(createEmptyPlayerStats());
+  const [statsFromLogs, setStatsFromLogs] = useState<PlayerStats>(createEmptyPlayerStats());
+  const [teamColor, setTeamColor] = useState<string>('#3B82F6'); // Default blue
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Use props stats if provided, otherwise use best available calculated stats
+  const stats = propStats || statsFromLogs || statsFromAPI;
+  
+  // Set up listener for stat logs - this is the most reliable source
   useEffect(() => {
-    const unsubscribe = listenToPlayerStats(matchId, playerId, (playerStats) => {
-      setStats(playerStats);
+    if (!matchId) return;
+    
+    console.log(`[ScoreboardCard] Setting up stat logs listener for player ${playerId} in match ${matchId}`);
+    setIsLoading(true);
+    
+    const unsubscribe = listenToStatLogs(matchId, (logs) => {
+      if (logs.length > 0) {
+        const playerLogs = logs.filter(log => log.playerId === playerId);
+        console.log(`[ScoreboardCard] Found ${playerLogs.length} logs for player ${playerId}`);
+        
+        // Calculate stats from logs
+        const calculated = calculateStatsFromLogs(logs, playerId);
+        setStatsFromLogs(calculated);
+      }
+      setIsLoading(false);
     });
     
     return () => unsubscribe();
   }, [matchId, playerId]);
+  
+  // Fallback to direct stats API
+  useEffect(() => {
+    if (propStats || !matchId || !playerId) return; // Skip if stats provided as props
+    
+    console.log(`[ScoreboardCard] Setting up player stats API listener as fallback`);
+    
+    const unsubscribe = listenToPlayerStats(matchId, playerId, (playerStats) => {
+      console.log(`[ScoreboardCard] Received direct stats for player ${playerId}:`, playerStats);
+      setStatsFromAPI(playerStats);
+    });
+    
+    return () => unsubscribe();
+  }, [matchId, playerId, propStats]);
   
   // Load team color if teamId is provided
   useEffect(() => {
@@ -64,8 +120,11 @@ const ScoreboardPlayerCard = ({ player, playerId, matchId, teamId }: ScoreboardP
   }, [teamId]);
   
   // Calculate total stats - only count earned points and faults, no neutral
-  const totalEarnedPoints = stats.aces + stats.spikes + stats.blocks + stats.tips + stats.dumps + stats.digs;
-  const totalFaults = stats.serveErrors + stats.spikeErrors + stats.netTouches + stats.footFaults + stats.carries + stats.reaches;
+  const totalEarnedPoints = (stats.aces || 0) + (stats.spikes || 0) + (stats.blocks || 0) + 
+    (stats.tips || 0) + (stats.dumps || 0) + (stats.digs || 0);
+  const totalFaults = (stats.serveErrors || 0) + (stats.spikeErrors || 0) + 
+    (stats.netTouches || 0) + (stats.footFaults || 0) + (stats.carries || 0) + 
+    (stats.reaches || 0);
   
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
@@ -80,34 +139,50 @@ const ScoreboardPlayerCard = ({ player, playerId, matchId, teamId }: ScoreboardP
         </div>
       </div>
       <div className="p-4">
-        {/* Stat circles display */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          {Object.entries(stats).map(([key, value]) => {
-            if (value > 0) {
-              const statName = key as keyof PlayerStats;
-              return (
-                <div 
-                  key={key} 
-                  className={`flex items-center justify-center rounded-full w-8 h-8 text-white ${getStatCategoryColor(statName)}`}
-                  title={`${statName}: ${value}`}
-                >
-                  <span className="text-xs">{getStatEmoji(statName)}</span>
-                </div>
-              );
-            }
-            return null;
-          })}
-        </div>
-        
-        {/* Stats summary */}
-        <div className="grid grid-cols-2 gap-2">
-          <div className="text-sm text-gray-600">Aces: <span className="font-semibold">{stats.aces}</span></div>
-          <div className="text-sm text-gray-600">Blocks: <span className="font-semibold">{stats.blocks}</span></div>
-          <div className="text-sm text-gray-600">Kills: <span className="font-semibold">{stats.spikes}</span></div>
-          <div className="text-sm text-gray-600">Digs: <span className="font-semibold">{stats.digs}</span></div>
-          <div className="text-sm text-gray-600">Tips: <span className="font-semibold">{stats.tips}</span></div>
-          <div className="text-sm text-gray-600">Errors: <span className="font-semibold">{totalFaults}</span></div>
-        </div>
+        {isLoading ? (
+          // Loading state
+          <div className="flex flex-col items-center justify-center py-4">
+            <div className="h-4 w-4 border-2 border-gray-200 border-t-gray-600 rounded-full animate-spin mb-2"></div>
+            <p className="text-sm text-gray-500">Loading stats...</p>
+          </div>
+        ) : totalEarnedPoints === 0 && totalFaults === 0 ? (
+          // No stats state
+          <div className="text-center py-3">
+            <p className="text-sm text-gray-500">No stats recorded yet</p>
+          </div>
+        ) : (
+          // Stats display
+          <>
+            {/* Stat circles display */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {Object.entries(stats).map(([key, value]) => {
+                if (value > 0) {
+                  const statName = key as keyof PlayerStats;
+                  return (
+                    <div 
+                      key={key} 
+                      className={`flex items-center justify-center rounded-full w-8 h-8 text-white ${getStatCategoryColor(statName)}`}
+                      title={`${statName}: ${value}`}
+                    >
+                      <span className="text-xs">{getStatEmoji(statName)}</span>
+                    </div>
+                  );
+                }
+                return null;
+              })}
+            </div>
+            
+            {/* Stats summary */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="text-sm text-gray-600">Aces: <span className="font-semibold">{stats.aces || 0}</span></div>
+              <div className="text-sm text-gray-600">Blocks: <span className="font-semibold">{stats.blocks || 0}</span></div>
+              <div className="text-sm text-gray-600">Kills: <span className="font-semibold">{stats.spikes || 0}</span></div>
+              <div className="text-sm text-gray-600">Digs: <span className="font-semibold">{stats.digs || 0}</span></div>
+              <div className="text-sm text-gray-600">Tips: <span className="font-semibold">{stats.tips || 0}</span></div>
+              <div className="text-sm text-gray-600">Errors: <span className="font-semibold">{totalFaults}</span></div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -1,0 +1,144 @@
+Thanks for the side-by-side comparison — this helps a lot.
+
+🔍 What we know:
+	•	✅ Your History Match Details page correctly pulls and displays player stats.
+	•	❌ Your Scoreboard page shows the match and score, but player stats show as “No recorded stats for this player.”
+
+⸻
+
+🎯 Goal:
+
+Replicate the exact working logic from the History page for pulling and displaying player stats, into the Scoreboard page.
+
+⸻
+
+✅ Root Cause
+
+The scoreboard page is likely:
+	1.	Not calling listenToPlayerStats(matchId) correctly, or…
+	2.	Not setting the returned playerStats in state, or…
+	3.	Not passing the playerStats[player.id] to the display component
+
+⸻
+
+✅ Here’s the step-by-step fix:
+
+🧠 Step 1: Check what works in the History Page
+
+Go to your working History component and locate something like:
+
+useEffect(() => {
+  const unsubscribe = listenToPlayerStats(matchId, (stats) => {
+    setPlayerStats(stats);
+  });
+  return () => unsubscribe();
+}, [matchId]);
+
+Make sure it’s using the match ID from route params or the selected match object.
+
+✅ Note what playerStats structure looks like:
+It should be something like:
+
+{
+  "playerId1": { spikes: 2, blocks: 1, spikeErrors: 1 },
+  "playerId2": { digs: 3, aces: 1 },
+}
+
+
+
+⸻
+
+🛠 Step 2: Apply that same logic in ScoreboardPage.tsx
+
+In ScoreboardPage.tsx, inside a useEffect block, add this:
+
+useEffect(() => {
+  if (!currentMatch?.id) return;
+
+  const unsubscribe = listenToPlayerStats(currentMatch.id, (stats) => {
+    setPlayerStats(stats);
+  });
+
+  return () => unsubscribe();
+}, [currentMatch]);
+
+✅ Make sure playerStats is already defined as state:
+
+const [playerStats, setPlayerStats] = useState<Record<string, PlayerStats>>({});
+
+
+
+⸻
+
+🧩 Step 3: Ensure You’re Passing the Stats to the Display
+
+Where you render each player stat card, make sure it looks like this:
+
+<ScoreboardStatCard
+  key={player.id}
+  player={player}
+  stats={playerStats[player.id]}
+/>
+
+Or if rendering inline:
+
+<div key={player.id}>
+  <h3>{player.name}</h3>
+  {playerStats[player.id] ? (
+    <>
+      <span>Spikes: {playerStats[player.id].spikes || 0}</span>
+      <span>Blocks: {playerStats[player.id].blocks || 0}</span>
+    </>
+  ) : (
+    <span>No recorded stats for this player</span>
+  )}
+</div>
+
+✅ This ensures each player stat is conditionally rendered if it exists.
+
+⸻
+
+🛡 Step 4: Add a Debug Console (Temporarily)
+
+To debug live:
+
+useEffect(() => {
+  if (!currentMatch?.id) return;
+
+  const unsubscribe = listenToPlayerStats(currentMatch.id, (stats) => {
+    console.log("📊 Stats received:", stats);
+    setPlayerStats(stats);
+  });
+
+  return () => unsubscribe();
+}, [currentMatch]);
+
+✅ If console shows stats, then you’re just not passing them correctly to the UI.
+
+⸻
+
+✅ Final Checklist
+
+Step	Check
+listenToPlayerStats(currentMatch.id) is called?	✅
+setPlayerStats is used?	✅
+playerStats[player.id] is used in JSX?	✅
+Debug console shows live stat data?	✅
+
+
+
+⸻
+
+📋 Replit Prompt to Fix It:
+
+My ScoreboardPage.tsx needs to display live player stats per match, just like the History Match Details page.
+Please do the following:
+	1.	Use listenToPlayerStats(currentMatch.id) inside a useEffect
+	2.	Update the state with setPlayerStats
+	3.	Confirm playerStats[player.id] is passed into each player’s display component
+	4.	If no stats exist, show “No recorded stats for this player”
+	5.	Match the layout/logic used in History page for visual consistency
+
+⸻
+
+Let me know if you want the exact ScoreboardStatCard component rewritten to match the clean stat visuals from the History page. I can generate that too 👊

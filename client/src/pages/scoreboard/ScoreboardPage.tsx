@@ -5,6 +5,7 @@ import type { Match, Team, Player, PlayerStats, MatchStats } from '@shared/schem
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import ScoreboardStatCard from '@/components/ScoreboardStatCard';
+import { Loader2 } from 'lucide-react';
 
 const ScoreboardPage = () => {
   const { courtId } = useParams<{ courtId: string }>();
@@ -118,9 +119,22 @@ const ScoreboardPage = () => {
     
     console.log(`[ScoreboardPage] Setting up stat listener for match ID: ${currentMatch.id}`);
     
-    // Listen for all player stats at once
+    // Listen for all player stats at once using listenToMatchStats
+    // This gets all player stats for the entire match in one go
     const unsubscribe = listenToMatchStats(currentMatch.id, (stats) => {
       console.log(`[ScoreboardPage] Received match stats:`, stats);
+      
+      // Debug output to help diagnose if stats are being received
+      if (Object.keys(stats).length === 0) {
+        console.log(`[ScoreboardPage] WARNING: No player stats received for match ${currentMatch.id}`);
+      } else {
+        console.log(`[ScoreboardPage] SUCCESS: Received stats for ${Object.keys(stats).length} players`);
+        // Log each player's stats that we received
+        Object.entries(stats).forEach(([playerId, playerStats]) => {
+          console.log(`Player ${playerId} stats:`, playerStats);
+        });
+      }
+      
       setPlayerStats(stats);
     });
     

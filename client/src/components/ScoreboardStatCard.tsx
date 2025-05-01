@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
 import type { Player, PlayerStats } from '@shared/schema';
-import { listenToPlayerStats, createEmptyPlayerStats, getTeamById } from '@/lib/firebase';
+import { 
+  listenToPlayerStats, 
+  createEmptyPlayerStats, 
+  getTeamById, 
+  listenToStatLogs,
+  type StatLog
+} from '@/lib/firebase';
 
 interface ScoreboardStatCardProps {
   player: Player;
@@ -42,18 +48,72 @@ const getStatCategoryColor = (statName: keyof PlayerStats): string => {
   }
 };
 
+// Helper function to calculate stats from logs
+const calculateStatsFromLogs = (logs: StatLog[], playerId: string): PlayerStats => {
+  console.log(`[STAT_CALC] Calculating stats for player ${playerId} from ${logs.length} logs`);
+  
+  // Filter logs for this player
+  const playerLogs = logs.filter(log => log.playerId === playerId);
+  
+  console.log(`[STAT_CALC] Found ${playerLogs.length} logs for this player`);
+  
+  // Initialize empty stats
+  const stats = createEmptyPlayerStats();
+  
+  // Aggregate stats from logs
+  playerLogs.forEach(log => {
+    if (log.statName && log.value) {
+      stats[log.statName] = (stats[log.statName] || 0) + log.value;
+    }
+  });
+  
+  console.log(`[STAT_CALC] Calculated stats:`, stats);
+  return stats;
+};
+
 const ScoreboardStatCard = ({ player, playerId, matchId, teamId, stats: propStats, isLoading: externalLoading }: ScoreboardStatCardProps) => {
   const [localStats, setLocalStats] = useState<PlayerStats>(createEmptyPlayerStats());
+  const [logsStats, setLogsStats] = useState<PlayerStats>(createEmptyPlayerStats());
   const [teamColor, setTeamColor] = useState<string | null>(null);
   const [internalLoading, setInternalLoading] = useState(propStats ? false : true);
+  const [logsLoading, setLogsLoading] = useState(true);
   
   // Use external loading state if provided, otherwise use internal loading state
-  const isLoading = externalLoading !== undefined ? externalLoading : internalLoading;
+  const isLoading = externalLoading !== undefined ? externalLoading : (internalLoading && logsLoading);
   
-  // If the component receives stats as a prop, use those - otherwise use the local state
-  const stats = propStats || localStats;
+  // If the component receives stats as a prop, use those - otherwise use the best available stats
+  // Priority: 1. propStats (parent provided), 2. logsStats (calculated from logs), 3. localStats (from Firebase stats path)
+  const stats = propStats || logsStats || localStats;
   
-  // Only set up the listener if stats weren't provided as props
+  // Set up listener for stat logs to calculate stats directly
+  useEffect(() => {
+    if (!matchId) {
+      console.log('[SCOREBOARD_STAT] Missing matchId for stat logs listener');
+      setLogsLoading(false);
+      return;
+    }
+    
+    console.log(`[SCOREBOARD_STAT] Setting up stat logs listener for match ${matchId}`);
+    setLogsLoading(true);
+    
+    const unsubscribe = listenToStatLogs(matchId, (logs) => {
+      console.log(`[SCOREBOARD_STAT] Received ${logs.length} stat logs for match ${matchId}`);
+      
+      if (logs.length > 0) {
+        // Calculate player stats from logs
+        const calculatedStats = calculateStatsFromLogs(logs, playerId);
+        setLogsStats(calculatedStats);
+      }
+      setLogsLoading(false);
+    });
+    
+    return () => {
+      console.log(`[SCOREBOARD_STAT] Removing stat logs listener for match ${matchId}`);
+      unsubscribe();
+    };
+  }, [matchId, playerId]);
+  
+  // Only set up the listener if stats weren't provided as props (backup)
   useEffect(() => {
     // If stats are provided as props, we don't need to fetch them
     if (propStats) {
@@ -62,21 +122,24 @@ const ScoreboardStatCard = ({ player, playerId, matchId, teamId, stats: propStat
     }
     
     if (!matchId || !playerId) {
-      console.log('Missing matchId or playerId:', { matchId, playerId });
+      console.log('[SCOREBOARD_STAT] Missing matchId or playerId:', { matchId, playerId });
       setInternalLoading(false);
       return;
     }
     
     setInternalLoading(true);
-    console.log(`ScoreboardStatCard: Setting up listener for match ${matchId}, player ${playerId}`);
+    console.log(`[SCOREBOARD_STAT] Setting up player stats listener for match ${matchId}, player ${playerId}`);
     
     const unsubscribe = listenToPlayerStats(matchId, playerId, (playerStats) => {
-      console.log(`ScoreboardStatCard: Received stats for ${playerId}:`, playerStats);
+      console.log(`[SCOREBOARD_STAT] Received stats for ${playerId}:`, playerStats);
       setLocalStats(playerStats);
       setInternalLoading(false);
     });
     
-    return () => unsubscribe();
+    return () => {
+      console.log(`[SCOREBOARD_STAT] Removing player stats listener for match ${matchId}, player ${playerId}`);
+      unsubscribe();
+    }
   }, [matchId, playerId, propStats]);
   
   // Load team color if teamId is provided

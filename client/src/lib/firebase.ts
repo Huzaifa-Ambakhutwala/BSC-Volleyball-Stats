@@ -597,24 +597,46 @@ export const updatePlayerStat = async (
   value: number,
   category: 'earned' | 'fault' = 'earned'
 ) => {
+  console.log(`[UPDATE_STAT] Starting stat update for match ${matchId}, player ${playerId}, stat ${statName}`);
+  
   // Get player and team info for the log
   const playerRef = ref(database, `players/${playerId}`);
   const playerSnapshot = await get(playerRef);
   const player = playerSnapshot.val();
   
-  // Update player stats
+  if (!player) {
+    console.error(`[UPDATE_STAT] CRITICAL ERROR: Player with ID ${playerId} not found`);
+    throw new Error(`Player with ID ${playerId} not found`);
+  }
+  
+  console.log(`[UPDATE_STAT] Found player:`, player);
+  
+  // Update player stats in Firebase
   const playerStatsRef = ref(database, `stats/${matchId}/${playerId}`);
   const statsSnapshot = await get(playerStatsRef);
   const currentStats = statsSnapshot.val() || createEmptyPlayerStats();
   
+  console.log(`[UPDATE_STAT] Current stats for player:`, currentStats);
+  
+  // Calculate new stat value
+  const newStatValue = (currentStats[statName] || 0) + value;
+  console.log(`[UPDATE_STAT] Updating ${statName} from ${currentStats[statName] || 0} to ${newStatValue}`);
+  
   await update(playerStatsRef, {
-    [statName]: (currentStats[statName] || 0) + value
+    [statName]: newStatValue
   });
   
   // Find which team this player belongs to and update score
   const matchRef = ref(database, `matches/${matchId}`);
   const matchSnapshot = await get(matchRef);
   const match = matchSnapshot.val() as Match;
+  
+  if (!match) {
+    console.error(`[UPDATE_STAT] CRITICAL ERROR: Match with ID ${matchId} not found`);
+    throw new Error(`Match with ID ${matchId} not found`);
+  }
+  
+  console.log(`[UPDATE_STAT] Found match:`, match);
   
   // Determine player's team
   let playerTeamId = '';
@@ -626,20 +648,28 @@ export const updatePlayerStat = async (
   const teamASnapshot = await get(teamARef);
   const teamA = teamASnapshot.val();
   
+  console.log(`[UPDATE_STAT] Team A:`, teamA);
+  
   if (teamA && teamA.players && teamA.players.includes(playerId)) {
     playerTeamId = match.teamA;
     playerTeamName = teamA.teamName;
     isTeamA = true;
+    console.log(`[UPDATE_STAT] Player belongs to Team A (${teamA.teamName})`);
   } else {
     // Check team B players
     const teamBRef = ref(database, `teams/${match.teamB}`);
     const teamBSnapshot = await get(teamBRef);
     const teamB = teamBSnapshot.val();
     
+    console.log(`[UPDATE_STAT] Team B:`, teamB);
+    
     if (teamB && teamB.players && teamB.players.includes(playerId)) {
       playerTeamId = match.teamB;
       playerTeamName = teamB.teamName;
       isTeamA = false;
+      console.log(`[UPDATE_STAT] Player belongs to Team B (${teamB.teamName})`);
+    } else {
+      console.warn(`[UPDATE_STAT] CRITICAL WARNING: Player ${playerId} not found in either team for match ${matchId}`);
     }
   }
   
@@ -647,25 +677,31 @@ export const updatePlayerStat = async (
   if (category === 'earned' && isTeamA) {
     // Team A earned a point
     await updateMatchScore(matchId, match.scoreA + 1, match.scoreB);
+    console.log(`[UPDATE_STAT] Team A earned a point, score updated to ${match.scoreA + 1}-${match.scoreB}`);
   } else if (category === 'earned' && !isTeamA) {
     // Team B earned a point
     await updateMatchScore(matchId, match.scoreA, match.scoreB + 1);
+    console.log(`[UPDATE_STAT] Team B earned a point, score updated to ${match.scoreA}-${match.scoreB + 1}`);
   } else if (category === 'fault' && isTeamA) {
     // Team A fault gives point to Team B
     await updateMatchScore(matchId, match.scoreA, match.scoreB + 1);
+    console.log(`[UPDATE_STAT] Team A fault, point to Team B, score updated to ${match.scoreA}-${match.scoreB + 1}`);
   } else if (category === 'fault' && !isTeamA) {
     // Team B fault gives point to Team A
     await updateMatchScore(matchId, match.scoreA + 1, match.scoreB);
+    console.log(`[UPDATE_STAT] Team B fault, point to Team A, score updated to ${match.scoreA + 1}-${match.scoreB}`);
   }
   
-  // Log the stat action
+  // Create and save the stat log
   const statLogsRef = ref(database, `statLogs/${matchId}`);
   const newLogRef = push(statLogsRef);
+  const logId = newLogRef.key || '';
+  
   const log: StatLog = {
-    id: newLogRef.key || '',
+    id: logId,
     matchId,
     playerId,
-    playerName: player ? player.name : 'Unknown Player',
+    playerName: player.name,
     teamId: playerTeamId,
     teamName: playerTeamName,
     statName,
@@ -674,8 +710,27 @@ export const updatePlayerStat = async (
     category
   };
   
-  await set(newLogRef, log);
-  return log;
+  console.log(`[UPDATE_STAT] Creating log entry:`, log);
+  
+  try {
+    await set(newLogRef, log);
+    console.log(`[UPDATE_STAT] Successfully created log with ID ${logId}`);
+    
+    // Verify the log was saved
+    const verifyLogRef = ref(database, `statLogs/${matchId}/${logId}`);
+    const verifySnapshot = await get(verifyLogRef);
+    
+    if (verifySnapshot.exists()) {
+      console.log(`[UPDATE_STAT] Verified log exists in Firebase`);
+    } else {
+      console.error(`[UPDATE_STAT] CRITICAL ERROR: Log verification failed, log not found`);
+    }
+    
+    return log;
+  } catch (error) {
+    console.error(`[UPDATE_STAT] Error saving log:`, error);
+    throw error;
+  }
 };
 
 export const getPlayerStats = async (matchId: string, playerId: string): Promise<PlayerStats> => {
@@ -776,10 +831,25 @@ export const getStatLogs = async (matchId: string): Promise<StatLog[]> => {
 
 export const listenToStatLogs = (matchId: string, callback: (logs: StatLog[]) => void) => {
   const logsRef = ref(database, `statLogs/${matchId}`);
-  console.log(`Setting up stat logs listener for match ID: ${matchId}`);
+  console.log(`[STAT_LOGS] Setting up stat logs listener for match ID: ${matchId}`);
+  
+  // First, do a direct check to see if logs exist for this match
+  get(logsRef).then(directSnapshot => {
+    const directLogs = directSnapshot.val();
+    if (!directLogs) {
+      console.warn(`[STAT_LOGS] WARNING: Direct check found NO logs for match ${matchId}`);
+    } else {
+      console.log(`[STAT_LOGS] Direct check found ${Object.keys(directLogs).length} logs for match ${matchId}`);
+    }
+  }).catch(error => {
+    console.error(`[STAT_LOGS] Error during direct check:`, error);
+  });
   
   const unsubscribe = onValue(logsRef, (snapshot) => {
     const logs = snapshot.val() || {};
+    
+    // Log the raw data for debugging
+    console.log(`[STAT_LOGS] Raw logs data for match ID: ${matchId}:`, logs);
     
     // Convert to array and sort by timestamp (newest first)
     const logArray = Object.entries(logs)
@@ -789,14 +859,27 @@ export const listenToStatLogs = (matchId: string, callback: (logs: StatLog[]) =>
       }))
       .sort((a, b) => b.timestamp - a.timestamp);
     
-    console.log(`Stat logs received for match ID: ${matchId}:`, logArray);
+    console.log(`[STAT_LOGS] Processed ${logArray.length} stat logs for match ID: ${matchId}`);
+    
+    // Debug individual logs if available
+    if (logArray.length > 0) {
+      console.log(`[STAT_LOGS] First log:`, logArray[0]);
+      
+      // Check for any potential issues with the log entries
+      logArray.forEach((log, index) => {
+        if (!log.playerId || !log.statName || log.value === undefined) {
+          console.warn(`[STAT_LOGS] Malformed log at index ${index}:`, log);
+        }
+      });
+    }
+    
     callback(logArray);
   }, (error) => {
-    console.error(`Error in stat logs listener for match ID: ${matchId}:`, error);
+    console.error(`[STAT_LOGS] Error in listener for match ID: ${matchId}:`, error);
   });
   
   return () => {
-    console.log(`Removing stat logs listener for match ID: ${matchId}`);
+    console.log(`[STAT_LOGS] Removing stat logs listener for match ID: ${matchId}`);
     unsubscribe();
   };
 };

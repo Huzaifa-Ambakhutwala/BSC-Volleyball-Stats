@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'wouter';
-import { listenToMatchesByCourtNumber, getTeamById, getPlayers, listenToPlayerStats } from '@/lib/firebase';
-import type { Match, Team, Player, PlayerStats } from '@shared/schema';
+import { listenToMatchesByCourtNumber, getTeamById, getPlayers, listenToMatchStats } from '@/lib/firebase';
+import type { Match, Team, Player, PlayerStats, MatchStats } from '@shared/schema';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import ScoreboardStatCard from '@/components/ScoreboardStatCard';
@@ -18,6 +18,7 @@ const ScoreboardPage = () => {
   const [playersB, setPlayersB] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [allPlayers, setAllPlayers] = useState<Record<string, Player>>({});
+  const [playerStats, setPlayerStats] = useState<MatchStats>({});
   const { toast } = useToast();
 
   // Listen for matches on the specified court
@@ -106,6 +107,28 @@ const ScoreboardPage = () => {
     setPlayersA(teamAPlayers);
     setPlayersB(teamBPlayers);
   }, [teamA, teamB, allPlayers]);
+  
+  // Listen for player stats when current match changes
+  useEffect(() => {
+    if (!currentMatch || !currentMatch.id) {
+      // Clear player stats if no match is selected
+      setPlayerStats({});
+      return;
+    }
+    
+    console.log(`[ScoreboardPage] Setting up stat listener for match ID: ${currentMatch.id}`);
+    
+    // Listen for all player stats at once
+    const unsubscribe = listenToMatchStats(currentMatch.id, (stats) => {
+      console.log(`[ScoreboardPage] Received match stats:`, stats);
+      setPlayerStats(stats);
+    });
+    
+    return () => {
+      console.log(`[ScoreboardPage] Removing stat listener for match ID: ${currentMatch.id}`);
+      unsubscribe();
+    };
+  }, [currentMatch]);
 
   const formatTime = (timeString: string) => {
     try {
@@ -189,12 +212,13 @@ const ScoreboardPage = () => {
                   <div className="grid grid-cols-1 gap-4">
                     {playersA.map(player => (
                       <div key={player.id} className="w-full">
-                        {/* Read-only player card for scoreboard */}
+                        {/* Read-only player card for scoreboard with stats */}
                         <ScoreboardStatCard 
                           player={player}
                           playerId={player.id}
                           matchId={currentMatch.id}
                           teamId={teamA?.id}
+                          stats={playerStats[player.id]}
                         />
                       </div>
                     ))}
@@ -214,6 +238,7 @@ const ScoreboardPage = () => {
                           playerId={player.id}
                           matchId={currentMatch.id}
                           teamId={teamB?.id}
+                          stats={playerStats[player.id]}
                         />
                       </div>
                     ))}

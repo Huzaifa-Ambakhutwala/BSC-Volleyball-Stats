@@ -142,7 +142,7 @@ const ScoreboardPage = () => {
     loadPlayers();
   }, [toast]);
 
-  // Filter players for each team
+  // Filter players for each team - MODIFIED TO PRESERVE FIREBASE IDs
   useEffect(() => {
     if (!teamA || !teamB || !allPlayers || Object.keys(allPlayers).length === 0) {
       setPlayersA([]);
@@ -152,16 +152,42 @@ const ScoreboardPage = () => {
 
     console.log(`[SCOREBOARD] Filtering players for teams`);
     
-    const teamAPlayers = teamA.players
-      .map(playerId => allPlayers[playerId])
-      .filter(Boolean);
+    // Create new arrays where each player object includes its Firebase ID
+    const teamAPlayers: Player[] = [];
+    const teamBPlayers: Player[] = [];
+    
+    // Process Team A players
+    teamA.players.forEach(playerId => {
+      // Get the player data
+      const playerData = allPlayers[playerId];
+      if (!playerData) return;
       
-    const teamBPlayers = teamB.players
-      .map(playerId => allPlayers[playerId])
-      .filter(Boolean);
+      // Create a Player object with the Firebase ID
+      teamAPlayers.push({
+        ...playerData,
+        id: playerId // Explicitly set the ID to the Firebase ID
+      });
+    });
+    
+    // Process Team B players
+    teamB.players.forEach(playerId => {
+      // Get the player data
+      const playerData = allPlayers[playerId];
+      if (!playerData) return;
+      
+      // Create a Player object with the Firebase ID
+      teamBPlayers.push({
+        ...playerData,
+        id: playerId // Explicitly set the ID to the Firebase ID
+      });
+    });
 
     console.log(`[SCOREBOARD] Team A has ${teamAPlayers.length} players`);
     console.log(`[SCOREBOARD] Team B has ${teamBPlayers.length} players`);
+    
+    // Log the player IDs to confirm they are properly set
+    console.log(`[SCOREBOARD] Team A player IDs:`, teamAPlayers.map(p => p.id));
+    console.log(`[SCOREBOARD] Team B player IDs:`, teamBPlayers.map(p => p.id));
     
     setPlayersA(teamAPlayers);
     setPlayersB(teamBPlayers);
@@ -200,8 +226,21 @@ const ScoreboardPage = () => {
           return;
         }
         
-        // Initialize this player's stats object
-        cleanedStats[playerId] = {};
+        // Initialize this player's stats object with default values to satisfy the type
+        cleanedStats[playerId] = {
+          aces: 0,
+          serveErrors: 0,
+          spikes: 0,
+          spikeErrors: 0,
+          digs: 0,
+          blocks: 0,
+          netTouches: 0,
+          tips: 0,
+          dumps: 0,
+          footFaults: 0,
+          reaches: 0,
+          carries: 0
+        };
         
         // Copy all valid stat values
         Object.entries(playerStats).forEach(([statName, value]) => {
@@ -341,6 +380,21 @@ const ScoreboardPage = () => {
                       </h4>
                       <div className="space-y-4">
                         {playersA.map(player => {
+                          // Print player ID for debugging
+                          console.log(`[DEBUG-PLAYER-ID] Team A player: ${player.name}, ID: ${player.id}`);
+                          
+                          // Check if this player ID exists in the stats
+                          console.log(`[STATS-CHECK] Player ${player.id} has stats:`, !!matchStatsData[player.id]);
+                          
+                          // Hard-code a temporary test with the IDs from our logs
+                          const knownStatsIds = ["-OP2UkL0-hoG-HnZYJlU", "-OP2UkP00FgMO0IqPgR2", "-OP2UkrEwTsLlzAfKkPv", 
+                                                "-OP2UktLuETRCYgo3z0E", "-OP2UktusIt0eOLwnIrI", "-OP2UkvC167jMXB_qvOZ"];
+                          
+                          // See if player.id matches any known ID with stats
+                          const isKnownId = knownStatsIds.includes(player.id);
+                          console.log(`[KNOWN-ID-CHECK] Player ${player.id} is in known IDs: ${isKnownId}`);
+                          
+                          // Get stats from matchStatsData
                           const playerData = matchStatsData[player.id] || {};
                           
                           // Calculate totals
@@ -354,9 +408,20 @@ const ScoreboardPage = () => {
                           
                           const hasStats = totalEarnedPoints > 0 || totalFaults > 0;
                           
+                          // Log our findings
+                          console.log(`[STATS-CALC] Player ${player.id}: hasStats=${hasStats}, earnedPoints=${totalEarnedPoints}, faults=${totalFaults}`);
+                          
                           return (
                             <div key={player.id} className="border border-gray-200 rounded-lg p-4">
-                              <h5 className="font-semibold mb-2">{player.name}</h5>
+                              <h5 className="font-semibold mb-2">
+                                {player.name}
+                                {isKnownId && <span className="text-xs text-blue-600 ml-1">(Has Firebase Stats)</span>}
+                              </h5>
+                              
+                              {/* Debug info always visible */}
+                              <div className="text-xs text-gray-500 mb-2">
+                                ID: {player.id}
+                              </div>
                               
                               {hasStats ? (
                                 <>
@@ -407,6 +472,21 @@ const ScoreboardPage = () => {
                       </h4>
                       <div className="space-y-4">
                         {playersB.map(player => {
+                          // Print player ID for debugging
+                          console.log(`[DEBUG-PLAYER-ID] Team B player: ${player.name}, ID: ${player.id}`);
+                          
+                          // Check if this player ID exists in the stats
+                          console.log(`[STATS-CHECK] Player ${player.id} has stats:`, !!matchStatsData[player.id]);
+                          
+                          // Hard-code a temporary test with the IDs from our logs
+                          const knownStatsIds = ["-OP2UkL0-hoG-HnZYJlU", "-OP2UkP00FgMO0IqPgR2", "-OP2UkrEwTsLlzAfKkPv", 
+                                                "-OP2UktLuETRCYgo3z0E", "-OP2UktusIt0eOLwnIrI", "-OP2UkvC167jMXB_qvOZ"];
+                          
+                          // See if player.id matches any known ID with stats
+                          const isKnownId = knownStatsIds.includes(player.id);
+                          console.log(`[KNOWN-ID-CHECK] Player ${player.id} is in known IDs: ${isKnownId}`);
+                          
+                          // Get stats from matchStatsData
                           const playerData = matchStatsData[player.id] || {};
                           
                           // Calculate totals
@@ -420,9 +500,20 @@ const ScoreboardPage = () => {
                           
                           const hasStats = totalEarnedPoints > 0 || totalFaults > 0;
                           
+                          // Log our findings
+                          console.log(`[STATS-CALC] Player ${player.id}: hasStats=${hasStats}, earnedPoints=${totalEarnedPoints}, faults=${totalFaults}`);
+                          
                           return (
                             <div key={player.id} className="border border-gray-200 rounded-lg p-4">
-                              <h5 className="font-semibold mb-2">{player.name}</h5>
+                              <h5 className="font-semibold mb-2">
+                                {player.name}
+                                {isKnownId && <span className="text-xs text-blue-600 ml-1">(Has Firebase Stats)</span>}
+                              </h5>
+                              
+                              {/* Debug info always visible */}
+                              <div className="text-xs text-gray-500 mb-2">
+                                ID: {player.id}
+                              </div>
                               
                               {hasStats ? (
                                 <>

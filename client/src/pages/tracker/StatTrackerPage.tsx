@@ -74,20 +74,23 @@ const StatTrackerPage = () => {
 
   // Load assigned matches
   useEffect(() => {
-    if (!trackerUser) {
-      console.log("No tracker user found in context, cannot load matches");
+    // Use trackerUser from context or get it directly from localStorage
+    const currentUser = trackerUser || getTrackerUser();
+    
+    if (!currentUser) {
+      console.log("No tracker user found in context or localStorage, cannot load matches");
       setIsLoading(false);
       return;
     }
     
-    console.log("[StatTrackerPage] Loading matches for team ID:", trackerUser.teamId);
-    console.log("[StatTrackerPage] IMPORTANT - Team Context:", trackerUser);
+    console.log("[StatTrackerPage] Loading matches for team ID:", currentUser.teamId);
+    console.log("[StatTrackerPage] IMPORTANT - Team data:", currentUser);
     
     // Set loading to true to show loading state
     setIsLoading(true);
     
     // Force direct match lookup first to ensure we have matches
-    getMatchesForTracker(trackerUser.teamId).then((directMatches: Record<string, Match>) => {
+    getMatchesForTracker(currentUser.teamId).then((directMatches: Record<string, Match>) => {
       console.log("[StatTrackerPage] Direct database check found matches:", directMatches);
       
       // Immediately update matches if found
@@ -102,14 +105,18 @@ const StatTrackerPage = () => {
           setSelectedMatchId(firstMatchId);
         }
       } else {
-        console.log("[StatTrackerPage] Warning: No matches found directly in database for team", trackerUser.teamId);
+        console.log("[StatTrackerPage] Warning: No matches found directly in database for team", currentUser.teamId);
+        
+        // Check for potential issues
+        console.log("[StatTrackerPage] DEBUG - Team ID Type:", typeof currentUser.teamId);
+        console.log("[StatTrackerPage] DEBUG - Team ID Value:", currentUser.teamId);
       }
     }).catch((err: Error) => {
       console.error("[StatTrackerPage] Error in direct match check:", err);
     });
     
     // Set up real-time listener for ongoing updates
-    const unsubscribe = listenToMatchesForTracker(trackerUser.teamId, (matchesData) => {
+    const unsubscribe = listenToMatchesForTracker(currentUser.teamId, (matchesData) => {
       console.log("[StatTrackerPage] Received matches data from real-time listener:", matchesData);
       
       if (Object.keys(matchesData).length === 0) {
@@ -117,6 +124,13 @@ const StatTrackerPage = () => {
         // Still update state to empty if nothing found
         setMatches({});
         setIsLoading(false);
+        
+        // Alert the user if no matches found
+        toast({
+          title: "No Matches Found",
+          description: "Your team isn't assigned to track any matches. Please verify the match assignments with the administrator.",
+          variant: "warning",
+        });
         return;
       }
       
@@ -155,7 +169,7 @@ const StatTrackerPage = () => {
       unsubscribe();
       clearTimeout(timeoutId);
     };
-  }, [toast, trackerUser]);
+  }, [toast, trackerUser, selectedMatchId]);
 
   // Load all players
   useEffect(() => {

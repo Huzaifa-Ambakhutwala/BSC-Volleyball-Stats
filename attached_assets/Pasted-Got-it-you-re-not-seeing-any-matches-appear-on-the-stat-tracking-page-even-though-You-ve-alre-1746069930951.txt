@@ -1,0 +1,114 @@
+Got it — you’re not seeing any matches appear on the stat tracking page, even though:
+	•	You’ve already created matches
+	•	They’re assigned to specific courts/teams
+	•	You expect stat trackers to see and select them
+
+⸻
+
+✅ Let’s Debug This Step-by-Step:
+
+1. Is listenToMatchesByCourtNumber() or similar function being used in the stat tracker?
+
+Check your stat tracking page. It should have something like:
+
+useEffect(() => {
+  const unsubscribe = listenToMatchesByCourtNumber(courtNumber, (matchesByCourtNumber) => {
+    // Update local state with matches
+  });
+  return () => unsubscribe();
+}, [courtNumber]);
+
+Or if you’re not filtering by court and instead want all matches, it should use:
+
+listenToAllMatches((matchList) => setMatches(matchList));
+
+✅ If your stat trackers should see all matches, make sure you are not filtering by court ID unless needed.
+
+⸻
+
+2. Check Match Structure in Firebase
+
+Open [Firebase Console → Realtime Database] and confirm:
+	•	Matches exist under /matches/{matchID}
+	•	Each match has fields like:
+	•	courtNumber, teamA, teamB, startTime
+	•	(Optional: status: "scheduled" or "in-progress")
+
+✅ Make sure match data is complete and readable by the client app.
+
+⸻
+
+3. Check if useEffect is properly setting state
+
+Make sure your match listener code actually sets state:
+
+const [matches, setMatches] = useState<Match[]>([]);
+
+useEffect(() => {
+  const unsubscribe = listenToAllMatches((matchList) => {
+    setMatches(matchList);
+  });
+
+  return () => unsubscribe();
+}, []);
+
+✅ Confirm the UI uses matches.map(...) and not some stale state or empty array.
+
+⸻
+
+4. Verify Match Filtering Logic in UI
+
+Sometimes you’re filtering out matches unintentionally:
+
+const visibleMatches = matches.filter(m => m.status === 'in-progress');
+
+❌ This would hide all matches unless the status is exactly "in-progress".
+
+✅ Temporarily remove filters to debug:
+
+{matches.map((match) => (
+  <div key={match.id}>{match.teamA} vs {match.teamB}</div>
+))}
+
+
+
+⸻
+
+5. Check Firebase Read Permissions
+
+Make sure your Firebase Realtime DB rules allow public read (for now):
+
+{
+  "rules": {
+    ".read": true,
+    ".write": true
+  }
+}
+
+If you’ve restricted access, the stat tracker may not be able to fetch anything.
+
+✅ Try temporarily loosening rules to test.
+
+⸻
+
+✅ Quick Checklist:
+
+Item	Check
+Firebase has matches under /matches	✅
+Stat tracking page is calling correct Firebase listener	✅
+Listener is setting state (setMatches)	✅
+UI is mapping over matches and not filtering incorrectly	✅
+Firebase rules allow read	✅
+
+
+
+⸻
+
+📣 Next Step:
+
+Would you like to:
+	•	Share the code for the stat tracking page?
+	•	Let me review the listener function (listenToMatches...)?
+	•	Or confirm Firebase structure via screenshot?
+
+I can help line-by-line once you send one of those. 👊

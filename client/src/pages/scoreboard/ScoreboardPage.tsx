@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'wouter';
-import { listenToMatchesByCourtNumber, getTeamById, getPlayers, getMatchStats, listenToStatLogs, type StatLog } from '@/lib/firebase';
+import { listenToMatchesByCourtNumber, getTeamById, getPlayers, getMatchStats, listenToStatLogs, getStatLogs, type StatLog, createEmptyPlayerStats } from '@/lib/firebase';
 import type { Match, Team, Player, PlayerStats, MatchStats } from '@shared/schema';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -128,27 +128,61 @@ const ScoreboardPage = () => {
       console.log(`[ScoreboardPage] Stat logs updated, refreshing match stats`);
       console.log(`[ScoreboardPage] Received ${logs.length} stat logs:`, logs);
       
-      // When logs change, fetch the latest match stats
       try {
         setStatsLoading(true);
-        const stats = await getMatchStats(currentMatch.id);
-        console.log(`[ScoreboardPage] Received match stats:`, stats);
         
-        // Debug output to help diagnose if stats are being received
-        if (Object.keys(stats).length === 0) {
-          console.log(`[ScoreboardPage] WARNING: No player stats received for match ${currentMatch.id}`);
+        // IMPROVEMENT: Calculate stats directly from logs instead of relying on Firebase stats path
+        // This ensures we always have the most up-to-date stats even if the Firebase stats path isn't updating
+        const calculatedStats: MatchStats = {};
+        
+        // Process each log to build up player stats
+        logs.forEach((log: StatLog) => {
+          // Initialize player stats if this is the first log for this player
+          if (!calculatedStats[log.playerId]) {
+            calculatedStats[log.playerId] = createEmptyPlayerStats();
+          }
+          
+          // Update the specific stat from the log
+          const statName = log.statName as keyof PlayerStats;
+          const currentValue = calculatedStats[log.playerId][statName] || 0;
+          calculatedStats[log.playerId][statName] = currentValue + log.value;
+        });
+        
+        console.log(`[ScoreboardPage] Calculated player stats from logs:`, calculatedStats);
+        
+        // Debug output to help diagnose if stats are being calculated
+        if (Object.keys(calculatedStats).length === 0) {
+          console.log(`[ScoreboardPage] WARNING: No player stats calculated for match ${currentMatch.id}`);
+          
+          // As a fallback, try to fetch from Firebase stats path
+          try {
+            const stats = await getMatchStats(currentMatch.id);
+            console.log(`[ScoreboardPage] Attempting fallback to Firebase stats:`, stats);
+            
+            if (Object.keys(stats).length > 0) {
+              console.log(`[ScoreboardPage] SUCCESS: Fetched stats from Firebase as fallback`);
+              setPlayerStats(stats);
+            } else {
+              console.log(`[ScoreboardPage] ALERT: Both calculation and Firebase fetch returned no stats`);
+              setPlayerStats({});
+            }
+          } catch (error) {
+            console.error(`[ScoreboardPage] Fallback to Firebase stats failed:`, error);
+            setPlayerStats({});
+          }
         } else {
-          console.log(`[ScoreboardPage] SUCCESS: Received stats for ${Object.keys(stats).length} players`);
-          // Log each player's stats that we received
-          Object.entries(stats).forEach(([playerId, playerStats]) => {
-            console.log(`Player ${playerId} stats:`, playerStats);
+          console.log(`[ScoreboardPage] SUCCESS: Calculated stats for ${Object.keys(calculatedStats).length} players`);
+          // Log each player's stats that we calculated
+          Object.entries(calculatedStats).forEach(([playerId, playerStats]) => {
+            console.log(`Player ${playerId} calculated stats:`, playerStats);
           });
+          
+          setPlayerStats(calculatedStats);
         }
         
-        setPlayerStats(stats);
         setStatsLoading(false);
       } catch (error) {
-        console.error(`[ScoreboardPage] Error fetching match stats:`, error);
+        console.error(`[ScoreboardPage] Error processing stat logs:`, error);
         setStatsLoading(false);
         toast({
           title: "Error",
@@ -162,9 +196,35 @@ const ScoreboardPage = () => {
     const loadInitialStats = async () => {
       try {
         setStatsLoading(true);
-        const stats = await getMatchStats(currentMatch.id);
-        console.log(`[ScoreboardPage] Initial match stats:`, stats);
-        setPlayerStats(stats);
+        
+        // First try to get stat logs and calculate stats from those
+        const logs = await getStatLogs(currentMatch.id);
+        console.log(`[ScoreboardPage] Initial load: Got ${logs.length} stat logs`);
+        
+        if (logs.length > 0) {
+          // Calculate stats from logs
+          const calculatedStats: MatchStats = {};
+          
+          // Process each log to build up player stats
+          logs.forEach((log: StatLog) => {
+            if (!calculatedStats[log.playerId]) {
+              calculatedStats[log.playerId] = createEmptyPlayerStats();
+            }
+            
+            const statName = log.statName as keyof PlayerStats;
+            const currentValue = calculatedStats[log.playerId][statName] || 0;
+            calculatedStats[log.playerId][statName] = currentValue + log.value;
+          });
+          
+          console.log(`[ScoreboardPage] Initial: Calculated stats from logs:`, calculatedStats);
+          setPlayerStats(calculatedStats);
+        } else {
+          // Fallback to Firebase stats path
+          const stats = await getMatchStats(currentMatch.id);
+          console.log(`[ScoreboardPage] Initial: Firebase stats path returned:`, stats);
+          setPlayerStats(stats);
+        }
+        
         setStatsLoading(false);
       } catch (error) {
         console.error(`[ScoreboardPage] Error loading initial match stats:`, error);

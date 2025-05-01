@@ -58,65 +58,86 @@ const StatTrackerPage = () => {
   useEffect(() => {
     if (!trackerUser) {
       console.log("No tracker user found in context, cannot load matches");
-      setIsLoading(false); // Set loading to false even if no tracker user
+      setIsLoading(false);
       return;
     }
     
-    console.log("Loading matches for team ID:", trackerUser.teamId);
+    console.log("[StatTrackerPage] Loading matches for team ID:", trackerUser.teamId);
+    console.log("[StatTrackerPage] IMPORTANT - Team Context:", trackerUser);
     
     // Set loading to true to show loading state
     setIsLoading(true);
     
-    // Force direct match lookup from database to verify matches exist
+    // Force direct match lookup first to ensure we have matches
     getMatchesForTracker(trackerUser.teamId).then((directMatches: Record<string, Match>) => {
-      console.log("Direct database check found matches:", directMatches);
+      console.log("[StatTrackerPage] Direct database check found matches:", directMatches);
       
-      if (Object.keys(directMatches).length === 0) {
-        console.log("Warning: No matches found directly in database for team", trackerUser.teamId);
-        // Keep loading true to continue with real-time listener
+      // Immediately update matches if found
+      if (Object.keys(directMatches).length > 0) {
+        console.log("[StatTrackerPage] Setting matches from direct lookup");
+        setMatches(directMatches);
+        
+        // Auto-select first match if none selected
+        if (!selectedMatchId) {
+          const firstMatchId = Object.keys(directMatches)[0];
+          console.log("[StatTrackerPage] Auto-selecting first match:", firstMatchId);
+          setSelectedMatchId(firstMatchId);
+        }
+      } else {
+        console.log("[StatTrackerPage] Warning: No matches found directly in database for team", trackerUser.teamId);
       }
     }).catch((err: Error) => {
-      console.error("Error in direct match check:", err);
+      console.error("[StatTrackerPage] Error in direct match check:", err);
     });
     
-    // Listen for matches assigned to this tracker team
+    // Set up real-time listener for ongoing updates
     const unsubscribe = listenToMatchesForTracker(trackerUser.teamId, (matchesData) => {
-      console.log("Received matches data from real-time listener:", matchesData);
+      console.log("[StatTrackerPage] Received matches data from real-time listener:", matchesData);
+      
+      if (Object.keys(matchesData).length === 0) {
+        console.log("[StatTrackerPage] Warning: No matches from real-time listener");
+        // Still update state to empty if nothing found
+        setMatches({});
+        setIsLoading(false);
+        return;
+      }
+      
+      // Update matches with real-time data
       setMatches(matchesData);
       
-      // If there are matches, select the first one by default
+      // Select first match if none selected
       const matchIds = Object.keys(matchesData);
-      console.log("Available match IDs:", matchIds);
-      
       if (matchIds.length > 0 && !selectedMatchId) {
-        console.log("Setting first match as selected:", matchIds[0]);
+        console.log("[StatTrackerPage] Setting first match as selected:", matchIds[0]);
         setSelectedMatchId(matchIds[0]);
       }
       
-      // Always set loading to false when we get data, even if empty
+      // Loading complete
       setIsLoading(false);
     });
       
     // Set a timeout to prevent infinite loading
     const timeoutId = setTimeout(() => {
-      setIsLoading(false);
-      console.log("Timeout reached, stopping loading state");
-      
-      if (Object.keys(matches).length === 0) {
-        toast({
-          title: "No Matches Found",
-          description: "No matches are assigned to your team for tracking. Please contact the administrator.",
-          variant: "destructive",
-        });
+      if (isLoading) {
+        setIsLoading(false);
+        console.log("[StatTrackerPage] Timeout reached, stopping loading state");
+        
+        if (Object.keys(matches).length === 0) {
+          toast({
+            title: "No Matches Found",
+            description: "No matches are assigned to your team for tracking. Please contact the administrator.",
+            variant: "destructive",
+          });
+        }
       }
     }, 5000); // 5 second timeout
       
     return () => {
-      console.log("Cleaning up match listener");
+      console.log("[StatTrackerPage] Cleaning up match listener");
       unsubscribe();
       clearTimeout(timeoutId);
     };
-  }, [toast, trackerUser, selectedMatchId]);
+  }, [toast, trackerUser]);
 
   // Load all players
   useEffect(() => {

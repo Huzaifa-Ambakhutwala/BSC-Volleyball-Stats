@@ -41,27 +41,38 @@ const TrackerRoute = () => {
     // Check if user is logged in as a tracker
     const user = getTrackerUser();
     console.log("TrackerRoute - Retrieved tracker user from localStorage:", user);
-    setTrackerUser(user);
-    setIsLoading(false);
     
     if (!user) {
       console.log("TrackerRoute - No user found, redirecting to login");
+      setIsLoading(false);
       setLocation('/tracker/login');
-    } else {
-      console.log("TrackerRoute - User found, team ID:", user.teamId);
+      return;
     }
+    
+    console.log("TrackerRoute - User found, team ID:", user.teamId);
+    
+    // Important: Set the user state BEFORE setting loading to false
+    setTrackerUser(user);
+    
+    // Slight delay to ensure context is properly updated
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 100);
   }, [setLocation]);
 
   // Show loading state while checking authentication
   if (isLoading) {
-    return <div className="flex justify-center items-center h-screen">Loading...</div>;
+    return <div className="flex justify-center items-center h-screen">Loading tracker user data...</div>;
   }
 
   // Redirect to login if not authenticated
   if (!trackerUser) {
+    console.log("TrackerRoute - TrackerUser is null after loading, redirecting to login");
     return <Redirect to="/tracker/login" />;
   }
 
+  console.log("TrackerRoute - Rendering StatTrackerPage with user:", trackerUser);
+  
   // Render the StatTrackerPage with context if authenticated
   return (
     <TrackerUserContext.Provider value={{ trackerUser, setTrackerUser }}>

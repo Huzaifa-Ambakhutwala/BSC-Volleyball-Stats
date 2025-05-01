@@ -23,40 +23,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
   setupAuth(app);
   
-  // Debug route to check Firebase database
-  app.get("/api/debug/matches", async (req, res) => {
+  // Debug route to provide information about the application configuration
+  app.get("/api/debug/env", async (req, res) => {
     try {
-      const { initializeApp } = require('firebase/app');
-      const { getDatabase, ref, get } = require('firebase/database');
-      
-      // Firebase configuration (using environment variables)
-      const firebaseConfig = {
-        apiKey: process.env.VITE_FIREBASE_API_KEY,
-        authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
-        databaseURL: process.env.VITE_FIREBASE_DATABASE_URL,
-        projectId: process.env.VITE_FIREBASE_PROJECT_ID,
-        storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
-        messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-        appId: process.env.VITE_FIREBASE_APP_ID,
-      };
-      
-      // Initialize Firebase
-      const app = initializeApp(firebaseConfig);
-      const database = getDatabase(app);
-      
-      // Get matches
-      const matchesRef = ref(database, 'matches');
-      const snapshot = await get(matchesRef);
-      const matches = snapshot.val() || {};
-      
-      // Get teams for reference
-      const teamsRef = ref(database, 'teams');
-      const teamsSnapshot = await get(teamsRef);
-      const teams = teamsSnapshot.val() || {};
-      
-      res.json({ matches, teams });
+      // Return environment information (without exposing secrets)
+      res.json({
+        environment: process.env.NODE_ENV,
+        hasDatabaseUrl: !!process.env.DATABASE_URL,
+        hasFirebaseConfig: !!process.env.VITE_FIREBASE_API_KEY && 
+                           !!process.env.VITE_FIREBASE_DATABASE_URL,
+        server: 'active'
+      });
     } catch (error) {
-      console.error("Error fetching Firebase data:", error);
+      console.error("Error in debug route:", error);
       res.status(500).json({ error: String(error) });
     }
   });

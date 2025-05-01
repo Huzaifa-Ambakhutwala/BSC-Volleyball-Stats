@@ -155,7 +155,7 @@ const StatTrackerPage = () => {
       unsubscribe();
       clearTimeout(timeoutId);
     };
-  }, [toast, trackerUser, selectedMatchId, matches, isLoading]);
+  }, [toast, trackerUser]);
 
   // Load all players
   useEffect(() => {

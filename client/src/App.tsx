@@ -101,6 +101,83 @@ function Router() {
           <Route path="/scoreboard/:courtId" component={ScoreboardPage} />
           <Route path="/history" component={GameHistoryPage} />
           <Route path="/history/:matchId" component={MatchDetailsPage} />
+          <Route path="/debug">
+            {() => {
+              const [loading, setLoading] = useState(true);
+              const [data, setData] = useState<any>({ matches: {}, teams: {} });
+              
+              // Load all matches and teams for debugging
+              useEffect(() => {
+                const { getMatches, getTeams } = require('./lib/firebase');
+                
+                Promise.all([getMatches(), getTeams()])
+                  .then(([matches, teams]) => {
+                    console.log("DEBUG - All Matches:", matches);
+                    console.log("DEBUG - All Teams:", teams);
+                    
+                    // Log info about each match
+                    Object.entries(matches).forEach(([id, match]: [string, any]) => {
+                      const trackerTeamName = teams[match.trackerTeam]?.teamName || 'Unknown';
+                      console.log(`Match ${id} - Court ${match.courtNumber}`);
+                      console.log(`- Tracker Team: ${trackerTeamName} (ID: ${match.trackerTeam})`);
+                      console.log(`- TeamA: ${teams[match.teamA]?.teamName || 'Unknown'} (ID: ${match.teamA})`);
+                      console.log(`- TeamB: ${teams[match.teamB]?.teamName || 'Unknown'} (ID: ${match.teamB})`);
+                      console.log('---');
+                    });
+                    
+                    setData({ matches, teams });
+                    setLoading(false);
+                  })
+                  .catch(error => {
+                    console.error("Error loading debug data:", error);
+                    setLoading(false);
+                  });
+              }, []);
+              
+              return (
+                <div className="container mx-auto p-6">
+                  <h1 className="text-2xl font-bold mb-4">Debug Information</h1>
+                  {loading ? (
+                    <p>Loading data...</p>
+                  ) : (
+                    <div>
+                      <h2 className="text-xl font-semibold mt-4 mb-2">Matches ({Object.keys(data.matches).length})</h2>
+                      <div className="bg-gray-100 p-4 rounded mb-4">
+                        <ul className="space-y-2">
+                          {Object.entries(data.matches).map(([id, match]: [string, any]) => (
+                            <li key={id} className="border-b pb-2">
+                              <strong>Match ID: {id}</strong>
+                              <div className="text-sm">
+                                <p>Court: {match.courtNumber}</p>
+                                <p>Tracker Team: {data.teams[match.trackerTeam]?.teamName || 'Unknown'} (ID: {match.trackerTeam})</p>
+                                <p>Team A: {data.teams[match.teamA]?.teamName || 'Unknown'}</p>
+                                <p>Team B: {data.teams[match.teamB]?.teamName || 'Unknown'}</p>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      
+                      <h2 className="text-xl font-semibold mt-4 mb-2">Teams ({Object.keys(data.teams).length})</h2>
+                      <div className="bg-gray-100 p-4 rounded">
+                        <ul className="space-y-2">
+                          {Object.entries(data.teams).map(([id, team]: [string, any]) => (
+                            <li key={id} className="border-b pb-2">
+                              <strong>Team ID: {id}</strong>
+                              <div className="text-sm">
+                                <p>Name: {team.teamName}</p>
+                                <p>Players: {team.players?.length || 0}</p>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            }}
+          </Route>
           {/* Fallback to 404 */}
           <Route component={NotFound} />
         </Switch>

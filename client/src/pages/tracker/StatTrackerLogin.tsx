@@ -72,11 +72,28 @@ const StatTrackerLogin = () => {
         setTrackerUser(trackerUser);
         
         // Force a check for matches immediately
+        console.log(`Checking matches for team ID: ${selectedTeam}`);
         const matches = await getMatchesForTracker(selectedTeam);
-        console.log("Available matches for this team:", matches);
+        console.log("Available matches found:", Object.keys(matches).length);
+        
+        // Log each match for debugging
+        Object.entries(matches).forEach(([id, match]) => {
+          console.log(`Match ${id}:`, match);
+          console.log(`- Team A: ${match.teamA}`);
+          console.log(`- Team B: ${match.teamB}`);
+          console.log(`- Tracker Team: ${match.trackerTeam}`);
+          console.log(`- Tracker Team matches current team: ${match.trackerTeam === selectedTeam}`);
+        });
         
         if (Object.keys(matches).length === 0) {
           console.warn("No matches found for this team. User may not see any matches.");
+          
+          // Show warning
+          toast({
+            title: "Warning",
+            description: "No matches are currently assigned to your team for tracking.",
+            variant: "warning",
+          });
         }
         
         toast({

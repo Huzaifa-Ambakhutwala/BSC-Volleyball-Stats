@@ -67,10 +67,10 @@ const ScoreboardPage = () => {
         const [matchId, firstMatch] = matchEntries[0];
         console.log(`[SCOREBOARD] Setting current match to: ${matchId}`);
         
-        // IMPORTANT: Include the ID in the match object
+        // Create match object with ID
         setCurrentMatch({ 
-          id: matchId, 
-          ...firstMatch 
+          ...firstMatch,
+          id: matchId
         });
       } else {
         console.log(`[SCOREBOARD] No matches found for court ${courtNumber}`);
@@ -208,19 +208,19 @@ const ScoreboardPage = () => {
           <h2 className="text-xl font-bold">Scoreboard Display</h2>
           <p className="text-gray-600">Select a court to view:</p>
           <div className="mt-3 flex flex-wrap gap-2">
-            <Link key="all" href="/scoreboard/all">
+            <Link href="/scoreboard/all">
               <button className="btn-blue">All Courts</button>
             </Link>
-            <Link key="court1" href="/scoreboard/1">
+            <Link href="/scoreboard/1">
               <button className={`btn-blue ${courtNumber === 1 ? 'bg-blue-800' : ''}`}>Court 1</button>
             </Link>
-            <Link key="court2" href="/scoreboard/2">
+            <Link href="/scoreboard/2">
               <button className={`btn-blue ${courtNumber === 2 ? 'bg-blue-800' : ''}`}>Court 2</button>
             </Link>
-            <Link key="court3" href="/scoreboard/3">
+            <Link href="/scoreboard/3">
               <button className={`btn-blue ${courtNumber === 3 ? 'bg-blue-800' : ''}`}>Court 3</button>
             </Link>
-            <Link key="court4" href="/scoreboard/4">
+            <Link href="/scoreboard/4">
               <button className={`btn-blue ${courtNumber === 4 ? 'bg-blue-800' : ''}`}>Court 4</button>
             </Link>
           </div>
@@ -290,16 +290,16 @@ const ScoreboardPage = () => {
                       </h4>
                       <div className="space-y-4">
                         {playersA.map(player => {
-                          const playerStats = playerStats[player.id] || {};
+                          const playerData = matchStatsData[player.id] || {};
                           
                           // Calculate totals
-                          const totalEarnedPoints = (playerStats.aces || 0) + (playerStats.spikes || 0) + 
-                            (playerStats.blocks || 0) + (playerStats.digs || 0) + (playerStats.tips || 0) + 
-                            (playerStats.dumps || 0);
+                          const totalEarnedPoints = (playerData.aces || 0) + (playerData.spikes || 0) + 
+                            (playerData.blocks || 0) + (playerData.digs || 0) + (playerData.tips || 0) + 
+                            (playerData.dumps || 0);
                             
-                          const totalFaults = (playerStats.serveErrors || 0) + (playerStats.spikeErrors || 0) + 
-                            (playerStats.netTouches || 0) + (playerStats.footFaults || 0) + (playerStats.carries || 0) +
-                            (playerStats.reaches || 0);
+                          const totalFaults = (playerData.serveErrors || 0) + (playerData.spikeErrors || 0) + 
+                            (playerData.netTouches || 0) + (playerData.footFaults || 0) + (playerData.carries || 0) +
+                            (playerData.reaches || 0);
                           
                           const hasStats = totalEarnedPoints > 0 || totalFaults > 0;
                           
@@ -319,8 +319,8 @@ const ScoreboardPage = () => {
                                   </div>
                                   
                                   <div className="flex flex-wrap gap-2">
-                                    {Object.entries(playerStats).map(([key, value]) => {
-                                      if (value > 0) {
+                                    {Object.entries(playerData).map(([key, value]) => {
+                                      if (value && typeof value === 'number' && value > 0) {
                                         const statName = key as keyof PlayerStats;
                                         return (
                                           <div 
@@ -356,16 +356,16 @@ const ScoreboardPage = () => {
                       </h4>
                       <div className="space-y-4">
                         {playersB.map(player => {
-                          const playerStats = playerStats[player.id] || {};
+                          const playerData = matchStatsData[player.id] || {};
                           
                           // Calculate totals
-                          const totalEarnedPoints = (playerStats.aces || 0) + (playerStats.spikes || 0) + 
-                            (playerStats.blocks || 0) + (playerStats.digs || 0) + (playerStats.tips || 0) + 
-                            (playerStats.dumps || 0);
+                          const totalEarnedPoints = (playerData.aces || 0) + (playerData.spikes || 0) + 
+                            (playerData.blocks || 0) + (playerData.digs || 0) + (playerData.tips || 0) + 
+                            (playerData.dumps || 0);
                             
-                          const totalFaults = (playerStats.serveErrors || 0) + (playerStats.spikeErrors || 0) + 
-                            (playerStats.netTouches || 0) + (playerStats.footFaults || 0) + (playerStats.carries || 0) +
-                            (playerStats.reaches || 0);
+                          const totalFaults = (playerData.serveErrors || 0) + (playerData.spikeErrors || 0) + 
+                            (playerData.netTouches || 0) + (playerData.footFaults || 0) + (playerData.carries || 0) +
+                            (playerData.reaches || 0);
                           
                           const hasStats = totalEarnedPoints > 0 || totalFaults > 0;
                           
@@ -385,8 +385,8 @@ const ScoreboardPage = () => {
                                   </div>
                                   
                                   <div className="flex flex-wrap gap-2">
-                                    {Object.entries(playerStats).map(([key, value]) => {
-                                      if (value > 0) {
+                                    {Object.entries(playerData).map(([key, value]) => {
+                                      if (value && typeof value === 'number' && value > 0) {
                                         const statName = key as keyof PlayerStats;
                                         return (
                                           <div 

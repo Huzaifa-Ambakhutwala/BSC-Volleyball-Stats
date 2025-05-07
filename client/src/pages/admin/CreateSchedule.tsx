@@ -490,8 +490,10 @@ const CreateSchedule = () => {
               onChange={(e) => setTeamA(e.target.value)}
             >
               <option value="">Select Team A</option>
-              {Object.entries(teams).map(([id, team]) => (
-                <option key={id} value={id}>{team.teamName}</option>
+              {Object.entries(teams)
+                .filter(([id]) => id !== teamB && id !== trackerTeam)
+                .map(([id, team]) => (
+                  <option key={id} value={id}>{team.teamName}</option>
               ))}
             </select>
           </div>
@@ -508,8 +510,10 @@ const CreateSchedule = () => {
               onChange={(e) => setTeamB(e.target.value)}
             >
               <option value="">Select Team B</option>
-              {Object.entries(teams).map(([id, team]) => (
-                <option key={id} value={id}>{team.teamName}</option>
+              {Object.entries(teams)
+                .filter(([id]) => id !== teamA && id !== trackerTeam)
+                .map(([id, team]) => (
+                  <option key={id} value={id}>{team.teamName}</option>
               ))}
             </select>
           </div>
@@ -526,8 +530,10 @@ const CreateSchedule = () => {
               onChange={(e) => setTrackerTeam(e.target.value)}
             >
               <option value="">Select Tracker Team</option>
-              {Object.entries(teams).map(([id, team]) => (
-                <option key={id} value={id}>{team.teamName}</option>
+              {Object.entries(teams)
+                .filter(([id]) => id !== teamA && id !== teamB)
+                .map(([id, team]) => (
+                  <option key={id} value={id}>{team.teamName}</option>
               ))}
             </select>
           </div>

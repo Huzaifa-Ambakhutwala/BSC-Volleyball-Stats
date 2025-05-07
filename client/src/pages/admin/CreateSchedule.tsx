@@ -39,14 +39,14 @@ const CreateSchedule = () => {
   // Load teams - use a listener to keep data in sync
   useEffect(() => {
     setIsLoadingTeams(true);
-    
+
     // Set up listener for teams collection
     const unsubscribe = listenToTeams((teamsData) => {
       console.log('Teams data updated:', teamsData);
       setTeams(teamsData);
       setIsLoadingTeams(false);
     });
-    
+
     // Clean up listener on unmount
     return () => {
       unsubscribe();
@@ -56,14 +56,14 @@ const CreateSchedule = () => {
   // Load matches - use a listener to keep data in sync
   useEffect(() => {
     setIsLoadingMatches(true);
-    
+
     // Set up listener for matches collection
     const unsubscribe = listenToMatches((matchesData) => {
       console.log('Matches data updated:', matchesData);
       setMatches(matchesData);
       setIsLoadingMatches(false);
     });
-    
+
     // Clean up listener on unmount
     return () => {
       unsubscribe();
@@ -71,28 +71,19 @@ const CreateSchedule = () => {
   }, []);
 
   const handleSubmit = async () => {
-    if (!teamA || !teamB) {
+    if (!teamA || !teamB || !trackerTeam) {
       toast({
         title: "Error",
-        description: "Please select both teams",
+        description: "Please select all teams (Team A, Team B, and Tracker Team)",
         variant: "destructive",
       });
       return;
     }
 
-    if (teamA === teamB) {
+    if (teamA === teamB || teamA === trackerTeam || teamB === trackerTeam) {
       toast({
         title: "Error",
-        description: "Team A and Team B cannot be the same team",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!trackerTeam) {
-      toast({
-        title: "Error",
-        description: "Please select a tracker team",
+        description: "Team A, Team B, and Tracker Team must all be different",
         variant: "destructive",
       });
       return;
@@ -118,17 +109,17 @@ const CreateSchedule = () => {
         trackerTeam,
         startTime
       });
-      
+
       // Initialize stats for this match
       if (matchId) {
         await initializeMatchStats(matchId);
       }
-      
+
       toast({
         title: "Success",
         description: `Game #${gameNumber} scheduled on Court ${courtNumber}`,
       });
-      
+
       // Reset form
       setGameNumber(prev => prev + 1); // Increment game number
       setTeamA('');
@@ -177,17 +168,17 @@ const CreateSchedule = () => {
       return;
     }
 
-    if (editTeamA === editTeamB) {
+    if (editTeamA === editTeamB || editTeamA === editTrackerTeam || editTeamB === editTrackerTeam) {
       toast({
         title: "Error",
-        description: "Team A and Team B cannot be the same team",
+        description: "Team A, Team B, and Tracker Team must all be different",
         variant: "destructive",
       });
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       await updateMatch(editingMatchId, {
         gameNumber: editGameNumber,
@@ -197,12 +188,12 @@ const CreateSchedule = () => {
         trackerTeam: editTrackerTeam,
         startTime: editStartTime
       });
-      
+
       toast({
         title: "Success",
         description: "Match updated successfully",
       });
-      
+
       // Reset edit mode
       setEditingMatchId(null);
       setEditGameNumber(1);
@@ -224,16 +215,16 @@ const CreateSchedule = () => {
 
   const handleDeleteClick = async (matchId: string) => {
     if (isDeleting) return;
-    
+
     if (!confirm("Are you sure you want to delete this match? This will also delete all related stats and cannot be undone.")) {
       return;
     }
-    
+
     setIsDeleting(true);
-    
+
     try {
       await deleteMatch(matchId);
-      
+
       toast({
         title: "Success",
         description: "Match deleted successfully",
@@ -283,7 +274,7 @@ const CreateSchedule = () => {
       {/* Match Management Section */}
       <div>
         <h3 className="text-lg font-semibold mb-4">Match Schedule</h3>
-        
+
         {/* Matches List */}
         <div className="border rounded-md overflow-hidden mb-8">
           <div className="bg-gray-100 px-4 py-2 font-medium grid grid-cols-7">
@@ -295,7 +286,7 @@ const CreateSchedule = () => {
             <div>Start Time</div>
             <div className="text-center">Actions</div>
           </div>
-          
+
           {sortedMatches.length === 0 ? (
             <div className="px-4 py-8 text-center text-gray-500">
               No matches scheduled yet
@@ -448,7 +439,7 @@ const CreateSchedule = () => {
           )}
         </div>
       </div>
-      
+
       {/* Create Match Form */}
       <div>
         <h3 className="text-lg font-semibold mb-4 flex items-center">

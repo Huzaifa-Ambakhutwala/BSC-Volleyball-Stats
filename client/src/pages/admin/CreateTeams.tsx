@@ -8,6 +8,8 @@ const CreateTeams = () => {
   const [teamName, setTeamName] = useState('');
   const [teamColor, setTeamColor] = useState('#3B82F6'); // Default to blue
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
+  const [playerSearchTerm, setPlayerSearchTerm] = useState('');
+  const [editPlayerSearchTerm, setEditPlayerSearchTerm] = useState('');
   const [players, setPlayers] = useState<Record<string, Player>>({});
   const [teams, setTeams] = useState<Record<string, Team>>({});
   const [isLoadingPlayers, setIsLoadingPlayers] = useState(true);
@@ -105,12 +107,14 @@ const CreateTeams = () => {
     setEditTeamName(team.teamName);
     setEditSelectedPlayers(team.players || []);
     setEditTeamColor(team.teamColor || '#3B82F6');
+    setEditPlayerSearchTerm(''); // Clear search when starting to edit
   };
 
   const handleCancelEdit = () => {
     setEditingTeamId(null);
     setEditTeamName('');
     setEditSelectedPlayers([]);
+    setEditPlayerSearchTerm(''); // Clear search when canceling edit
   };
 
   const handleSaveEdit = async () => {
@@ -206,6 +210,18 @@ const CreateTeams = () => {
       .join(', ');
   };
   
+  // Filter players based on search term for new team
+  const filteredPlayers = Object.entries(players).filter(([id, player]) => {
+    if (!playerSearchTerm) return true;
+    return player.name.toLowerCase().includes(playerSearchTerm.toLowerCase());
+  });
+  
+  // Filter players based on search term for editing team
+  const filteredEditPlayers = Object.entries(players).filter(([id, player]) => {
+    if (!editPlayerSearchTerm) return true;
+    return player.name.toLowerCase().includes(editPlayerSearchTerm.toLowerCase());
+  });
+  
   // Helper function to determine brightness of a color (for text contrast)
   const getBrightness = (hexColor: string): number => {
     // Remove # if present
@@ -246,32 +262,36 @@ const CreateTeams = () => {
                   {editingTeamId === teamId ? (
                     // Edit mode
                     <div className="flex flex-col space-y-2">
-                      <div className="flex space-x-2 items-center">
+                      <div className="flex space-x-3 items-center mb-2">
                         <input
                           type="text"
-                          className="flex-grow px-3 py-1 border border-gray-300 rounded-md"
+                          className="flex-grow px-3 py-2 border border-gray-300 rounded-md"
                           value={editTeamName}
                           onChange={(e) => setEditTeamName(e.target.value)}
                           placeholder="Team Name"
                         />
+                      </div>
+                      <div className="flex items-center justify-end space-x-3 mb-3">
                         <button 
-                          className="text-green-500 p-1 hover:bg-green-50 rounded" 
-                          onClick={handleSaveEdit}
-                          title="Save"
-                          disabled={isSubmitting}
-                        >
-                          {isSubmitting ? (
-                            <Loader2 className="h-5 w-5 animate-spin" />
-                          ) : (
-                            <Save className="h-5 w-5" />
-                          )}
-                        </button>
-                        <button 
-                          className="text-gray-500 p-1 hover:bg-gray-100 rounded" 
+                          className="text-gray-700 px-4 py-2 h-11 min-w-[90px] hover:bg-gray-100 border border-gray-300 rounded-md flex items-center justify-center" 
                           onClick={handleCancelEdit}
                           title="Cancel"
                         >
-                          <X className="h-5 w-5" />
+                          <X className="h-5 w-5 mr-1.5" />
+                          <span>Cancel</span>
+                        </button>
+                        <button 
+                          className="bg-green-600 text-white px-4 py-2 h-11 min-w-[90px] hover:bg-green-700 rounded-md flex items-center justify-center" 
+                          onClick={handleSaveEdit}
+                          title="Save Changes"
+                          disabled={isSubmitting}
+                        >
+                          {isSubmitting ? (
+                            <Loader2 className="h-5 w-5 animate-spin mr-1.5" />
+                          ) : (
+                            <Save className="h-5 w-5 mr-1.5" />
+                          )}
+                          <span>Save</span>
                         </button>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -294,17 +314,77 @@ const CreateTeams = () => {
                           </div>
                         </div>
                       </div>
-                      <select 
-                        multiple 
-                        className="w-full h-32 px-3 py-1 border border-gray-300 rounded-md text-sm"
-                        value={editSelectedPlayers}
-                        onChange={handleEditPlayerSelection}
-                      >
-                        {Object.entries(players).map(([id, player]) => (
-                          <option key={id} value={id}>{player.name}</option>
-                        ))}
-                      </select>
-                      <p className="text-xs text-gray-500">Hold Ctrl/Cmd to select multiple players</p>
+                      {/* Search input for edit mode */}
+                      <div className="mb-2 relative">
+                        <input
+                          type="text"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                          placeholder="Search players..."
+                          value={editPlayerSearchTerm}
+                          onChange={(e) => setEditPlayerSearchTerm(e.target.value)}
+                        />
+                        {editPlayerSearchTerm && (
+                          <button 
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            onClick={() => setEditPlayerSearchTerm('')}
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                      
+                      <div className="border border-gray-300 rounded-md overflow-hidden">
+                        <div className="max-h-[200px] overflow-y-auto p-1">
+                          {filteredEditPlayers.length > 0 ? (
+                            filteredEditPlayers.map(([id, player]) => (
+                              <div 
+                                key={id} 
+                                className={`p-2 rounded cursor-pointer flex items-center mb-1 ${
+                                  editSelectedPlayers.includes(id) 
+                                  ? 'bg-blue-100 border border-blue-300' 
+                                  : 'bg-white border border-gray-200 hover:bg-gray-50'
+                                }`}
+                                onClick={() => {
+                                  if (editSelectedPlayers.includes(id)) {
+                                    setEditSelectedPlayers(editSelectedPlayers.filter(pid => pid !== id));
+                                  } else {
+                                    setEditSelectedPlayers([...editSelectedPlayers, id]);
+                                  }
+                                }}
+                              >
+                                <div className="flex-grow font-medium">{player.name}</div>
+                                {editSelectedPlayers.includes(id) && (
+                                  <div className="text-blue-600 rounded-full bg-blue-50 p-1 ml-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-center py-4 text-gray-500">
+                              {editPlayerSearchTerm 
+                                ? `No players matching "${editPlayerSearchTerm}"`
+                                : "No players available"}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between mt-2">
+                        <p className="text-xs text-gray-500">
+                          {editSelectedPlayers.length} player(s) selected
+                        </p>
+                        {editSelectedPlayers.length > 0 && (
+                          <button
+                            className="text-xs text-red-600 hover:text-red-800"
+                            onClick={() => setEditSelectedPlayers([])}
+                          >
+                            Clear selection
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ) : (
                     // Display mode
@@ -322,21 +402,25 @@ const CreateTeams = () => {
                       <div className="w-1/2 text-sm text-gray-600 truncate" title={getPlayerNames(team.players || [])}>
                         {getPlayerNames(team.players || [])}
                       </div>
-                      <div className="w-1/6 flex justify-center space-x-1">
+                      <div className="w-1/6 flex justify-center space-x-2">
                         <button 
-                          className="text-blue-500 p-1 hover:bg-blue-50 rounded" 
+                          className="text-blue-600 p-2 hover:bg-blue-50 rounded-md min-w-[44px] min-h-[44px] flex items-center justify-center" 
                           onClick={() => handleEditClick({...team, id: teamId})}
-                          title="Edit"
+                          title="Edit Team"
                         >
                           <Pencil className="h-5 w-5" />
                         </button>
                         <button 
-                          className="text-red-500 p-1 hover:bg-red-50 rounded" 
+                          className="text-red-600 p-2 hover:bg-red-50 rounded-md min-w-[44px] min-h-[44px] flex items-center justify-center" 
                           onClick={() => handleDeleteClick(teamId)}
-                          title="Delete"
+                          title="Delete Team"
                           disabled={isDeleting}
                         >
-                          <Trash2 className="h-5 w-5" />
+                          {isDeleting ? (
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-5 w-5" />
+                          )}
                         </button>
                       </div>
                     </div>
@@ -398,28 +482,99 @@ const CreateTeams = () => {
               <Users className="h-4 w-4 mr-1" />
               Select Players
             </label>
-            <select 
-              multiple 
-              id="players" 
-              name="players" 
-              className="w-full h-40 px-4 py-2 border border-gray-300 rounded-md focus:ring-[hsl(var(--vb-blue))] focus:border-[hsl(var(--vb-blue))]"
-              value={selectedPlayers}
-              onChange={handlePlayerSelection}
-            >
-              {Object.entries(players).map(([id, player]) => (
-                <option key={id} value={id}>{player.name}</option>
-              ))}
-            </select>
-            <p className="text-sm text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple players</p>
+            
+            {/* Search input */}
+            <div className="mb-2 relative">
+              <input
+                type="text"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[hsl(var(--vb-blue))] focus:border-[hsl(var(--vb-blue))]"
+                placeholder="Search players..."
+                value={playerSearchTerm}
+                onChange={(e) => setPlayerSearchTerm(e.target.value)}
+              />
+              {playerSearchTerm && (
+                <button 
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  onClick={() => setPlayerSearchTerm('')}
+                  title="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            
+            <div className="border border-gray-300 rounded-md overflow-hidden">
+              <div className="max-h-[250px] overflow-y-auto p-1">
+                {filteredPlayers.length > 0 ? (
+                  filteredPlayers.map(([id, player]) => (
+                    <div 
+                      key={id} 
+                      className={`p-2 rounded cursor-pointer flex items-center mb-1 ${
+                        selectedPlayers.includes(id) 
+                        ? 'bg-blue-100 border border-blue-300' 
+                        : 'bg-white border border-gray-200 hover:bg-gray-50'
+                      }`}
+                      onClick={() => {
+                        if (selectedPlayers.includes(id)) {
+                          setSelectedPlayers(selectedPlayers.filter(pid => pid !== id));
+                        } else {
+                          setSelectedPlayers([...selectedPlayers, id]);
+                        }
+                      }}
+                    >
+                      <div className="flex-grow font-medium">{player.name}</div>
+                      {selectedPlayers.includes(id) && (
+                        <div className="text-blue-600 rounded-full bg-blue-50 p-1 ml-2">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-4 text-gray-500">
+                    {playerSearchTerm 
+                      ? `No players matching "${playerSearchTerm}"`
+                      : "No players available"}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between mt-2">
+              <p className="text-sm text-gray-500">
+                {selectedPlayers.length} player(s) selected
+              </p>
+              {selectedPlayers.length > 0 && (
+                <button
+                  className="text-sm text-red-600 hover:text-red-800"
+                  onClick={() => setSelectedPlayers([])}
+                >
+                  Clear selection
+                </button>
+              )}
+            </div>
           </div>
-          <button 
-            className="bg-[hsl(var(--vb-blue))] text-white py-2 px-6 rounded-md hover:bg-blue-700 transition flex items-center justify-center"
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-          >
-            {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            {isSubmitting ? 'Creating Team...' : 'Create Team'}
-          </button>
+          <div className="flex justify-end">
+            <button 
+              className="bg-[hsl(var(--vb-blue))] text-white py-3 px-6 min-h-[50px] min-w-[150px] rounded-md hover:bg-blue-700 transition flex items-center justify-center text-base font-medium"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                  <span>Creating Team...</span>
+                </>
+              ) : (
+                <>
+                  <PlusCircle className="h-5 w-5 mr-2" />
+                  <span>Create Team</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -574,46 +574,106 @@ const StatTrackerPage = () => {
                 </div>
                 
                 {/* Set scores summary */}
-                {currentMatch.setScores && (
-                  <div className="mt-4 grid grid-cols-3 gap-2">
-                    <div className={`rounded-lg p-3 ${currentSet === 1 ? 'bg-blue-50 border border-blue-200' : 'bg-white border border-gray-200'}`}>
-                      <div className="text-center font-semibold mb-1">Set 1</div>
+                <div className="mt-4">
+                  <h4 className="text-sm font-semibold text-gray-600 mb-2">Set Scores Summary</h4>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className={`rounded-lg p-3 relative ${
+                      currentSet === 1 
+                        ? 'bg-blue-50 border-2 border-blue-400' 
+                        : (currentMatch.currentSet && currentMatch.currentSet > 1) 
+                          ? 'bg-green-50 border border-green-300' 
+                          : 'bg-white border border-gray-200'
+                    }`}>
+                      <div className="text-center font-semibold mb-2">Set 1</div>
                       <div className="flex justify-center items-center gap-2">
-                        <span className="inline-block px-2 py-1 rounded bg-[hsl(var(--vb-blue))] text-white font-bold">
-                          {currentMatch.setScores.set1?.scoreA || 0}
+                        <span className="inline-block px-2 py-1 rounded bg-[hsl(var(--vb-blue))] text-white font-bold min-w-[30px] text-center">
+                          {currentMatch.setScores?.set1?.scoreA || 0}
                         </span>
                         <span className="text-gray-500">-</span>
-                        <span className="inline-block px-2 py-1 rounded bg-[hsl(var(--vb-yellow))] text-white font-bold">
-                          {currentMatch.setScores.set1?.scoreB || 0}
+                        <span className="inline-block px-2 py-1 rounded bg-[hsl(var(--vb-yellow))] text-white font-bold min-w-[30px] text-center">
+                          {currentMatch.setScores?.set1?.scoreB || 0}
                         </span>
                       </div>
+                      {currentMatch.currentSet && currentMatch.currentSet > 1 && (
+                        <div className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                      {currentSet === 1 && (
+                        <div className="absolute -top-2 -right-2 bg-blue-500 text-white rounded-full px-2 py-0.5 text-xs font-bold">
+                          Current
+                        </div>
+                      )}
                     </div>
-                    <div className={`rounded-lg p-3 ${currentSet === 2 ? 'bg-blue-50 border border-blue-200' : 'bg-white border border-gray-200'}`}>
-                      <div className="text-center font-semibold mb-1">Set 2</div>
+                    
+                    <div className={`rounded-lg p-3 relative ${
+                      currentSet === 2 
+                        ? 'bg-blue-50 border-2 border-blue-400' 
+                        : (currentMatch.currentSet && currentMatch.currentSet > 2) 
+                          ? 'bg-green-50 border border-green-300' 
+                          : (currentMatch.currentSet && currentMatch.currentSet > 1)
+                            ? 'bg-white border border-gray-200' 
+                            : 'bg-gray-50 border border-gray-200 opacity-75'
+                    }`}>
+                      <div className="text-center font-semibold mb-2">Set 2</div>
                       <div className="flex justify-center items-center gap-2">
-                        <span className="inline-block px-2 py-1 rounded bg-[hsl(var(--vb-blue))] text-white font-bold">
-                          {currentMatch.setScores.set2?.scoreA || 0}
+                        <span className="inline-block px-2 py-1 rounded bg-[hsl(var(--vb-blue))] text-white font-bold min-w-[30px] text-center">
+                          {currentMatch.setScores?.set2?.scoreA || 0}
                         </span>
                         <span className="text-gray-500">-</span>
-                        <span className="inline-block px-2 py-1 rounded bg-[hsl(var(--vb-yellow))] text-white font-bold">
-                          {currentMatch.setScores.set2?.scoreB || 0}
+                        <span className="inline-block px-2 py-1 rounded bg-[hsl(var(--vb-yellow))] text-white font-bold min-w-[30px] text-center">
+                          {currentMatch.setScores?.set2?.scoreB || 0}
                         </span>
                       </div>
+                      {currentMatch.currentSet && currentMatch.currentSet > 2 && (
+                        <div className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                      {currentSet === 2 && (
+                        <div className="absolute -top-2 -right-2 bg-blue-500 text-white rounded-full px-2 py-0.5 text-xs font-bold">
+                          Current
+                        </div>
+                      )}
+                      {currentMatch.currentSet && currentMatch.currentSet < 2 && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-gray-200 bg-opacity-30 rounded-lg">
+                          <span className="text-sm text-gray-500 font-medium">Unlock after Set 1</span>
+                        </div>
+                      )}
                     </div>
-                    <div className={`rounded-lg p-3 ${currentSet === 3 ? 'bg-blue-50 border border-blue-200' : 'bg-white border border-gray-200'}`}>
-                      <div className="text-center font-semibold mb-1">Set 3</div>
+                    
+                    <div className={`rounded-lg p-3 relative ${
+                      currentSet === 3 
+                        ? 'bg-blue-50 border-2 border-blue-400' 
+                        : 'bg-gray-50 border border-gray-200 opacity-75'
+                    }`}>
+                      <div className="text-center font-semibold mb-2">Set 3</div>
                       <div className="flex justify-center items-center gap-2">
-                        <span className="inline-block px-2 py-1 rounded bg-[hsl(var(--vb-blue))] text-white font-bold">
-                          {currentMatch.setScores.set3?.scoreA || 0}
+                        <span className="inline-block px-2 py-1 rounded bg-[hsl(var(--vb-blue))] text-white font-bold min-w-[30px] text-center">
+                          {currentMatch.setScores?.set3?.scoreA || 0}
                         </span>
                         <span className="text-gray-500">-</span>
-                        <span className="inline-block px-2 py-1 rounded bg-[hsl(var(--vb-yellow))] text-white font-bold">
-                          {currentMatch.setScores.set3?.scoreB || 0}
+                        <span className="inline-block px-2 py-1 rounded bg-[hsl(var(--vb-yellow))] text-white font-bold min-w-[30px] text-center">
+                          {currentMatch.setScores?.set3?.scoreB || 0}
                         </span>
                       </div>
+                      {currentSet === 3 && (
+                        <div className="absolute -top-2 -right-2 bg-blue-500 text-white rounded-full px-2 py-0.5 text-xs font-bold">
+                          Current
+                        </div>
+                      )}
+                      {currentMatch.currentSet && currentMatch.currentSet < 3 && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-gray-200 bg-opacity-30 rounded-lg">
+                          <span className="text-sm text-gray-500 font-medium">Unlock after Set 2</span>
+                        </div>
+                      )}
                     </div>
                   </div>
-                )}
+                </div>
               </div>
               
               {/* Current Set Score Controls */}

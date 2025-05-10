@@ -50,7 +50,7 @@ const StatTrackerPage = () => {
   const { toast } = useToast();
   const [_, setLocation] = useLocation();
   const { trackerUser, setTrackerUser } = useContext(TrackerUserContext);
-  
+
   // Add fallback to localStorage if context is not available
   useEffect(() => {
     if (!trackerUser) {
@@ -81,28 +81,28 @@ const StatTrackerPage = () => {
   useEffect(() => {
     // Use trackerUser from context or get it directly from localStorage
     const currentUser = trackerUser || getTrackerUser();
-    
+
     if (!currentUser) {
       console.log("No tracker user found in context or localStorage, cannot load matches");
       setIsLoading(false);
       return;
     }
-    
+
     console.log("[StatTrackerPage] Loading matches for team ID:", currentUser.teamId);
     console.log("[StatTrackerPage] IMPORTANT - Team data:", currentUser);
-    
+
     // Set loading to true to show loading state
     setIsLoading(true);
-    
+
     // Force direct match lookup first to ensure we have matches
     getMatchesForTracker(currentUser.teamId).then((directMatches: Record<string, Match>) => {
       console.log("[StatTrackerPage] Direct database check found matches:", directMatches);
-      
+
       // Immediately update matches if found
       if (Object.keys(directMatches).length > 0) {
         console.log("[StatTrackerPage] Setting matches from direct lookup");
         setMatches(directMatches);
-        
+
         // Auto-select first match if none selected
         if (!selectedMatchId) {
           const firstMatchId = Object.keys(directMatches)[0];
@@ -111,7 +111,7 @@ const StatTrackerPage = () => {
         }
       } else {
         console.log("[StatTrackerPage] Warning: No matches found directly in database for team", currentUser.teamId);
-        
+
         // Check for potential issues
         console.log("[StatTrackerPage] DEBUG - Team ID Type:", typeof currentUser.teamId);
         console.log("[StatTrackerPage] DEBUG - Team ID Value:", currentUser.teamId);
@@ -119,17 +119,17 @@ const StatTrackerPage = () => {
     }).catch((err: Error) => {
       console.error("[StatTrackerPage] Error in direct match check:", err);
     });
-    
+
     // Set up real-time listener for ongoing updates
     const unsubscribe = listenToMatchesForTracker(currentUser.teamId, (matchesData) => {
       console.log("[StatTrackerPage] Received matches data from real-time listener:", matchesData);
-      
+
       if (Object.keys(matchesData).length === 0) {
         console.log("[StatTrackerPage] Warning: No matches from real-time listener");
         // Still update state to empty if nothing found
         setMatches({});
         setIsLoading(false);
-        
+
         // Alert the user if no matches found
         toast({
           title: "No Matches Found",
@@ -138,27 +138,27 @@ const StatTrackerPage = () => {
         });
         return;
       }
-      
+
       // Update matches with real-time data
       setMatches(matchesData);
-      
+
       // Select first match if none selected
       const matchIds = Object.keys(matchesData);
       if (matchIds.length > 0 && !selectedMatchId) {
         console.log("[StatTrackerPage] Setting first match as selected:", matchIds[0]);
         setSelectedMatchId(matchIds[0]);
       }
-      
+
       // Loading complete
       setIsLoading(false);
     });
-      
+
     // Set a timeout to prevent infinite loading
     const timeoutId = setTimeout(() => {
       if (isLoading) {
         setIsLoading(false);
         console.log("[StatTrackerPage] Timeout reached, stopping loading state");
-        
+
         if (Object.keys(matches).length === 0) {
           toast({
             title: "No Matches Found",
@@ -168,7 +168,7 @@ const StatTrackerPage = () => {
         }
       }
     }, 5000); // 5 second timeout
-      
+
     return () => {
       console.log("[StatTrackerPage] Cleaning up match listener");
       unsubscribe();
@@ -197,13 +197,13 @@ const StatTrackerPage = () => {
   // Listen for updates to the selected match
   useEffect(() => {
     if (!selectedMatchId) return;
-    
+
     const matchUnsubscribe = listenToMatchById(selectedMatchId, (match) => {
       if (match) {
         setCurrentMatch(match);
       }
     });
-    
+
     // Listen for stat logs for this match
     const logsUnsubscribe = listenToStatLogs(selectedMatchId, (logs) => {
       console.log(`[StatTrackerPage] Received ${logs.length} stat logs for match ID: ${selectedMatchId}`);
@@ -212,10 +212,10 @@ const StatTrackerPage = () => {
       }
       setStatLogs(logs);
     });
-    
+
     // Reset selected player when match changes
     setSelectedPlayerId(null);
-    
+
     return () => {
       matchUnsubscribe();
       logsUnsubscribe();
@@ -225,14 +225,14 @@ const StatTrackerPage = () => {
   // Load teams when match changes
   useEffect(() => {
     if (!currentMatch) return;
-    
+
     const loadTeams = async () => {
       try {
         const [teamAData, teamBData] = await Promise.all([
           getTeamById(currentMatch.teamA),
           getTeamById(currentMatch.teamB)
         ]);
-        
+
         setTeamA(teamAData);
         setTeamB(teamBData);
       } catch (error) {
@@ -243,7 +243,7 @@ const StatTrackerPage = () => {
         });
       }
     };
-    
+
     loadTeams();
   }, [currentMatch, toast]);
 
@@ -253,15 +253,15 @@ const StatTrackerPage = () => {
 
   const handleScoreUpdate = async (team: 'A' | 'B', increment: 1 | -1) => {
     if (!currentMatch || !selectedMatchId) return;
-    
+
     try {
       // Get current set
       const setNum = currentMatch.currentSet || currentSet;
-      
+
       // Get current scores for the specific set
       let currentSetScoreA = currentMatch.scoreA;
       let currentSetScoreB = currentMatch.scoreB;
-      
+
       // Use set-specific scores if available
       if (currentMatch.setScores) {
         const setKey = `set${setNum}` as keyof typeof currentMatch.setScores;
@@ -271,20 +271,20 @@ const StatTrackerPage = () => {
           currentSetScoreB = setScore.scoreB;
         }
       }
-      
+
       // Calculate new scores
       let newScoreA = currentSetScoreA;
       let newScoreB = currentSetScoreB;
-      
+
       if (team === 'A') {
         newScoreA = Math.max(0, currentSetScoreA + increment);
       } else {
         newScoreB = Math.max(0, currentSetScoreB + increment);
       }
-      
+
       // Update score for the current set
       await updateMatchScore(selectedMatchId, newScoreA, newScoreB, setNum);
-      
+
       console.log(`[SCORE_UPDATE] Updated Set ${setNum} score to ${newScoreA}-${newScoreB}`);
     } catch (error) {
       toast({
@@ -298,28 +298,28 @@ const StatTrackerPage = () => {
   const handlePlayerSelect = (playerId: string) => {
     setSelectedPlayerId(playerId === selectedPlayerId ? null : playerId);
   };
-  
+
   const openSubmitDialog = () => {
     setShowConfirmDialog(true);
   };
-  
+
   const handleConfirmSubmit = async () => {
     setShowConfirmDialog(false);
     if (!currentMatch || !selectedMatchId) return;
-    
+
     setIsSubmitting(true);
     try {
       // Here you would update the match status in your database
       // await updateMatchStatus(selectedMatchId, 'completed');
-      
+
       toast({
         title: "Match Complete",
         description: "Match data has been saved successfully",
       });
-      
+
       // Reset selection and navigation as needed
       setSelectedPlayerId(null);
-      
+
       // After successful submission, redirect to the match details page
       setLocation(`/history/${selectedMatchId}`);
     } catch (error) {
@@ -332,15 +332,15 @@ const StatTrackerPage = () => {
       setIsSubmitting(false);
     }
   };
-  
+
   const handleCancelSubmit = () => {
     setShowConfirmDialog(false);
   };
-  
+
   // Handler for changing the current set
   const handleSetChange = (setNumber: number) => {
     if (!currentMatch || !selectedMatchId) return;
-    
+
     // First check if the set is locked 
     if (isSetLocked(currentMatch, setNumber)) {
       toast({
@@ -350,7 +350,7 @@ const StatTrackerPage = () => {
       });
       return;
     }
-    
+
     // Check if we're trying to access a future set that's not unlocked yet
     const currentMatchSet = currentMatch.currentSet || 1;
     if (setNumber > currentMatchSet) {
@@ -361,36 +361,36 @@ const StatTrackerPage = () => {
       });
       return;
     }
-    
+
     // If validation passes, change the set
     if (setNumber >= 1 && setNumber <= 3) {
       setCurrentSet(setNumber);
-      
+
       // If the match has a currentSet field, update it
       if (currentMatch && selectedMatchId) {
         // Get the current scores
         const scoreA = currentMatch.scoreA || 0;
         const scoreB = currentMatch.scoreB || 0;
-        
+
         // Update the match score and set number
         updateMatchScore(selectedMatchId, scoreA, scoreB, setNumber);
         console.log(`[StatTrackerPage] Changed to set ${setNumber}`);
       }
-      
+
       toast({
         title: `Set ${setNumber}`,
         description: `Now tracking stats for set ${setNumber}`,
       });
     }
   };
-  
+
   // Handler for advancing to the next set
   const handleAdvanceToNextSet = async () => {
     if (!currentMatch || !selectedMatchId) return;
-    
+
     // Get the current set or default to 1
     const currentSetNumber = currentMatch.currentSet || 1;
-    
+
     // Check if the current set is already locked
     if (currentMatch && isSetLocked(currentMatch, currentSetNumber)) {
       toast({
@@ -400,9 +400,9 @@ const StatTrackerPage = () => {
       });
       return;
     }
-    
+
     // Only allow advancing if current set is 1 or 2
-    if (currentSetNumber >= 3) {
+    if (currentSetNumber > 2) {
       toast({
         title: "Final Set",
         description: "Please use 'Submit Complete Match' to finalize the game",
@@ -410,28 +410,28 @@ const StatTrackerPage = () => {
       });
       return;
     }
-    
+
     // Confirm with the user before finalizing
     if (!window.confirm(`Are you sure you want to finalize Set ${currentSetNumber}? This will lock the set and cannot be undone.`)) {
       return; // User cancelled
     }
-    
+
     try {
       // Use the advanceToNextSet function
       const nextSet = await advanceToNextSet(selectedMatchId, currentSetNumber);
-      
+
       // If successful, move to the next set
       if (nextSet > currentSetNumber) {
         setCurrentSet(nextSet);
-        
+
         toast({
           title: `Set ${currentSetNumber} Complete`,
           description: `Advanced to set ${nextSet}. Set ${currentSetNumber} is now locked.`,
         });
-        
+
         // Reset player selection for the new set
         setSelectedPlayerId(null);
-        
+
         // If this was set 2 and we're advancing to set 3 (final set),
         // Show a hint about finalizing the match
         if (nextSet === 3) {
@@ -456,21 +456,21 @@ const StatTrackerPage = () => {
       });
     }
   };
-  
+
   // Handler for finalizing the entire match
   const handleFinalizeMatch = async () => {
     if (!currentMatch || !selectedMatchId) return;
-    
+
     try {
       // Finalize the match
       const success = await finalizeMatch(selectedMatchId);
-      
+
       if (success) {
         toast({
           title: "Match Completed",
           description: "The match has been successfully finalized and submitted.",
         });
-        
+
         // Reset selection and redirect to match history
         setSelectedPlayerId(null);
         setLocation(`/history/${selectedMatchId}`);
@@ -490,18 +490,18 @@ const StatTrackerPage = () => {
       });
     }
   };
-  
+
   // Open the finalize match dialog
   const openFinalizeMatchDialog = () => {
     setShowFinalizeMatchDialog(true);
   };
-  
+
   // Handle confirm finalize match
   const handleConfirmFinalizeMatch = () => {
     setShowFinalizeMatchDialog(false);
     handleFinalizeMatch();
   };
-  
+
   // Handle cancel finalize match
   const handleCancelFinalizeMatch = () => {
     setShowFinalizeMatchDialog(false);
@@ -510,11 +510,11 @@ const StatTrackerPage = () => {
   // Handler for deleting logs
   const handleDeleteLog = async (logId: string) => {
     if (!selectedMatchId || isDeletingLog) return;
-    
+
     setIsDeletingLog(true);
     try {
       const success = await deleteStatLog(selectedMatchId, logId);
-      
+
       if (success) {
         toast({
           title: "Success",
@@ -590,20 +590,20 @@ const StatTrackerPage = () => {
                 <option value="">Select a match</option>
                 {Object.entries(matches).map(([id, match]) => {
                   const startTime = new Date(match.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                  
+
                   // Get team names instead of IDs
                   let teamAName = "Team A";
                   let teamBName = "Team B";
-                  
+
                   try {
                     // Try to find the team names in the cache
                     const teamAObj = Object.values(matches).find(m => m.teamA === match.teamA);
                     const teamBObj = Object.values(matches).find(m => m.teamB === match.teamB);
-                    
+
                     if (teamA && teamA.id === match.teamA) {
                       teamAName = teamA.teamName;
                     }
-                    
+
                     if (teamB && teamB.id === match.teamB) {
                       teamBName = teamB.teamName;
                     }
@@ -612,7 +612,7 @@ const StatTrackerPage = () => {
                     teamAName = `Team ${match.teamA}`;
                     teamBName = `Team ${match.teamB}`;
                   }
-                  
+
                   return (
                     <option key={id} value={id}>
                       Court {match.courtNumber}: {teamAName} vs {teamBName} ({startTime})
@@ -635,7 +635,7 @@ const StatTrackerPage = () => {
                         Set {currentSet} of 3
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center space-x-3">
                       {/* Set selection buttons with locked status indicators */}
                       {[1, 2, 3].map(setNum => {
@@ -646,7 +646,7 @@ const StatTrackerPage = () => {
                         // Determine button style based on status
                         let buttonStyle = '';
                         let statusLabel = '';
-                        
+
                         if (isCurrentSet) {
                           // Current set styling
                           buttonStyle = 'bg-blue-600 text-white border-blue-600 font-bold';
@@ -660,7 +660,7 @@ const StatTrackerPage = () => {
                           buttonStyle = 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50';
                           statusLabel = 'Available';
                         }
-                        
+
                         return (
                           <div key={setNum} className="flex flex-col items-center">
                             <button 
@@ -687,7 +687,7 @@ const StatTrackerPage = () => {
                       })}
                     </div>
                   </div>
-                  
+
                   {/* Submit set/match buttons */}
                   <div className="flex flex-col space-y-2">
                     {/* Check if current match is completed */}
@@ -730,7 +730,7 @@ const StatTrackerPage = () => {
                             <span>Finalize Set {currentSet} & Advance to Set {currentSet + 1}</span>
                           </button>
                         )}
-                        
+
                         {/* Submit full match button - only show when all required sets are completed */}
                         {currentMatch && currentMatch.completedSets && 
                          ((currentMatch.completedSets.set1 && currentMatch.completedSets.set2) ||
@@ -746,10 +746,10 @@ const StatTrackerPage = () => {
                       </>
                     )}
                   </div>
-                  
+
                   {/* This submit button was replaced by the buttons above */}
                 </div>
-                
+
                 {/* Set scores summary */}
                 <div className="mt-4">
                   <h4 className="text-sm font-semibold text-gray-600 mb-2">Set Scores Summary</h4>
@@ -771,7 +771,7 @@ const StatTrackerPage = () => {
                           {currentMatch.setScores?.set1?.scoreB || 0}
                         </span>
                       </div>
-                      
+
                       {/* Status indicators */}
                       {currentMatch.completedSets?.set1 ? (
                         <div className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center">
@@ -784,7 +784,7 @@ const StatTrackerPage = () => {
                           Current
                         </div>
                       ) : null}
-                      
+
                       {/* Set lock status */}
                       {currentMatch.completedSets?.set1 && (
                         <div className="mt-2 text-xs text-center font-medium text-green-600 flex items-center justify-center">
@@ -795,7 +795,7 @@ const StatTrackerPage = () => {
                         </div>
                       )}
                     </div>
-                    
+
                     <div className={`rounded-lg p-3 relative ${
                       currentSet === 2 
                         ? 'bg-blue-50 border-2 border-blue-400' 
@@ -815,7 +815,7 @@ const StatTrackerPage = () => {
                           {currentMatch.setScores?.set2?.scoreB || 0}
                         </span>
                       </div>
-                      
+
                       {/* Status indicators */}
                       {currentMatch.completedSets?.set2 ? (
                         <div className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center">
@@ -828,7 +828,7 @@ const StatTrackerPage = () => {
                           Current
                         </div>
                       ) : null}
-                      
+
                       {/* Set lock status */}
                       {currentMatch.completedSets?.set2 && (
                         <div className="mt-2 text-xs text-center font-medium text-green-600 flex items-center justify-center">
@@ -838,7 +838,7 @@ const StatTrackerPage = () => {
                           Locked
                         </div>
                       )}
-                      
+
                       {/* Coming soon indicator for locked sets */}
                       {currentMatch.currentSet && currentMatch.currentSet < 2 && (
                         <div className="absolute inset-0 flex items-center justify-center bg-gray-200 bg-opacity-30 rounded-lg">
@@ -846,7 +846,7 @@ const StatTrackerPage = () => {
                         </div>
                       )}
                     </div>
-                    
+
                     <div className={`rounded-lg p-3 relative ${
                       currentSet === 3 
                         ? 'bg-blue-50 border-2 border-blue-400' 
@@ -866,7 +866,7 @@ const StatTrackerPage = () => {
                           {currentMatch.setScores?.set3?.scoreB || 0}
                         </span>
                       </div>
-                      
+
                       {/* Status indicators */}
                       {currentMatch.completedSets?.set3 ? (
                         <div className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center">
@@ -879,7 +879,7 @@ const StatTrackerPage = () => {
                           Current
                         </div>
                       ) : null}
-                      
+
                       {/* Set lock status */}
                       {currentMatch.completedSets?.set3 && (
                         <div className="mt-2 text-xs text-center font-medium text-green-600 flex items-center justify-center">
@@ -889,7 +889,7 @@ const StatTrackerPage = () => {
                           Locked
                         </div>
                       )}
-                      
+
                       {/* Coming soon indicator for locked sets */}
                       {currentMatch.currentSet && currentMatch.currentSet < 3 && (
                         <div className="absolute inset-0 flex items-center justify-center bg-gray-200 bg-opacity-30 rounded-lg">
@@ -900,7 +900,7 @@ const StatTrackerPage = () => {
                   </div>
                 </div>
               </div>
-              
+
               {/* Current Set Score Controls */}
               <div className="p-4 bg-white border-b border-gray-200">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
@@ -998,65 +998,13 @@ const StatTrackerPage = () => {
 
                   {/* Actions - Middle Column */}
                   <div className="lg:col-span-3">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold">Actions</h3>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm font-semibold mr-1">Current Set:</span>
-                        <div className="flex space-x-2">
-                          {[1, 2, 3].map((setNum) => {
-                            // Determine set status
-                            const isLocked = currentMatch && isSetLocked(currentMatch, setNum);
-                            const isCurrent = currentSet === setNum;
-                            const isUnavailable = currentMatch && (currentMatch.currentSet || 1) < setNum;
-                            
-                            // Determine button style based on status
-                            let buttonStyle = '';
-                            let statusLabel = '';
-                            
-                            if (isLocked) {
-                              buttonStyle = 'bg-gray-200 text-gray-500 border-gray-400 cursor-not-allowed';
-                              statusLabel = 'Locked';
-                            } else if (isCurrent) {
-                              buttonStyle = 'bg-blue-600 text-white border-blue-700 font-bold';
-                              statusLabel = 'In Progress';
-                            } else if (isUnavailable) {
-                              buttonStyle = 'bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed';
-                              statusLabel = 'Not Available';
-                            } else {
-                              buttonStyle = 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50';
-                              statusLabel = 'Available';
-                            }
-                            
-                            return (
-                              <div key={setNum} className="flex flex-col items-center">
-                                <button 
-                                  onClick={() => handleSetChange(setNum)}
-                                  disabled={isLocked || isUnavailable}
-                                  className={`px-3 py-1 rounded border-2 mb-1 ${buttonStyle}`}
-                                >
-                                  Set {setNum}
-                                </button>
-                                <span className={`text-xs ${
-                                  isLocked ? 'text-red-500' : 
-                                  isCurrent ? 'text-blue-600' : 
-                                  isUnavailable ? 'text-gray-400' : 
-                                  'text-green-600'
-                                }`}>
-                                  {statusLabel}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
                     <StatActions 
                       matchId={selectedMatchId}
                       selectedPlayerId={selectedPlayerId}
                       currentSet={currentSet}
                     />
                   </div>
-                  
+
                   {/* Team B Players - Right Column */}
                   <div className="lg:col-span-1">
                     <h3 className="text-lg font-semibold mb-4 text-[hsl(var(--vb-yellow))]">
@@ -1100,7 +1048,7 @@ const StatTrackerPage = () => {
                   </span>
                 </div>
               </div>
-              
+
               {statLogs.length > 0 ? (
                 <div className="overflow-auto max-h-[300px] border border-gray-200 rounded-md">
                   <table className="min-w-full divide-y divide-gray-200">
@@ -1209,7 +1157,7 @@ const StatTrackerPage = () => {
                   <span>{teamB?.teamName || 'Team B'}:</span> 
                   <span className="font-semibold">{currentMatch?.scoreB || 0}</span>
                 </div>
-                
+
                 {/* Set information */}
                 <div className="mt-3 pt-2 border-t border-gray-200">
                   <div className="font-medium text-sm">Sets Played:</div>
@@ -1260,7 +1208,7 @@ const StatTrackerPage = () => {
             </AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to finalize this match? This will lock all sets and make the match permanently read-only. This action cannot be undone.
-              
+
               <div className="mt-4 p-3 bg-gray-50 rounded-md">
                 <div className="font-medium">Match Summary:</div>
                 <div className="mt-2 space-y-2">
@@ -1275,7 +1223,7 @@ const StatTrackerPage = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   {/* Set 2 */}
                   {currentMatch?.setScores?.set2 && (
                     <div className="text-sm flex items-center justify-between border-b pb-2">
@@ -1287,7 +1235,7 @@ const StatTrackerPage = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   {/* Set 3 */}
                   {currentMatch?.setScores?.set3 && (
                     <div className="text-sm flex items-center justify-between">
@@ -1300,7 +1248,7 @@ const StatTrackerPage = () => {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Final Result */}
                 <div className="mt-4 flex items-center justify-between bg-gray-100 p-2 rounded">
                   <span className="font-medium">Final Result:</span>
@@ -1316,7 +1264,7 @@ const StatTrackerPage = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="mt-4 bg-amber-50 text-amber-800 p-3 rounded-md text-sm">
                 <div className="flex items-start">
                   <Info className="h-5 w-5 text-amber-500 mr-2 flex-shrink-0 mt-0.5" />

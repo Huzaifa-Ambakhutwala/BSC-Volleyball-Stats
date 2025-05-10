@@ -14,6 +14,7 @@ export type StatLog = {
   value: number;
   timestamp: number;
   category: 'earned' | 'fault';
+  set?: number; // Which set the stat belongs to
 };
 
 // Firebase configuration from environment variables
@@ -595,7 +596,8 @@ export const updatePlayerStat = async (
   playerId: string, 
   statName: keyof PlayerStats, 
   value: number,
-  category: 'earned' | 'fault' = 'earned'
+  category: 'earned' | 'fault' = 'earned',
+  setNumber: number = 1
 ) => {
   console.log(`[UPDATE_STAT] Starting stat update for match ${matchId}, player ${playerId}, stat ${statName}`);
   
@@ -614,7 +616,7 @@ export const updatePlayerStat = async (
   // Update player stats in Firebase
   const playerStatsRef = ref(database, `stats/${matchId}/${playerId}`);
   const statsSnapshot = await get(playerStatsRef);
-  const currentStats = statsSnapshot.val() || createEmptyPlayerStats();
+  const currentStats = statsSnapshot.val() || createEmptyPlayerStats(setNumber);
   
   console.log(`[UPDATE_STAT] Current stats for player:`, currentStats);
   
@@ -622,8 +624,10 @@ export const updatePlayerStat = async (
   const newStatValue = (currentStats[statName] || 0) + value;
   console.log(`[UPDATE_STAT] Updating ${statName} from ${currentStats[statName] || 0} to ${newStatValue}`);
   
+  // Always ensure set number is included
   await update(playerStatsRef, {
-    [statName]: newStatValue
+    [statName]: newStatValue,
+    set: setNumber // Store the set number with the stats
   });
   
   // Find which team this player belongs to and update score
@@ -707,7 +711,8 @@ export const updatePlayerStat = async (
     statName,
     value,
     timestamp: Date.now(),
-    category
+    category,
+    set: setNumber // Include the set number in the log
   };
   
   console.log(`[UPDATE_STAT] Creating log entry:`, log);

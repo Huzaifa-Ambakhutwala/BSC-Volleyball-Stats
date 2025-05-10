@@ -14,6 +14,7 @@ interface ScoreboardPlayerCardProps {
   matchId: string;
   teamId?: string;
   stats?: PlayerStats; // Allow passing stats directly
+  currentSet?: number; // Which set to display stats for
 }
 
 // Helper function to get emoji for stat type

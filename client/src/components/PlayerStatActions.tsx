@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
-import type { Player, PlayerStats } from '@shared/schema';
-import { updatePlayerStat, listenToPlayerStats, createEmptyPlayerStats, getTeamById } from '@/lib/firebase';
+import type { Player, PlayerStats, Match } from '@shared/schema';
+import { 
+  updatePlayerStat, 
+  listenToPlayerStats, 
+  createEmptyPlayerStats, 
+  getTeamById,
+  listenToMatchById
+} from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, CheckCircle2, Award } from 'lucide-react';
 
@@ -183,7 +189,7 @@ export const StatActions = ({ matchId, selectedPlayerId }: StatActionsProps) => 
   useEffect(() => {
     if (!matchId) return;
     
-    const unsubscribe = listenToMatchById(matchId, (match) => {
+    const unsubscribe = listenToMatchById(matchId, (match: Match | null) => {
       if (match && match.currentSet) {
         setCurrentSet(match.currentSet);
       }

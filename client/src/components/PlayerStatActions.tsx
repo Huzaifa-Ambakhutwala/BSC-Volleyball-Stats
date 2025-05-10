@@ -17,6 +17,7 @@ interface PlayerStatActionsProps {
   teamId?: string;
   isSelected: boolean;
   onSelect: () => void;
+  currentSet?: number; // Which set to record stats for
 }
 
 // Helper to calculate total points earned - includes all point-earning stats

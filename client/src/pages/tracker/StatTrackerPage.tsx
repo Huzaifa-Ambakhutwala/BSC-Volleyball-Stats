@@ -653,6 +653,7 @@ const StatTrackerPage = () => {
                               teamId={teamA.id}
                               isSelected={selectedPlayerId === playerId}
                               onSelect={() => handlePlayerSelect(playerId)}
+                              currentSet={currentSet}
                             />
                           ) : null;
                         })}
@@ -710,6 +711,7 @@ const StatTrackerPage = () => {
                               teamId={teamB.id}
                               isSelected={selectedPlayerId === playerId}
                               onSelect={() => handlePlayerSelect(playerId)}
+                              currentSet={currentSet}
                             />
                           ) : null;
                         })}

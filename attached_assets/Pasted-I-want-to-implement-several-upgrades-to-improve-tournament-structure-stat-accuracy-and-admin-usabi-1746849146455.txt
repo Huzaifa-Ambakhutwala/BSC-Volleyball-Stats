@@ -1,0 +1,79 @@
+I want to implement several upgrades to improve tournament structure, stat accuracy, and admin usability in my volleyball stat tracking app. Please follow the changes and suggestions carefully:
+ 
+🔢 1. 
+Add 3 Sets Per Match
+•	Each match should support up to 3 sets.
+•	If one team wins both the first 2 sets, the 3rd set should not be played.
+•	On the stat tracker UI:
+o	Show active set number
+o	Allow tracking stats per set
+o	Allow admin to override or resume set 3 manually if needed
+ 
+🧮 2. 
+Update Stat Tracking Action Buttons
+•	Remove: Dig from Earned
+•	Add to Earned: Point (used when the team gets a point not tied to another specific action)
+•	Add to Fault:
+o	Out of Bounds
+o	Fault (generic for things like touching net, illegal rotation)
+ 
+
+📱 3. 
+Improve Admin Edit/Delete/Save Button UX
+•	On the admin panel (teams/schedule editing):
+o	Either increase button size or
+o	Reposition buttons to prevent accidental taps on tablets
+o	Best approach: place Save as primary button (right-aligned), with larger hitbox (min 44px height)
+o	Consider spacing out or using a 2-row layout for better mobile ergonomics
+ 
+🔍 4. 
+Add Player Search When Creating Teams
+•	On the create/edit team page:
+o	Add a search bar above the player list
+o	Search should filter players by name (case-insensitive)
+o	Allow clicking on the filtered result to add them to the team
+o	Highlight already-added players
+ 
+📊 5. 
+Expandable Player Cards (Admin > Player Stats)
+•	On the admin dashboard > player stats:
+o	Each card should be expandable (on click)
+o	Expanded view should show:
+	Total stats: spikes, blocks, faults, serves, etc.
+	Win/loss ratio
+	Average performance per match
+	Small graph (e.g., bar chart or radar) showing performance breakdown
+•	Use collapsible animation and responsive layout
+ 
+🏅 6. 
+Public Leaderboard Page
+•	Add /leaderboard page (public route, no login needed)
+•	Rank players based on weighted performance metric:
+o	Points = 3
+o	Spikes = 2
+o	Aces = 2
+o	Blocks = 1.5
+o	Deductions for faults = -1
+•	Leaderboard should show:
+o	Player name
+o	Team
+o	Total points (based on metric)
+o	Games played
+o	Optional: MVP badge for top player
+•	Should be sortable by column (points, name, team)
+ 
+🧠 7. 
+Fix for Block Button in Stat Tracking
+•	Currently, Block is in the “Earned” group, but it doesn’t always give a point
+•	Instead:
+o	When clicking Block, show a popup/modal:
+	“Did the block result in a point?”
+	If yes, record under Earned
+	If no, record under Neutral
+o	Update data model to support “Neutral” category if not already
+ 
+📌 Suggested General Improvements
+•	Add “Undo Last Action” button on stat tracking screen (within 10s)
+•	Use keyboard shortcuts (or swipe gestures) on tablets for faster tracking
+•	Allow exporting match stats (CSV or PDF) per team/player
+•	Add a dark mode toggle for tracking in gym lighting conditions

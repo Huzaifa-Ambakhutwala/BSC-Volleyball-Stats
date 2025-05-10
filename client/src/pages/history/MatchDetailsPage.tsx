@@ -472,7 +472,37 @@ const MatchDetailsPage = () => {
                 <div className="space-y-4">
                   {teamBPlayers.map(playerId => {
                     const player = playersMap[playerId];
-                    const playerStats = matchStats[playerId] || {};
+                    
+                    // Get player stats based on currentSet
+                    let playerStats = matchStats[playerId] || createEmptyPlayerStats();
+                    
+                    // If a set is selected, only show stats for that set
+                    if (currentSet !== null && playerStats) {
+                      // If stats don't have a set number, assume set 1
+                      const statSet = playerStats.set || 1;
+                      
+                      // Only show if stat's set matches current set
+                      if (statSet !== currentSet) {
+                        // Get stats from logs directly if needed
+                        const filteredLogs = statLogs.filter(
+                          log => log.playerId === playerId && log.set === currentSet
+                        );
+                        
+                        if (filteredLogs.length > 0) {
+                          // Calculate stats from filtered logs
+                          const calculatedStats = createEmptyPlayerStats(currentSet);
+                          filteredLogs.forEach(log => {
+                            if (log.statName) {
+                              calculatedStats[log.statName] = (calculatedStats[log.statName] || 0) + (log.value || 1);
+                            }
+                          });
+                          playerStats = calculatedStats;
+                        } else {
+                          // If no matching logs, use empty stats for this set
+                          playerStats = createEmptyPlayerStats(currentSet);
+                        }
+                      }
+                    }
                     
                     if (!player) return null;
                     

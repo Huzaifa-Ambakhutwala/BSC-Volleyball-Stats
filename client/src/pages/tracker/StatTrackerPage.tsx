@@ -10,6 +10,7 @@ import {
   listenToStatLogs, 
   deleteStatLog,
   getTrackerUser,
+  advanceToNextSet,
   type StatLog 
 } from '@/lib/firebase';
 import type { Match, Team, Player } from '@shared/schema';
@@ -317,15 +318,56 @@ const StatTrackerPage = () => {
     if (setNumber >= 1 && setNumber <= 3) {
       setCurrentSet(setNumber);
       
-      // If the match has a currentSet field, try to update it
+      // If the match has a currentSet field, update it
       if (currentMatch && selectedMatchId) {
-        // Here you can add code to update the match's current set in your database
+        // Get the current scores
+        const scoreA = currentMatch.scoreA || 0;
+        const scoreB = currentMatch.scoreB || 0;
+        
+        // Update the match score and set number
+        updateMatchScore(selectedMatchId, scoreA, scoreB, setNumber);
         console.log(`[StatTrackerPage] Changed to set ${setNumber}`);
       }
       
       toast({
         title: `Set ${setNumber}`,
         description: `Now tracking stats for set ${setNumber}`,
+      });
+    }
+  };
+  
+  // Handler for advancing to the next set
+  const handleAdvanceToNextSet = async () => {
+    if (!currentMatch || !selectedMatchId) return;
+    
+    try {
+      // Get the current set or default to 1
+      const currentSetNumber = currentMatch.currentSet || 1;
+      
+      // Only allow advancing if current set is 1 or 2
+      if (currentSetNumber < 1 || currentSetNumber > 2) {
+        toast({
+          title: "Cannot Advance",
+          description: `Set ${currentSetNumber} is the final set`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Use the advanceToNextSet function
+      const nextSet = await advanceToNextSet(selectedMatchId, currentSetNumber);
+      setCurrentSet(nextSet);
+      
+      toast({
+        title: `Set ${currentSetNumber} Complete`,
+        description: `Advanced to set ${nextSet}`,
+      });
+    } catch (error) {
+      console.error("Error advancing to next set:", error);
+      toast({
+        title: "Error",
+        description: "Failed to advance to the next set",
+        variant: "destructive",
       });
     }
   };

@@ -34,6 +34,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
+// Export Firebase functions and database for direct use
+export { ref, get, set, update, push, remove, onValue, off };
+export { database };
+
 // Players API
 export const addPlayer = async (name: string) => {
   const playersRef = ref(database, 'players');

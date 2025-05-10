@@ -238,9 +238,40 @@ export const listenToMatchById = (matchId: string, callback: (match: Match | nul
   };
 };
 
-export const updateMatchScore = async (matchId: string, scoreA: number, scoreB: number) => {
+export const updateMatchScore = async (matchId: string, scoreA: number, scoreB: number, setNumber: number = 1) => {
   const matchRef = ref(database, `matches/${matchId}`);
-  await update(matchRef, { scoreA, scoreB });
+  const matchSnapshot = await get(matchRef);
+  const match = matchSnapshot.val() as Match;
+  
+  // If match doesn't exist, just update the main scores
+  if (!match) {
+    await update(matchRef, { scoreA, scoreB });
+    return;
+  }
+  
+  // Initialize setScores if it doesn't exist
+  const setScores = match.setScores || {
+    set1: { scoreA: 0, scoreB: 0 },
+    set2: { scoreA: 0, scoreB: 0 },
+    set3: { scoreA: 0, scoreB: 0 }
+  };
+  
+  // Update the specific set's score
+  if (setNumber === 1) {
+    setScores.set1 = { scoreA, scoreB };
+  } else if (setNumber === 2) {
+    setScores.set2 = { scoreA, scoreB };
+  } else if (setNumber === 3) {
+    setScores.set3 = { scoreA, scoreB };
+  }
+  
+  // Update both the main score and the set-specific scores
+  await update(matchRef, { 
+    scoreA, 
+    scoreB,
+    setScores,
+    currentSet: setNumber // Always update the current set
+  });
 };
 
 export const updateMatch = async (
@@ -677,23 +708,41 @@ export const updatePlayerStat = async (
     }
   }
   
+  // Get current set scores
+  const currentSetNumber = match.currentSet || setNumber;
+  let currentSetScoreA = match.scoreA;
+  let currentSetScoreB = match.scoreB;
+  
+  // Get current set-specific scores if available
+  if (match.setScores) {
+    const setKey = `set${currentSetNumber}` as keyof typeof match.setScores;
+    const setScore = match.setScores[setKey];
+    if (setScore) {
+      currentSetScoreA = setScore.scoreA;
+      currentSetScoreB = setScore.scoreB;
+    }
+  }
+  
   // Update score based on the stat category and team
   if (category === 'earned' && isTeamA) {
     // Team A earned a point
-    await updateMatchScore(matchId, match.scoreA + 1, match.scoreB);
-    console.log(`[UPDATE_STAT] Team A earned a point, score updated to ${match.scoreA + 1}-${match.scoreB}`);
+    await updateMatchScore(matchId, currentSetScoreA + 1, currentSetScoreB, currentSetNumber);
+    console.log(`[UPDATE_STAT] Team A earned a point, set ${currentSetNumber} score updated to ${currentSetScoreA + 1}-${currentSetScoreB}`);
   } else if (category === 'earned' && !isTeamA) {
     // Team B earned a point
-    await updateMatchScore(matchId, match.scoreA, match.scoreB + 1);
-    console.log(`[UPDATE_STAT] Team B earned a point, score updated to ${match.scoreA}-${match.scoreB + 1}`);
+    await updateMatchScore(matchId, currentSetScoreA, currentSetScoreB + 1, currentSetNumber);
+    console.log(`[UPDATE_STAT] Team B earned a point, set ${currentSetNumber} score updated to ${currentSetScoreA}-${currentSetScoreB + 1}`);
   } else if (category === 'fault' && isTeamA) {
     // Team A fault gives point to Team B
-    await updateMatchScore(matchId, match.scoreA, match.scoreB + 1);
-    console.log(`[UPDATE_STAT] Team A fault, point to Team B, score updated to ${match.scoreA}-${match.scoreB + 1}`);
+    await updateMatchScore(matchId, currentSetScoreA, currentSetScoreB + 1, currentSetNumber);
+    console.log(`[UPDATE_STAT] Team A fault, point to Team B, set ${currentSetNumber} score updated to ${currentSetScoreA}-${currentSetScoreB + 1}`);
   } else if (category === 'fault' && !isTeamA) {
     // Team B fault gives point to Team A
-    await updateMatchScore(matchId, match.scoreA + 1, match.scoreB);
-    console.log(`[UPDATE_STAT] Team B fault, point to Team A, score updated to ${match.scoreA + 1}-${match.scoreB}`);
+    await updateMatchScore(matchId, currentSetScoreA + 1, currentSetScoreB, currentSetNumber);
+    console.log(`[UPDATE_STAT] Team B fault, point to Team A, set ${currentSetNumber} score updated to ${currentSetScoreA + 1}-${currentSetScoreB}`);
+  } else if (category === 'neutral') {
+    // Neutral actions don't affect the score
+    console.log(`[UPDATE_STAT] Neutral action recorded, no score change`);
   }
   
   // Create and save the stat log
@@ -998,6 +1047,25 @@ export type AdminUser = {
 };
 
 // Authentication
+// Function to advance to the next set
+export const advanceToNextSet = async (matchId: string, currentSet: number): Promise<number> => {
+  // Validate current set
+  if (currentSet < 1 || currentSet > 2) {
+    console.error(`[ADVANCE_SET] Invalid current set: ${currentSet}`);
+    return currentSet; // Return unchanged if invalid
+  }
+  
+  const nextSet = currentSet + 1;
+  console.log(`[ADVANCE_SET] Advancing from set ${currentSet} to set ${nextSet}`);
+  
+  // Update match with new current set
+  const matchRef = ref(database, `matches/${matchId}`);
+  await update(matchRef, { currentSet: nextSet });
+  
+  // Return the new set number
+  return nextSet;
+};
+
 export const loginAdmin = async (username: string, password: string): Promise<boolean> => {
   try {
     // Get all admin users from Firebase

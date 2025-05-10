@@ -214,7 +214,7 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
     );
   }
 
-  const handleStatUpdate = (statName: keyof PlayerStats, label: string, category: 'earned' | 'fault' = 'earned') => {
+  const handleStatUpdate = (statName: keyof PlayerStats, label: string, category: 'earned' | 'fault' | 'neutral' = 'earned') => {
     if (!selectedPlayerId || !matchId) return;
     
     // Set loading state

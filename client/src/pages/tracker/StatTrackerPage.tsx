@@ -20,7 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import PlayerStatActions, { StatActions } from '@/components/PlayerStatActions';
 import { Button } from '@/components/ui/button';
 import { useLocation } from 'wouter';
-import { LogOut, Clock, Trash2, Loader2, AlertTriangle } from 'lucide-react';
+import { LogOut, Clock, Trash2, Loader2, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
 import { TrackerUserContext } from '@/App';
 import { format } from 'date-fns';
 import {
@@ -688,7 +688,7 @@ const StatTrackerPage = () => {
                     <div className={`rounded-lg p-3 relative ${
                       currentSet === 1 
                         ? 'bg-blue-50 border-2 border-blue-400' 
-                        : (currentMatch.currentSet && currentMatch.currentSet > 1) 
+                        : (currentMatch.completedSets?.set1)
                           ? 'bg-green-50 border border-green-300' 
                           : 'bg-white border border-gray-200'
                     }`}>
@@ -702,16 +702,27 @@ const StatTrackerPage = () => {
                           {currentMatch.setScores?.set1?.scoreB || 0}
                         </span>
                       </div>
-                      {currentMatch.currentSet && currentMatch.currentSet > 1 && (
+                      
+                      {/* Status indicators */}
+                      {currentMatch.completedSets?.set1 ? (
                         <div className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         </div>
-                      )}
-                      {currentSet === 1 && (
+                      ) : currentSet === 1 ? (
                         <div className="absolute -top-2 -right-2 bg-blue-500 text-white rounded-full px-2 py-0.5 text-xs font-bold">
                           Current
+                        </div>
+                      ) : null}
+                      
+                      {/* Set lock status */}
+                      {currentMatch.completedSets?.set1 && (
+                        <div className="mt-2 text-xs text-center font-medium text-green-600 flex items-center justify-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                          </svg>
+                          Locked
                         </div>
                       )}
                     </div>
@@ -719,7 +730,7 @@ const StatTrackerPage = () => {
                     <div className={`rounded-lg p-3 relative ${
                       currentSet === 2 
                         ? 'bg-blue-50 border-2 border-blue-400' 
-                        : (currentMatch.currentSet && currentMatch.currentSet > 2) 
+                        : (currentMatch.completedSets?.set2)
                           ? 'bg-green-50 border border-green-300' 
                           : (currentMatch.currentSet && currentMatch.currentSet > 1)
                             ? 'bg-white border border-gray-200' 
@@ -735,16 +746,34 @@ const StatTrackerPage = () => {
                           {currentMatch.setScores?.set2?.scoreB || 0}
                         </span>
                       </div>
-                      {currentMatch.currentSet && currentMatch.currentSet > 2 && (
+                      
+                      {/* Status indicators */}
+                      {currentMatch.completedSets?.set2 ? (
                         <div className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         </div>
-                      )}
-                      {currentSet === 2 && (
+                      ) : currentSet === 2 ? (
                         <div className="absolute -top-2 -right-2 bg-blue-500 text-white rounded-full px-2 py-0.5 text-xs font-bold">
                           Current
+                        </div>
+                      ) : null}
+                      
+                      {/* Set lock status */}
+                      {currentMatch.completedSets?.set2 && (
+                        <div className="mt-2 text-xs text-center font-medium text-green-600 flex items-center justify-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                          </svg>
+                          Locked
+                        </div>
+                      )}
+                      
+                      {/* Coming soon indicator for locked sets */}
+                      {currentMatch.currentSet && currentMatch.currentSet < 2 && (
+                        <div className="mt-2 text-xs text-center font-medium text-gray-500">
+                          Available after Set 1
                         </div>
                       )}
                       {currentMatch.currentSet && currentMatch.currentSet < 2 && (
@@ -1128,6 +1157,93 @@ const StatTrackerPage = () => {
               ) : (
                 'Yes, Submit Match'
               )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Finalize Match Dialog */}
+      <AlertDialog open={showFinalizeMatchDialog} onOpenChange={setShowFinalizeMatchDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center">
+              <CheckCircle2 className="w-5 h-5 text-green-500 mr-2" />
+              Finalize Match
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to finalize this match? This will lock all sets and make the match permanently read-only. This action cannot be undone.
+              
+              <div className="mt-4 p-3 bg-gray-50 rounded-md">
+                <div className="font-medium">Match Summary:</div>
+                <div className="mt-2 space-y-2">
+                  {/* Set 1 */}
+                  {currentMatch?.setScores?.set1 && (
+                    <div className="text-sm flex items-center justify-between border-b pb-2">
+                      <span className="font-medium">Set 1:</span>
+                      <div className="flex items-center space-x-1">
+                        <span className="font-semibold text-blue-600">{currentMatch.setScores.set1.scoreA || 0}</span>
+                        <span>-</span>
+                        <span className="font-semibold text-amber-500">{currentMatch.setScores.set1.scoreB || 0}</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Set 2 */}
+                  {currentMatch?.setScores?.set2 && (
+                    <div className="text-sm flex items-center justify-between border-b pb-2">
+                      <span className="font-medium">Set 2:</span>
+                      <div className="flex items-center space-x-1">
+                        <span className="font-semibold text-blue-600">{currentMatch.setScores.set2.scoreA || 0}</span>
+                        <span>-</span>
+                        <span className="font-semibold text-amber-500">{currentMatch.setScores.set2.scoreB || 0}</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Set 3 */}
+                  {currentMatch?.setScores?.set3 && (
+                    <div className="text-sm flex items-center justify-between">
+                      <span className="font-medium">Set 3:</span>
+                      <div className="flex items-center space-x-1">
+                        <span className="font-semibold text-blue-600">{currentMatch.setScores.set3.scoreA || 0}</span>
+                        <span>-</span>
+                        <span className="font-semibold text-amber-500">{currentMatch.setScores.set3.scoreB || 0}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Final Result */}
+                <div className="mt-4 flex items-center justify-between bg-gray-100 p-2 rounded">
+                  <span className="font-medium">Final Result:</span>
+                  <div className="flex items-center space-x-6">
+                    <div className="text-center">
+                      <div className="text-xs font-medium text-gray-500">{teamA?.teamName || 'Team A'}</div>
+                      <div className="font-bold text-lg text-blue-600">{currentMatch?.scoreA || 0}</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-xs font-medium text-gray-500">{teamB?.teamName || 'Team B'}</div> 
+                      <div className="font-bold text-lg text-amber-500">{currentMatch?.scoreB || 0}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-4 bg-amber-50 text-amber-800 p-3 rounded-md text-sm">
+                <div className="flex items-start">
+                  <Info className="h-5 w-5 text-amber-500 mr-2 flex-shrink-0 mt-0.5" />
+                  <p>Once a match is finalized, all sets are locked and no further changes can be made to the statistics. Make sure all data is accurate before proceeding.</p>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelFinalizeMatch}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmFinalizeMatch}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              Finalize Match
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

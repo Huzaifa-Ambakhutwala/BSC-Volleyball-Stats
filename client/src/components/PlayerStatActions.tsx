@@ -362,12 +362,12 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
       
       <ActionCategory title="Fault" className="bg-[hsl(var(--vb-error))] text-white">
         <ActionButton 
-          label="Serve" 
+          label="Serve Error" 
           onClick={() => handleStatUpdate('serveErrors', 'Serve Fault', 'fault')} 
           className="btn-error"
         />
         <ActionButton 
-          label="Spike" 
+          label="Spike Error" 
           onClick={() => handleStatUpdate('spikeErrors', 'Spike Fault', 'fault')} 
           className="btn-error"
         />
@@ -391,10 +391,6 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
           onClick={() => handleStatUpdate('carries', 'Carry', 'fault')} 
           className="btn-error"
         />
-      </ActionCategory>
-      
-      {/* New fault categories */}
-      <ActionCategory title="Additional Faults" className="bg-[hsl(var(--vb-error))] text-white">
         <ActionButton 
           label="Out of Bounds" 
           onClick={() => handleStatUpdate('outOfBounds', 'Out of Bounds', 'fault')} 

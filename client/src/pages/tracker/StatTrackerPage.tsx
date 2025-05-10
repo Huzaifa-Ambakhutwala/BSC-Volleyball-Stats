@@ -511,31 +511,137 @@ const StatTrackerPage = () => {
 
           {currentMatch && (
             <>
-              {/* Score Controls */}
-              <div className="p-4 bg-gray-50 border-b border-gray-200">
+              {/* Set Selection Controls - More prominent */}
+              <div className="p-4 bg-gray-100 border-b border-gray-200">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                  <div className="flex items-center space-x-4">
-                    <span className="font-bold text-lg">Score:</span>
-                    <div className="flex items-center space-x-1">
-                      <span className="text-[hsl(var(--vb-blue))] font-bold text-xl">{currentMatch.scoreA}</span>
-                      <span className="text-gray-500">-</span>
-                      <span className="text-[hsl(var(--vb-yellow))] font-bold text-xl">{currentMatch.scoreB}</span>
+                  <div className="flex flex-col items-start space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <span className="font-bold text-lg text-gray-800">Currently Tracking:</span>
+                      <span className="bg-blue-600 text-white py-1 px-3 rounded-lg font-semibold">
+                        Set {currentSet} of 3
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      {/* Set selection buttons */}
+                      <button 
+                        className={`py-1 px-4 rounded-full border-2 ${currentSet === 1 ? 'bg-blue-600 text-white border-blue-600 font-bold' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
+                        onClick={() => handleSetChange(1)}
+                      >
+                        Set 1
+                      </button>
+                      <button 
+                        className={`py-1 px-4 rounded-full border-2 ${currentSet === 2 ? 'bg-blue-600 text-white border-blue-600 font-bold' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
+                        onClick={() => handleSetChange(2)}
+                      >
+                        Set 2
+                      </button>
+                      <button 
+                        className={`py-1 px-4 rounded-full border-2 ${currentSet === 3 ? 'bg-blue-600 text-white border-blue-600 font-bold' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
+                        onClick={() => handleSetChange(3)}
+                      >
+                        Set 3
+                      </button>
                     </div>
                   </div>
-                  <div className="flex space-x-3">
+                  
+                  {/* Submit set button */}
+                  <button 
+                    className="bg-amber-500 text-white py-2 px-4 rounded-lg hover:bg-amber-600 transition flex items-center space-x-2 font-semibold"
+                    onClick={handleAdvanceToNextSet}
+                    disabled={currentSet >= 3}
+                  >
+                    <span>Submit Set {currentSet}</span>
+                  </button>
+                  
+                  {/* Submit match button */}
+                  <button 
+                    className="bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition font-semibold"
+                    onClick={openSubmitDialog}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Submitting...' : 'Submit Full Match'}
+                  </button>
+                </div>
+                
+                {/* Set scores summary */}
+                {currentMatch.setScores && (
+                  <div className="mt-4 grid grid-cols-3 gap-2">
+                    <div className={`rounded-lg p-3 ${currentSet === 1 ? 'bg-blue-50 border border-blue-200' : 'bg-white border border-gray-200'}`}>
+                      <div className="text-center font-semibold mb-1">Set 1</div>
+                      <div className="flex justify-center items-center gap-2">
+                        <span className="inline-block px-2 py-1 rounded bg-[hsl(var(--vb-blue))] text-white font-bold">
+                          {currentMatch.setScores.set1?.scoreA || 0}
+                        </span>
+                        <span className="text-gray-500">-</span>
+                        <span className="inline-block px-2 py-1 rounded bg-[hsl(var(--vb-yellow))] text-white font-bold">
+                          {currentMatch.setScores.set1?.scoreB || 0}
+                        </span>
+                      </div>
+                    </div>
+                    <div className={`rounded-lg p-3 ${currentSet === 2 ? 'bg-blue-50 border border-blue-200' : 'bg-white border border-gray-200'}`}>
+                      <div className="text-center font-semibold mb-1">Set 2</div>
+                      <div className="flex justify-center items-center gap-2">
+                        <span className="inline-block px-2 py-1 rounded bg-[hsl(var(--vb-blue))] text-white font-bold">
+                          {currentMatch.setScores.set2?.scoreA || 0}
+                        </span>
+                        <span className="text-gray-500">-</span>
+                        <span className="inline-block px-2 py-1 rounded bg-[hsl(var(--vb-yellow))] text-white font-bold">
+                          {currentMatch.setScores.set2?.scoreB || 0}
+                        </span>
+                      </div>
+                    </div>
+                    <div className={`rounded-lg p-3 ${currentSet === 3 ? 'bg-blue-50 border border-blue-200' : 'bg-white border border-gray-200'}`}>
+                      <div className="text-center font-semibold mb-1">Set 3</div>
+                      <div className="flex justify-center items-center gap-2">
+                        <span className="inline-block px-2 py-1 rounded bg-[hsl(var(--vb-blue))] text-white font-bold">
+                          {currentMatch.setScores.set3?.scoreA || 0}
+                        </span>
+                        <span className="text-gray-500">-</span>
+                        <span className="inline-block px-2 py-1 rounded bg-[hsl(var(--vb-yellow))] text-white font-bold">
+                          {currentMatch.setScores.set3?.scoreB || 0}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Current Set Score Controls */}
+              <div className="p-4 bg-white border-b border-gray-200">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                  <div className="flex items-center space-x-4">
+                    <span className="font-bold text-lg">
+                      Set {currentSet} Score:
+                    </span>
+                    <div className="flex items-center space-x-1">
+                      <span className="text-[hsl(var(--vb-blue))] font-bold text-3xl">
+                        {currentMatch.setScores && currentMatch.setScores[`set${currentSet}` as keyof typeof currentMatch.setScores] 
+                          ? (currentMatch.setScores[`set${currentSet}` as keyof typeof currentMatch.setScores] as any).scoreA 
+                          : currentMatch.scoreA}
+                      </span>
+                      <span className="text-gray-500 text-xl">-</span>
+                      <span className="text-[hsl(var(--vb-yellow))] font-bold text-3xl">
+                        {currentMatch.setScores && currentMatch.setScores[`set${currentSet}` as keyof typeof currentMatch.setScores] 
+                          ? (currentMatch.setScores[`set${currentSet}` as keyof typeof currentMatch.setScores] as any).scoreB 
+                          : currentMatch.scoreB}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex space-x-6">
                     <div className="flex flex-col items-center">
                       <div className="text-sm text-[hsl(var(--vb-blue))] font-semibold mb-1">
                         {teamA?.teamName || 'Team A'}
                       </div>
-                      <div className="flex space-x-1">
+                      <div className="flex space-x-2">
                         <button 
-                          className="bg-red-500 text-white w-8 h-8 rounded-md hover:bg-red-600 transition flex items-center justify-center"
+                          className="bg-red-500 text-white w-10 h-10 rounded-md hover:bg-red-600 transition flex items-center justify-center font-bold"
                           onClick={() => handleScoreUpdate('A', -1)}
                         >
                           -
                         </button>
                         <button 
-                          className="bg-[hsl(var(--vb-blue))] text-white w-8 h-8 rounded-md hover:bg-blue-700 transition flex items-center justify-center"
+                          className="bg-[hsl(var(--vb-blue))] text-white w-10 h-10 rounded-md hover:bg-blue-700 transition flex items-center justify-center font-bold"
                           onClick={() => handleScoreUpdate('A', 1)}
                         >
                           +
@@ -546,15 +652,15 @@ const StatTrackerPage = () => {
                       <div className="text-sm text-[hsl(var(--vb-yellow))] font-semibold mb-1">
                         {teamB?.teamName || 'Team B'}
                       </div>
-                      <div className="flex space-x-1">
+                      <div className="flex space-x-2">
                         <button 
-                          className="bg-red-500 text-white w-8 h-8 rounded-md hover:bg-red-600 transition flex items-center justify-center"
+                          className="bg-red-500 text-white w-10 h-10 rounded-md hover:bg-red-600 transition flex items-center justify-center font-bold"
                           onClick={() => handleScoreUpdate('B', -1)}
                         >
                           -
                         </button>
                         <button 
-                          className="bg-[hsl(var(--vb-yellow))] text-white w-8 h-8 rounded-md hover:bg-amber-600 transition flex items-center justify-center"
+                          className="bg-[hsl(var(--vb-yellow))] text-white w-10 h-10 rounded-md hover:bg-amber-600 transition flex items-center justify-center font-bold"
                           onClick={() => handleScoreUpdate('B', 1)}
                         >
                           +
@@ -562,73 +668,6 @@ const StatTrackerPage = () => {
                       </div>
                     </div>
                   </div>
-                  <button 
-                    className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition"
-                    onClick={openSubmitDialog}
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? 'Submitting...' : 'Submit Match'}
-                  </button>
-                </div>
-              </div>
-              
-              {/* Set Selection Controls */}
-              <div className="p-4 bg-gray-50 border-b border-gray-200">
-                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                  <div className="flex items-center space-x-4">
-                    <span className="font-bold text-lg">Current Set:</span>
-                    <div className="flex items-center space-x-2">
-                      {/* Set selection buttons */}
-                      <button 
-                        className={`py-1 px-3 rounded-full border ${currentSet === 1 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300'}`}
-                        onClick={() => handleSetChange(1)}
-                      >
-                        Set 1
-                      </button>
-                      <button 
-                        className={`py-1 px-3 rounded-full border ${currentSet === 2 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300'}`}
-                        onClick={() => handleSetChange(2)}
-                      >
-                        Set 2
-                      </button>
-                      <button 
-                        className={`py-1 px-3 rounded-full border ${currentSet === 3 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300'}`}
-                        onClick={() => handleSetChange(3)}
-                      >
-                        Set 3
-                      </button>
-                    </div>
-                  </div>
-                  
-                  {/* Set scores if available */}
-                  {currentMatch.setScores && (
-                    <div className="flex items-center gap-3">
-                      {currentMatch.setScores.set1 && (
-                        <div className="text-sm">
-                          <span className="font-semibold">Set 1:</span> {currentMatch.setScores.set1.scoreA}-{currentMatch.setScores.set1.scoreB}
-                        </div>
-                      )}
-                      {currentMatch.setScores.set2 && (
-                        <div className="text-sm">
-                          <span className="font-semibold">Set 2:</span> {currentMatch.setScores.set2.scoreA}-{currentMatch.setScores.set2.scoreB}
-                        </div>
-                      )}
-                      {currentMatch.setScores.set3 && (
-                        <div className="text-sm">
-                          <span className="font-semibold">Set 3:</span> {currentMatch.setScores.set3.scoreA}-{currentMatch.setScores.set3.scoreB}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  
-                  {/* Advance set button */}
-                  <button 
-                    className="bg-amber-500 text-white py-1 px-4 rounded-md hover:bg-amber-600 transition flex items-center space-x-2"
-                    onClick={handleAdvanceToNextSet}
-                    disabled={currentSet >= 3}
-                  >
-                    <span>Complete Set {currentSet}</span>
-                  </button>
                 </div>
               </div>
 

@@ -177,16 +177,24 @@ const ActionCategory = ({ title, className = "bg-gray-100", children }: ActionCa
 interface StatActionsProps {
   matchId: string;
   selectedPlayerId: string | null;
+  currentSet?: number;
 }
 
-export const StatActions = ({ matchId, selectedPlayerId }: StatActionsProps) => {
+export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrentSet }: StatActionsProps) => {
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
   const [currentSet, setCurrentSet] = useState<number>(1);
   const [blockType, setBlockType] = useState<'point' | 'neutral'>('point');
 
-  // Get the current match data to load current set
+  // Use prop current set if provided, otherwise get from match data
   useEffect(() => {
+    // If we have a prop value for the current set, use that
+    if (propCurrentSet !== undefined) {
+      setCurrentSet(propCurrentSet);
+      return;
+    }
+    
+    // Otherwise, listen to the match for the current set
     if (!matchId) return;
     
     const unsubscribe = listenToMatchById(matchId, (match: Match | null) => {
@@ -196,7 +204,7 @@ export const StatActions = ({ matchId, selectedPlayerId }: StatActionsProps) => 
     });
     
     return () => unsubscribe();
-  }, [matchId]);
+  }, [matchId, propCurrentSet]);
 
   if (!selectedPlayerId) {
     return (

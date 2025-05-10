@@ -527,6 +527,7 @@ const StatTrackerPage = () => {
                               player={player} 
                               playerId={playerId} 
                               matchId={selectedMatchId}
+                              teamId={teamA.id}
                               isSelected={selectedPlayerId === playerId}
                               onSelect={() => handlePlayerSelect(playerId)}
                             />
@@ -583,6 +584,7 @@ const StatTrackerPage = () => {
                               player={player} 
                               playerId={playerId} 
                               matchId={selectedMatchId}
+                              teamId={teamB.id}
                               isSelected={selectedPlayerId === playerId}
                               onSelect={() => handlePlayerSelect(playerId)}
                             />
@@ -642,6 +644,15 @@ const StatTrackerPage = () => {
                               {log.category}
                             </span>
                           </td>
+                          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-center">
+                            {log.set ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                Set {log.set}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </td>
                           <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
                             {/* Only show delete button for the most recent log (first in the array) */}
                             {index === 0 && (
@@ -688,11 +699,32 @@ const StatTrackerPage = () => {
               Are you sure you want to submit this match? This will finalize the current statistics and make them available in the match history.
               <div className="mt-4 p-3 bg-gray-50 rounded-md">
                 <div className="font-medium">Match Summary:</div>
-                <div className="mt-1 text-sm">
-                  {teamA?.teamName || 'Team A'}: <span className="font-semibold">{currentMatch?.scoreA || 0}</span>
+                <div className="mt-1 text-sm flex items-center justify-between">
+                  <span>{teamA?.teamName || 'Team A'}:</span> 
+                  <span className="font-semibold">{currentMatch?.scoreA || 0}</span>
                 </div>
-                <div className="text-sm">
-                  {teamB?.teamName || 'Team B'}: <span className="font-semibold">{currentMatch?.scoreB || 0}</span>
+                <div className="text-sm flex items-center justify-between">
+                  <span>{teamB?.teamName || 'Team B'}:</span> 
+                  <span className="font-semibold">{currentMatch?.scoreB || 0}</span>
+                </div>
+                
+                {/* Set information */}
+                <div className="mt-3 pt-2 border-t border-gray-200">
+                  <div className="font-medium text-sm">Sets Played:</div>
+                  <div className="flex space-x-2 mt-1">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                      ${currentSet >= 1 ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700'}`}>
+                      Set 1
+                    </span>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                      ${currentSet >= 2 ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700'}`}>
+                      Set 2
+                    </span>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                      ${currentSet >= 3 ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700'}`}>
+                      Set 3
+                    </span>
+                  </div>
                 </div>
               </div>
             </AlertDialogDescription>

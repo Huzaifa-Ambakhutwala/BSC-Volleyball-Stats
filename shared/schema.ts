@@ -33,6 +33,13 @@ export type Match = {
     set2?: { scoreA: number; scoreB: number };
     set3?: { scoreA: number; scoreB: number };
   };
+  completedSets?: {
+    set1?: boolean;
+    set2?: boolean;
+    set3?: boolean;
+  };
+  status?: 'in_progress' | 'completed'; // Match status
+  completedDate?: string; // When the match was finalized
 };
 
 export type PlayerStats = {

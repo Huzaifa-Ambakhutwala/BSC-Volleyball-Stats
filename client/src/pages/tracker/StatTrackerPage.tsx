@@ -11,6 +11,8 @@ import {
   deleteStatLog,
   getTrackerUser,
   advanceToNextSet,
+  isSetLocked,
+  finalizeMatch,
   type StatLog 
 } from '@/lib/firebase';
 import type { Match, Team, Player } from '@shared/schema';
@@ -66,6 +68,7 @@ const StatTrackerPage = () => {
     }
   }, [trackerUser, setTrackerUser, setLocation]);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showFinalizeMatchDialog, setShowFinalizeMatchDialog] = useState(false);
 
   // Logout handler
   const handleLogout = () => {
@@ -336,6 +339,30 @@ const StatTrackerPage = () => {
   
   // Handler for changing the current set
   const handleSetChange = (setNumber: number) => {
+    if (!currentMatch || !selectedMatchId) return;
+    
+    // First check if the set is locked 
+    if (isSetLocked(currentMatch, setNumber)) {
+      toast({
+        title: `Set ${setNumber} Locked`,
+        description: `This set is already finalized and cannot be modified.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Check if we're trying to access a future set that's not unlocked yet
+    const currentMatchSet = currentMatch.currentSet || 1;
+    if (setNumber > currentMatchSet) {
+      toast({
+        title: `Set ${setNumber} Not Available`,
+        description: `You need to finalize set ${currentMatchSet} first before accessing set ${setNumber}.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // If validation passes, change the set
     if (setNumber >= 1 && setNumber <= 3) {
       setCurrentSet(setNumber);
       
@@ -381,8 +408,18 @@ const StatTrackerPage = () => {
       
       toast({
         title: `Set ${currentSetNumber} Complete`,
-        description: `Advanced to set ${nextSet}`,
+        description: `Advanced to set ${nextSet}. Set ${currentSetNumber} is now locked.`,
       });
+      
+      // If this was set 2 and we're advancing to set 3 (final set),
+      // Check if we should show the "finalize match" option
+      if (nextSet === 3) {
+        // Show toast with hint about finalizing match after set 3
+        toast({
+          title: "Final Set",
+          description: "This is the final set. You'll be able to submit the match after completing this set.",
+        });
+      }
     } catch (error) {
       console.error("Error advancing to next set:", error);
       toast({
@@ -391,6 +428,56 @@ const StatTrackerPage = () => {
         variant: "destructive",
       });
     }
+  };
+  
+  // Handler for finalizing the entire match
+  const handleFinalizeMatch = async () => {
+    if (!currentMatch || !selectedMatchId) return;
+    
+    try {
+      // Finalize the match
+      const success = await finalizeMatch(selectedMatchId);
+      
+      if (success) {
+        toast({
+          title: "Match Completed",
+          description: "The match has been successfully finalized and submitted.",
+        });
+        
+        // Reset selection and redirect to match history
+        setSelectedPlayerId(null);
+        setLocation(`/history/${selectedMatchId}`);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to finalize the match",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error finalizing match:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while finalizing the match",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // Open the finalize match dialog
+  const openFinalizeMatchDialog = () => {
+    setShowFinalizeMatchDialog(true);
+  };
+  
+  // Handle confirm finalize match
+  const handleConfirmFinalizeMatch = () => {
+    setShowFinalizeMatchDialog(false);
+    handleFinalizeMatch();
+  };
+  
+  // Handle cancel finalize match
+  const handleCancelFinalizeMatch = () => {
+    setShowFinalizeMatchDialog(false);
   };
 
   // Handler for deleting logs
@@ -545,32 +632,53 @@ const StatTrackerPage = () => {
                     </div>
                   </div>
                   
-                  {/* Submit set button */}
-                  <button 
-                    className="bg-amber-500 text-white py-2 px-4 rounded-lg hover:bg-amber-600 transition flex items-center space-x-2 font-semibold"
-                    onClick={handleAdvanceToNextSet}
-                    disabled={currentSet >= 3}
-                  >
-                    {currentSet < 3 ? (
-                      <>
-                        <span>Finalize Set {currentSet} & Advance to Set {currentSet + 1}</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
-                      </>
+                  {/* Submit set/match buttons */}
+                  <div className="flex flex-col space-y-2">
+                    {/* Check if current match is completed */}
+                    {currentMatch && currentMatch.status === 'completed' ? (
+                      <div className="bg-gray-100 border border-gray-300 p-3 rounded-lg text-center">
+                        <p className="text-gray-700 font-medium">Match submitted. Tracking disabled.</p>
+                        <p className="text-gray-500 text-sm mt-1">No further changes can be made to this match.</p>
+                      </div>
                     ) : (
-                      <span>Final Set (Cannot Advance)</span>
+                      <>
+                        {/* Submit current set button */}
+                        <button 
+                          className="bg-amber-500 text-white py-2 px-4 rounded-lg hover:bg-amber-600 transition flex items-center space-x-2 font-semibold"
+                          onClick={handleAdvanceToNextSet}
+                          disabled={currentSet >= 3 || (currentMatch && isSetLocked(currentMatch, currentSet))}
+                        >
+                          {currentMatch && isSetLocked(currentMatch, currentSet) ? (
+                            <span>Set {currentSet} is locked and cannot be modified</span>
+                          ) : currentSet < 3 ? (
+                            <>
+                              <span>Finalize Set {currentSet} & Advance to Set {currentSet + 1}</span>
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                              </svg>
+                            </>
+                          ) : (
+                            <span>Finalize Set {currentSet}</span>
+                          )}
+                        </button>
+                        
+                        {/* Submit full match button - only show when all required sets are completed */}
+                        {currentMatch && currentMatch.completedSets && 
+                         ((currentMatch.completedSets.set1 && currentMatch.completedSets.set2) ||
+                          (currentMatch.completedSets.set1 && currentMatch.completedSets.set3) ||
+                          (currentMatch.completedSets.set2 && currentMatch.completedSets.set3)) && (
+                          <button 
+                            className="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition flex items-center justify-center space-x-2 font-semibold"
+                            onClick={openFinalizeMatchDialog}
+                          >
+                            <span>Submit Full Match</span>
+                          </button>
+                        )}
+                      </>
                     )}
-                  </button>
+                  </div>
                   
-                  {/* Submit match button */}
-                  <button 
-                    className="bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition font-semibold"
-                    onClick={openSubmitDialog}
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? 'Submitting...' : 'Submit Full Match'}
-                  </button>
+                  {/* This submit button was replaced by the buttons above */}
                 </div>
                 
                 {/* Set scores summary */}
@@ -776,21 +884,52 @@ const StatTrackerPage = () => {
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-semibold">Actions</h3>
                       <div className="flex items-center space-x-2">
-                        <span className="text-sm font-semibold">Set:</span>
-                        <div className="flex space-x-1">
-                          {[1, 2, 3].map((setNum) => (
-                            <button 
-                              key={setNum}
-                              onClick={() => handleSetChange(setNum)}
-                              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                                currentSet === setNum 
-                                  ? 'bg-[hsl(var(--vb-blue))] text-white' 
-                                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                              }`}
-                            >
-                              {setNum}
-                            </button>
-                          ))}
+                        <span className="text-sm font-semibold mr-1">Current Set:</span>
+                        <div className="flex space-x-2">
+                          {[1, 2, 3].map((setNum) => {
+                            // Determine set status
+                            const isLocked = currentMatch && isSetLocked(currentMatch, setNum);
+                            const isCurrent = currentSet === setNum;
+                            const isUnavailable = currentMatch && (currentMatch.currentSet || 1) < setNum;
+                            
+                            // Determine button style based on status
+                            let buttonStyle = '';
+                            let statusLabel = '';
+                            
+                            if (isLocked) {
+                              buttonStyle = 'bg-gray-200 text-gray-500 border-gray-400 cursor-not-allowed';
+                              statusLabel = 'Locked';
+                            } else if (isCurrent) {
+                              buttonStyle = 'bg-blue-600 text-white border-blue-700 font-bold';
+                              statusLabel = 'In Progress';
+                            } else if (isUnavailable) {
+                              buttonStyle = 'bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed';
+                              statusLabel = 'Not Available';
+                            } else {
+                              buttonStyle = 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50';
+                              statusLabel = 'Available';
+                            }
+                            
+                            return (
+                              <div key={setNum} className="flex flex-col items-center">
+                                <button 
+                                  onClick={() => handleSetChange(setNum)}
+                                  disabled={isLocked || isUnavailable}
+                                  className={`px-3 py-1 rounded border-2 mb-1 ${buttonStyle}`}
+                                >
+                                  Set {setNum}
+                                </button>
+                                <span className={`text-xs ${
+                                  isLocked ? 'text-red-500' : 
+                                  isCurrent ? 'text-blue-600' : 
+                                  isUnavailable ? 'text-gray-400' : 
+                                  'text-green-600'
+                                }`}>
+                                  {statusLabel}
+                                </span>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     </div>

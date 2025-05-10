@@ -1062,12 +1062,55 @@ export const advanceToNextSet = async (matchId: string, currentSet: number): Pro
   const nextSet = currentSet + 1;
   console.log(`[ADVANCE_SET] Advancing from set ${currentSet} to set ${nextSet}`);
   
-  // Update match with new current set
+  // Mark the current set as finalized/locked
+  const setKey = `set${currentSet}`;
+  const updates: any = { 
+    currentSet: nextSet,
+    [`completedSets.${setKey}`]: true // Mark this set as completed/locked
+  };
+  
+  // Update match with new current set and completed set status
   const matchRef = ref(database, `matches/${matchId}`);
-  await update(matchRef, { currentSet: nextSet });
+  await update(matchRef, updates);
   
   // Return the new set number
   return nextSet;
+};
+
+// New function to check if a set is locked/finalized
+export const isSetLocked = (match: Match, setNumber: number): boolean => {
+  if (!match) return false;
+  
+  // Check if the set is marked as completed
+  if (match.completedSets) {
+    // Type-safe way to access the set
+    const setKey = `set${setNumber}` as keyof typeof match.completedSets;
+    if (match.completedSets[setKey]) {
+      return true;
+    }
+  }
+  
+  // When a match has advanced to a later set, all previous sets are considered locked
+  if (match.currentSet && match.currentSet > setNumber) {
+    return true;
+  }
+  
+  return false;
+};
+
+// Function to finalize an entire match
+export const finalizeMatch = async (matchId: string): Promise<boolean> => {
+  try {
+    const matchRef = ref(database, `matches/${matchId}`);
+    await update(matchRef, { 
+      status: 'completed',
+      completedDate: new Date().toISOString()
+    });
+    return true;
+  } catch (error) {
+    console.error('[FINALIZE_MATCH] Error finalizing match:', error);
+    return false;
+  }
 };
 
 export const loginAdmin = async (username: string, password: string): Promise<boolean> => {

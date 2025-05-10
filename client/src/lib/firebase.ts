@@ -13,7 +13,7 @@ export type StatLog = {
   statName: keyof PlayerStats;
   value: number;
   timestamp: number;
-  category: 'earned' | 'fault';
+  category: 'earned' | 'fault' | 'neutral';
   set?: number; // Which set the stat belongs to
 };
 
@@ -596,7 +596,7 @@ export const updatePlayerStat = async (
   playerId: string, 
   statName: keyof PlayerStats, 
   value: number,
-  category: 'earned' | 'fault' = 'earned',
+  category: 'earned' | 'fault' | 'neutral' = 'earned',
   setNumber: number = 1
 ) => {
   console.log(`[UPDATE_STAT] Starting stat update for match ${matchId}, player ${playerId}, stat ${statName}`);

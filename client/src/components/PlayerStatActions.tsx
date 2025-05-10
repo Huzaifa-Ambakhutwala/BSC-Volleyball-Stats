@@ -224,7 +224,7 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
     if (statName === 'blocks' && blockType === 'neutral') {
       statName = 'neutralBlocks' as keyof PlayerStats;
       label = 'Neutral Block';
-      category = 'earned'; // Still an earned play even if it didn't result in a point
+      category = 'neutral'; // Change to neutral category - counted but doesn't affect score
     }
     
     // Update the stat with category to properly handle scoring, and include current set

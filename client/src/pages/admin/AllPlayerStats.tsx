@@ -3,12 +3,31 @@ import { getPlayers, getMatches, getMatchStats } from '@/lib/firebase';
 import type { Player, Match, PlayerStats } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
 import ScoreboardStatCard from '@/components/ScoreboardStatCard';
+import { ChevronDown, ChevronUp, Award, BarChart, Activity, TrendingUp, Trophy } from 'lucide-react';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, RadialLinearScale, PointElement, LineElement, ArcElement } from 'chart.js';
+import { Bar, Radar } from 'react-chartjs-2';
+
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 type PlayerWithTotalStats = {
   player: Player;
   id: string;
   totalStats: PlayerStats;
   matchCount: number;
+  winCount?: number;
+  lossCount?: number;
 };
 
 const AllPlayerStats = () => {
@@ -19,6 +38,15 @@ const AllPlayerStats = () => {
   const { toast } = useToast();
   const [sortBy, setSortBy] = useState<keyof PlayerStats | 'totalEarned' | 'totalFaults'>('totalEarned');
   const [searchQuery, setSearchQuery] = useState('');
+  const [expandedPlayers, setExpandedPlayers] = useState<Record<string, boolean>>({});
+  
+  // Helper function to toggle expanded state for a player
+  const toggleExpanded = (playerId: string) => {
+    setExpandedPlayers(prev => ({
+      ...prev,
+      [playerId]: !prev[playerId]
+    }));
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -72,7 +100,11 @@ const AllPlayerStats = () => {
           dumps: 0,
           footFaults: 0,
           reaches: 0,
-          carries: 0
+          carries: 0,
+          points: 0,
+          outOfBounds: 0,
+          faults: 0,
+          neutralBlocks: 0
         },
         matchCount: 0
       });
@@ -140,8 +172,103 @@ const AllPlayerStats = () => {
       stats.netTouches + 
       stats.footFaults + 
       stats.carries +
-      stats.reaches
+      stats.reaches +
+      (stats.outOfBounds || 0) +
+      (stats.faults || 0)
     );
+  };
+  
+  // Calculate average stats per match
+  const calculateAverageStats = (stats: PlayerStats, matchCount: number): Partial<PlayerStats> => {
+    if (!matchCount || matchCount === 0) return stats;
+    
+    const avgStats: Partial<PlayerStats> = {};
+    Object.entries(stats).forEach(([key, value]) => {
+      if (typeof value === 'number') {
+        avgStats[key as keyof PlayerStats] = Number((value / matchCount).toFixed(1));
+      }
+    });
+    
+    return avgStats;
+  };
+  
+  // Prepare data for bar chart
+  const prepareBarChartData = (stats: PlayerStats) => {
+    return {
+      labels: ['Aces', 'Spikes', 'Blocks', 'Tips', 'Digs', 'Errors'],
+      datasets: [
+        {
+          label: 'Performance',
+          data: [
+            stats.aces || 0,
+            stats.spikes || 0,
+            stats.blocks || 0,
+            stats.tips || 0,
+            stats.digs || 0,
+            calculateTotalFaults(stats)
+          ],
+          backgroundColor: [
+            'rgba(54, 162, 235, 0.6)',
+            'rgba(255, 99, 132, 0.6)',
+            'rgba(75, 192, 192, 0.6)',
+            'rgba(255, 159, 64, 0.6)',
+            'rgba(153, 102, 255, 0.6)',
+            'rgba(255, 99, 132, 0.6)'
+          ],
+          borderColor: [
+            'rgba(54, 162, 235, 1)',
+            'rgba(255, 99, 132, 1)',
+            'rgba(75, 192, 192, 1)',
+            'rgba(255, 159, 64, 1)',
+            'rgba(153, 102, 255, 1)',
+            'rgba(255, 99, 132, 1)'
+          ],
+          borderWidth: 1
+        }
+      ]
+    };
+  };
+  
+  // Prepare data for radar chart
+  const prepareRadarChartData = (stats: PlayerStats) => {
+    const totalPoints = calculateTotalEarnedPoints(stats);
+    const totalFaults = calculateTotalFaults(stats);
+    
+    // Normalize values between 0-100 for better visualization
+    const normalize = (value: number, max: number) => max ? Math.min(Math.round((value / max) * 100), 100) : 0;
+    
+    const maxStat = Math.max(
+      stats.aces || 0,
+      stats.spikes || 0, 
+      stats.blocks || 0,
+      stats.digs || 0,
+      stats.tips || 0,
+      totalFaults
+    );
+    
+    return {
+      labels: ['Serving', 'Attacking', 'Blocking', 'Defense', 'Ball Control', 'Consistency'],
+      datasets: [
+        {
+          label: 'Skill Breakdown',
+          data: [
+            normalize(stats.aces || 0, maxStat),
+            normalize(stats.spikes || 0, maxStat),
+            normalize(stats.blocks || 0, maxStat),
+            normalize(stats.digs || 0, maxStat),
+            normalize((stats.tips || 0) + (stats.dumps || 0), maxStat),
+            100 - normalize(totalFaults, totalPoints + totalFaults)
+          ],
+          backgroundColor: 'rgba(54, 162, 235, 0.2)',
+          borderColor: 'rgba(54, 162, 235, 1)',
+          borderWidth: 2,
+          pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+          pointBorderColor: '#fff',
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: 'rgba(54, 162, 235, 1)'
+        }
+      ]
+    };
   };
   
   // Sort players based on selected criteria
@@ -210,32 +337,125 @@ const AllPlayerStats = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredPlayers.map(item => (
-            <div key={item.id} className="border border-gray-200 rounded-lg bg-white p-4">
-              <div className="flex justify-between items-start mb-2">
-                <h4 className="font-bold text-lg">{item.player.name}</h4>
-                <div className="text-sm text-gray-500">{item.matchCount} matches</div>
-              </div>
-              
-              <div className="flex space-x-2 mb-3">
-                <div className="px-2 py-1 bg-green-100 text-green-800 rounded-md text-xs font-medium">
-                  Points: {calculateTotalEarnedPoints(item.totalStats)}
+          {filteredPlayers.map(item => {
+            const isExpanded = expandedPlayers[item.id] || false;
+            const totalEarnedPoints = calculateTotalEarnedPoints(item.totalStats);
+            const totalFaults = calculateTotalFaults(item.totalStats);
+            const avgStats = calculateAverageStats(item.totalStats, item.matchCount);
+            
+            return (
+              <div 
+                key={item.id} 
+                className={`border border-gray-200 rounded-lg bg-white overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'shadow-lg' : ''}`}
+              >
+                {/* Card Header - Always visible */}
+                <div 
+                  className="p-4 cursor-pointer hover:bg-gray-50" 
+                  onClick={() => toggleExpanded(item.id)}
+                >
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="font-bold text-lg flex items-center">
+                      {item.player.name}
+                      {totalEarnedPoints > 15 && <Trophy className="h-4 w-4 ml-1 text-yellow-500" />}
+                    </h4>
+                    <div className="flex items-center">
+                      <div className="text-sm text-gray-500 mr-2">{item.matchCount} matches</div>
+                      {isExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                    </div>
+                  </div>
+                  
+                  <div className="flex space-x-2 mb-3">
+                    <div className="px-2 py-1 bg-green-100 text-green-800 rounded-md text-xs font-medium">
+                      Points: {totalEarnedPoints}
+                    </div>
+                    <div className="px-2 py-1 bg-red-100 text-red-800 rounded-md text-xs font-medium">
+                      Faults: {totalFaults}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>Aces: <span className="font-semibold">{item.totalStats.aces}</span></div>
+                    <div>Kills: <span className="font-semibold">{item.totalStats.spikes}</span></div>
+                    <div>Blocks: <span className="font-semibold">{item.totalStats.blocks}</span></div>
+                    <div>Tips: <span className="font-semibold">{item.totalStats.tips}</span></div>
+                    <div>Digs: <span className="font-semibold">{item.totalStats.digs}</span></div>
+                    <div>Errors: <span className="font-semibold">{totalFaults}</span></div>
+                  </div>
                 </div>
-                <div className="px-2 py-1 bg-red-100 text-red-800 rounded-md text-xs font-medium">
-                  Faults: {calculateTotalFaults(item.totalStats)}
-                </div>
+                
+                {/* Expanded Content */}
+                {isExpanded && (
+                  <div className="p-4 pt-0 border-t border-gray-200 animate-in fade-in slide-in-from-top duration-300">
+                    {/* Tabs for different expanded views */}
+                    <div className="space-y-6">
+                      {/* Average Performance Section */}
+                      <div className="bg-gray-50 p-3 rounded-md">
+                        <h5 className="font-semibold mb-2 flex items-center">
+                          <TrendingUp className="w-4 h-4 mr-1 text-blue-500" />
+                          Per Match Average
+                        </h5>
+                        <div className="grid grid-cols-3 gap-2 text-sm">
+                          <div>Aces: <span className="font-semibold">{avgStats.aces}</span></div>
+                          <div>Kills: <span className="font-semibold">{avgStats.spikes}</span></div>
+                          <div>Blocks: <span className="font-semibold">{avgStats.blocks}</span></div>
+                          <div>Tips: <span className="font-semibold">{avgStats.tips}</span></div>
+                          <div>Digs: <span className="font-semibold">{avgStats.digs}</span></div>
+                          <div>Errors: <span className="font-semibold">{avgStats.serveErrors && avgStats.spikeErrors ? 
+                            (avgStats.serveErrors + avgStats.spikeErrors).toFixed(1) : 0}</span></div>
+                        </div>
+                      </div>
+                      
+                      {/* Performance Charts */}
+                      <div>
+                        <h5 className="font-semibold mb-3 flex items-center">
+                          <BarChart className="w-4 h-4 mr-1 text-blue-500" />
+                          Performance Breakdown
+                        </h5>
+                        
+                        <div className="space-y-4">
+                          {/* Bar Chart */}
+                          <div className="h-[150px]">
+                            <Bar 
+                              data={prepareBarChartData(item.totalStats)} 
+                              options={{
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                  legend: {
+                                    display: false
+                                  }
+                                }
+                              }}
+                            />
+                          </div>
+                          
+                          {/* Radar Chart */}
+                          <div className="h-[200px] mt-4">
+                            <Radar 
+                              data={prepareRadarChartData(item.totalStats)}
+                              options={{
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                  r: {
+                                    angleLines: {
+                                      display: true
+                                    },
+                                    suggestedMin: 0,
+                                    suggestedMax: 100
+                                  }
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-              
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div>Aces: <span className="font-semibold">{item.totalStats.aces}</span></div>
-                <div>Kills: <span className="font-semibold">{item.totalStats.spikes}</span></div>
-                <div>Blocks: <span className="font-semibold">{item.totalStats.blocks}</span></div>
-                <div>Tips: <span className="font-semibold">{item.totalStats.tips}</span></div>
-                <div>Digs: <span className="font-semibold">{item.totalStats.digs}</span></div>
-                <div>Errors: <span className="font-semibold">{calculateTotalFaults(item.totalStats)}</span></div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

@@ -43,6 +43,7 @@ const StatTrackerPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statLogs, setStatLogs] = useState<StatLog[]>([]);
   const [isDeletingLog, setIsDeletingLog] = useState(false);
+  const [currentSet, setCurrentSet] = useState<number>(1); // Default to set 1
   const { toast } = useToast();
   const [_, setLocation] = useLocation();
   const { trackerUser, setTrackerUser } = useContext(TrackerUserContext);
@@ -310,6 +311,24 @@ const StatTrackerPage = () => {
   const handleCancelSubmit = () => {
     setShowConfirmDialog(false);
   };
+  
+  // Handler for changing the current set
+  const handleSetChange = (setNumber: number) => {
+    if (setNumber >= 1 && setNumber <= 3) {
+      setCurrentSet(setNumber);
+      
+      // If the match has a currentSet field, try to update it
+      if (currentMatch && selectedMatchId) {
+        // Here you can add code to update the match's current set in your database
+        console.log(`[StatTrackerPage] Changed to set ${setNumber}`);
+      }
+      
+      toast({
+        title: `Set ${setNumber}`,
+        description: `Now tracking stats for set ${setNumber}`,
+      });
+    }
+  };
 
   // Handler for deleting logs
   const handleDeleteLog = async (logId: string) => {
@@ -521,10 +540,31 @@ const StatTrackerPage = () => {
 
                   {/* Actions - Middle Column */}
                   <div className="lg:col-span-3">
-                    <h3 className="text-lg font-semibold mb-4 text-center">Actions</h3>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold">Actions</h3>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm font-semibold">Set:</span>
+                        <div className="flex space-x-1">
+                          {[1, 2, 3].map((setNum) => (
+                            <button 
+                              key={setNum}
+                              onClick={() => handleSetChange(setNum)}
+                              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                                currentSet === setNum 
+                                  ? 'bg-[hsl(var(--vb-blue))] text-white' 
+                                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                              }`}
+                            >
+                              {setNum}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                     <StatActions 
                       matchId={selectedMatchId}
                       selectedPlayerId={selectedPlayerId}
+                      currentSet={currentSet}
                     />
                   </div>
                   
@@ -573,6 +613,7 @@ const StatTrackerPage = () => {
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Team</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Set</th>
                         <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                       </tr>
                     </thead>

@@ -767,7 +767,14 @@ const StatTrackerPage = () => {
           {/* Stat Logs Section */}
           {currentMatch && selectedMatchId && (
             <div className="p-6 border-t border-gray-200">
-              <h3 className="text-lg font-semibold mb-4">Recent Actions</h3>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold">Recent Actions - Set {currentSet}</h3>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-500">
+                    {statLogs.filter(log => log.set === currentSet).length} actions in current set
+                  </span>
+                </div>
+              </div>
               
               {statLogs.length > 0 ? (
                 <div className="overflow-auto max-h-[300px] border border-gray-200 rounded-md">
@@ -784,7 +791,9 @@ const StatTrackerPage = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {statLogs.map((log, index) => (
+                      {statLogs
+                        .filter(log => log.set === currentSet) // Only show logs for the current set
+                        .map((log, index) => (
                         <tr key={log.id} className="hover:bg-gray-50">
                           <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
                             <div className="flex items-center">
@@ -837,7 +846,11 @@ const StatTrackerPage = () => {
                 </div>
               ) : (
                 <div className="p-6 text-center border border-gray-200 rounded-md">
-                  <p className="text-gray-500">No stat actions recorded yet.</p>
+                  {statLogs.length > 0 ? (
+                    <p className="text-gray-500">No actions recorded for Set {currentSet}.</p>
+                  ) : (
+                    <p className="text-gray-500">No stat actions recorded for this match yet.</p>
+                  )}
                 </div>
               )}
             </div>

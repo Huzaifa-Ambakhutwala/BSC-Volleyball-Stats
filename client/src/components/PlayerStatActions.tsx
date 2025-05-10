@@ -224,6 +224,9 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
       </div>
     );
   }
+  
+  // Display which set is being tracked
+  const setDisplay = currentSet ? `Set ${currentSet}` : "Unknown Set";
 
   const handleStatUpdate = (statName: keyof PlayerStats, label: string, category: 'earned' | 'fault' | 'neutral' = 'earned') => {
     if (!selectedPlayerId || !matchId) return;
@@ -268,23 +271,29 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
         </div>
       )}
       
-      {/* Set selector */}
-      <div className="mb-4 flex items-center justify-between border-b pb-3">
-        <span className="font-medium">Current Set:</span>
-        <div className="flex space-x-2">
-          {[1, 2, 3].map((setNum) => (
-            <button
-              key={setNum}
-              className={`px-4 py-1 rounded-md ${
-                currentSet === setNum
-                  ? 'bg-[hsl(var(--vb-blue))] text-white'
-                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-              }`}
-              onClick={() => setCurrentSet(setNum)}
-            >
-              {setNum}
-            </button>
-          ))}
+      {/* Set indicator banner */}
+      <div className="mb-4">
+        <div className="bg-blue-600 text-white text-center py-2 rounded-t-lg font-semibold">
+          Recording Stats for {setDisplay}
+        </div>
+        
+        <div className="border border-gray-200 border-t-0 rounded-b-lg p-3 bg-gray-50 flex flex-col">
+          <span className="text-sm text-gray-600 mb-2 text-center">Change Current Set</span>
+          <div className="flex justify-center space-x-3">
+            {[1, 2, 3].map((setNum) => (
+              <button
+                key={setNum}
+                className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-colors ${
+                  currentSet === setNum 
+                  ? 'bg-[hsl(var(--vb-blue))] text-white border-2 border-blue-700 shadow-md'
+                  : 'bg-white hover:bg-gray-100 text-gray-700 border border-gray-300'
+                }`}
+                onClick={() => setCurrentSet(setNum)}
+              >
+                {setNum}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       

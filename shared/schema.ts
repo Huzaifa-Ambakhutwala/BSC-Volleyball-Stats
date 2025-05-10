@@ -27,21 +27,39 @@ export type Match = {
   startTime: string;
   scoreA: number;
   scoreB: number;
+  currentSet?: number; // Current set being played (1, 2, or 3)
+  setScores?: {
+    set1?: { scoreA: number; scoreB: number };
+    set2?: { scoreA: number; scoreB: number };
+    set3?: { scoreA: number; scoreB: number };
+  };
 };
 
 export type PlayerStats = {
+  // Earned points
   aces: number;
-  serveErrors: number;
   spikes: number;
-  spikeErrors: number;
-  digs: number;
   blocks: number;
-  netTouches: number;
   tips: number;
   dumps: number;
+  digs: number; // Moving to neutral category in UI but keeping for backward compatibility
+  points: number; // New: Generic point not tied to a specific action
+  
+  // Faults
+  serveErrors: number;
+  spikeErrors: number;
+  netTouches: number;
   footFaults: number;
   reaches: number;
   carries: number;
+  outOfBounds: number; // New: Ball hit out of bounds
+  faults: number; // New: Generic fault (touching net, illegal rotation)
+  
+  // Set information
+  set?: number; // Which set the stats belong to (1, 2, or 3)
+  
+  // For block tracking improvement
+  neutralBlocks?: number; // Blocks that didn't result in a point
 };
 
 export type MatchStats = {
@@ -82,24 +100,43 @@ export const matches = pgTable("matches", {
   scoreA: integer("score_a").default(0).notNull(),
   scoreB: integer("score_b").default(0).notNull(),
   completed: boolean("completed").default(false).notNull(),
+  currentSet: integer("current_set").default(1), // Current set (1, 2, or 3)
+  setScores: json("set_scores").$type<{
+    set1?: { scoreA: number; scoreB: number };
+    set2?: { scoreA: number; scoreB: number };
+    set3?: { scoreA: number; scoreB: number };
+  }>(), // Store set scores as JSON
 });
 
 export const playerStats = pgTable("player_stats", {
   id: serial("id").primaryKey(),
   matchId: integer("match_id").notNull().references(() => matches.id, { onDelete: "cascade" }),
   playerId: integer("player_id").notNull().references(() => players.id, { onDelete: "cascade" }),
+  
+  // Earned points
   aces: integer("aces").default(0).notNull(),
-  serveErrors: integer("serve_errors").default(0).notNull(),
   spikes: integer("spikes").default(0).notNull(),
-  spikeErrors: integer("spike_errors").default(0).notNull(),
-  digs: integer("digs").default(0).notNull(),
   blocks: integer("blocks").default(0).notNull(),
-  netTouches: integer("net_touches").default(0).notNull(),
   tips: integer("tips").default(0).notNull(),
   dumps: integer("dumps").default(0).notNull(),
+  digs: integer("digs").default(0).notNull(),
+  points: integer("points").default(0).notNull(), // Generic points
+  
+  // Faults
+  serveErrors: integer("serve_errors").default(0).notNull(),
+  spikeErrors: integer("spike_errors").default(0).notNull(),
+  netTouches: integer("net_touches").default(0).notNull(),
   footFaults: integer("foot_faults").default(0).notNull(),
   reaches: integer("reaches").default(0).notNull(),
   carries: integer("carries").default(0).notNull(),
+  outOfBounds: integer("out_of_bounds").default(0).notNull(),
+  faults: integer("faults").default(0).notNull(),
+  
+  // Set tracking
+  set: integer("set").default(1), // Default to set 1
+  
+  // Block tracking improvement
+  neutralBlocks: integer("neutral_blocks").default(0),
 }, (t) => ({
   unq: uniqueIndex("player_match_unique").on(t.matchId, t.playerId),
 }));

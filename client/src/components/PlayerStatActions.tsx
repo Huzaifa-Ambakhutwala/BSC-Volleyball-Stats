@@ -13,16 +13,18 @@ interface PlayerStatActionsProps {
   onSelect: () => void;
 }
 
-// Helper to calculate total points earned - now includes digs, tips, and dumps
+// Helper to calculate total points earned - includes all point-earning stats
 const getTotalPointsContribution = (stats: PlayerStats): number => {
-  const earned = stats.aces + stats.spikes + stats.blocks + stats.digs + stats.tips + stats.dumps;
+  const earned = stats.aces + stats.spikes + stats.blocks + stats.tips + 
+    stats.dumps + (stats.points || 0);
   return earned;
 };
 
-// Helper to calculate total faults - now includes reaches
+// Helper to calculate total faults - includes all fault types
 const getTotalFaults = (stats: PlayerStats): number => {
   return stats.serveErrors + stats.spikeErrors + stats.netTouches + 
-    stats.footFaults + stats.carries + stats.reaches;
+    stats.footFaults + stats.carries + stats.reaches + 
+    (stats.outOfBounds || 0) + (stats.faults || 0);
 };
 
 const PlayerStatActions = ({ player, playerId, matchId, teamId, isSelected, onSelect }: PlayerStatActionsProps) => {
@@ -174,6 +176,21 @@ interface StatActionsProps {
 export const StatActions = ({ matchId, selectedPlayerId }: StatActionsProps) => {
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
+  const [currentSet, setCurrentSet] = useState<number>(1);
+  const [blockType, setBlockType] = useState<'point' | 'neutral'>('point');
+
+  // Get the current match data to load current set
+  useEffect(() => {
+    if (!matchId) return;
+    
+    const unsubscribe = listenToMatchById(matchId, (match) => {
+      if (match && match.currentSet) {
+        setCurrentSet(match.currentSet);
+      }
+    });
+    
+    return () => unsubscribe();
+  }, [matchId]);
 
   if (!selectedPlayerId) {
     return (
@@ -189,13 +206,20 @@ export const StatActions = ({ matchId, selectedPlayerId }: StatActionsProps) => 
     // Set loading state
     setIsUpdating(true);
     
-    // Update the stat with category to properly handle scoring
-    updatePlayerStat(matchId, selectedPlayerId, statName, 1, category)
+    // Special handling for blocks based on selected type
+    if (statName === 'blocks' && blockType === 'neutral') {
+      statName = 'neutralBlocks' as keyof PlayerStats;
+      label = 'Neutral Block';
+      category = 'earned'; // Still an earned play even if it didn't result in a point
+    }
+    
+    // Update the stat with category to properly handle scoring, and include current set
+    updatePlayerStat(matchId, selectedPlayerId, statName, 1, category, currentSet)
       .then(() => {
         // Show success toast
         toast({
           title: "Stat Recorded",
-          description: `${label} stat updated successfully`,
+          description: `${label} stat updated successfully (Set ${currentSet})`,
           variant: "default",
         });
       })
@@ -219,6 +243,26 @@ export const StatActions = ({ matchId, selectedPlayerId }: StatActionsProps) => 
         </div>
       )}
       
+      {/* Set selector */}
+      <div className="mb-4 flex items-center justify-between border-b pb-3">
+        <span className="font-medium">Current Set:</span>
+        <div className="flex space-x-2">
+          {[1, 2, 3].map((setNum) => (
+            <button
+              key={setNum}
+              className={`px-4 py-1 rounded-md ${
+                currentSet === setNum
+                  ? 'bg-[hsl(var(--vb-blue))] text-white'
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+              }`}
+              onClick={() => setCurrentSet(setNum)}
+            >
+              {setNum}
+            </button>
+          ))}
+        </div>
+      </div>
+      
       <ActionCategory title="Earned" className="bg-[hsl(var(--vb-success))] text-white">
         <ActionButton 
           label="Ace" 
@@ -241,8 +285,8 @@ export const StatActions = ({ matchId, selectedPlayerId }: StatActionsProps) => 
           className="btn-success"
         />
         <ActionButton 
-          label="Block" 
-          onClick={() => handleStatUpdate('blocks', 'Block', 'earned')} 
+          label="Point" 
+          onClick={() => handleStatUpdate('points', 'Generic Point', 'earned')} 
           className="btn-success"
         />
         <ActionButton 
@@ -251,6 +295,45 @@ export const StatActions = ({ matchId, selectedPlayerId }: StatActionsProps) => 
           className="btn-success"
         />
       </ActionCategory>
+      
+      {/* Block tracking with more specific options */}
+      <div className="mb-4">
+        <h4 className="bg-[hsl(var(--vb-success))] text-white text-center font-semibold py-2 rounded-t-lg">Block</h4>
+        <div className="border border-t-0 border-gray-200 p-3 rounded-b-lg">
+          <div className="grid grid-cols-1 gap-2 mb-2">
+            <div className="flex justify-center space-x-2">
+              <button
+                className={`px-3 py-1 rounded-md ${
+                  blockType === 'point'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                onClick={() => setBlockType('point')}
+              >
+                Point Block
+              </button>
+              <button
+                className={`px-3 py-1 rounded-md ${
+                  blockType === 'neutral'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                onClick={() => setBlockType('neutral')}
+              >
+                Neutral Block
+              </button>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 gap-2">
+            <ActionButton 
+              label={blockType === 'point' ? "Block (Point)" : "Block (Touch Only)"}
+              onClick={() => handleStatUpdate('blocks', blockType === 'point' ? 'Block Point' : 'Neutral Block', 'earned')} 
+              className={blockType === 'point' ? "btn-success" : "bg-blue-500 text-white hover:bg-blue-600"}
+            />
+          </div>
+        </div>
+      </div>
       
       <ActionCategory title="Fault" className="bg-[hsl(var(--vb-error))] text-white">
         <ActionButton 
@@ -281,6 +364,20 @@ export const StatActions = ({ matchId, selectedPlayerId }: StatActionsProps) => 
         <ActionButton 
           label="Carry" 
           onClick={() => handleStatUpdate('carries', 'Carry', 'fault')} 
+          className="btn-error"
+        />
+      </ActionCategory>
+      
+      {/* New fault categories */}
+      <ActionCategory title="Additional Faults" className="bg-[hsl(var(--vb-error))] text-white">
+        <ActionButton 
+          label="Out of Bounds" 
+          onClick={() => handleStatUpdate('outOfBounds', 'Out of Bounds', 'fault')} 
+          className="btn-error"
+        />
+        <ActionButton 
+          label="Generic Fault" 
+          onClick={() => handleStatUpdate('faults', 'Generic Fault', 'fault')} 
           className="btn-error"
         />
       </ActionCategory>

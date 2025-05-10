@@ -959,19 +959,31 @@ export const deleteStatLog = async (matchId: string, logId: string): Promise<boo
   }
 };
 
-export const createEmptyPlayerStats = (): PlayerStats => ({
+export const createEmptyPlayerStats = (setNumber: number = 1): PlayerStats => ({
+  // Earned points
   aces: 0,
-  serveErrors: 0,
   spikes: 0,
-  spikeErrors: 0,
-  digs: 0,
   blocks: 0,
-  netTouches: 0,
   tips: 0,
   dumps: 0,
+  digs: 0,
+  points: 0,
+  
+  // Faults
+  serveErrors: 0,
+  spikeErrors: 0,
+  netTouches: 0,
   footFaults: 0,
   reaches: 0,
-  carries: 0
+  carries: 0,
+  outOfBounds: 0,
+  faults: 0,
+  
+  // Set information
+  set: setNumber,
+  
+  // Block tracking
+  neutralBlocks: 0
 });
 
 // Admin user type

@@ -133,9 +133,10 @@ interface ActionButtonProps {
   label: string;
   onClick: () => void;
   className?: string;
+  disabled?: boolean; // Add disabled prop
 }
 
-const ActionButton = ({ label, onClick, className = "btn-neutral" }: ActionButtonProps) => {
+const ActionButton = ({ label, onClick, className = "btn-neutral", disabled = false }: ActionButtonProps) => {
   const [isActive, setIsActive] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   
@@ -201,19 +202,34 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
   const [isSetLocked, setIsSetLocked] = useState<boolean>(false);
 
   // Use prop current set if provided, otherwise get from match data
+  // Check for match state and set locking
   useEffect(() => {
     // If we have a prop value for the current set, use that
     if (propCurrentSet !== undefined) {
       setCurrentSet(propCurrentSet);
-      return;
     }
     
-    // Otherwise, listen to the match for the current set
+    // Always listen to the match for current state and set locking
     if (!matchId) return;
     
     const unsubscribe = listenToMatchById(matchId, (match: Match | null) => {
-      if (match && match.currentSet) {
-        setCurrentSet(match.currentSet);
+      setCurrentMatch(match);
+      
+      if (match) {
+        // Check if the set is locked
+        if (propCurrentSet !== undefined) {
+          // For specific set provided through props
+          setIsSetLocked(checkIsSetLocked(match, propCurrentSet));
+        } else if (match.currentSet) {
+          // For automatic set from match
+          setCurrentSet(match.currentSet);
+          setIsSetLocked(checkIsSetLocked(match, match.currentSet));
+        }
+        
+        // If match is completed, disable all actions
+        if (match.status === 'completed') {
+          setIsSetLocked(true);
+        }
       }
     });
     

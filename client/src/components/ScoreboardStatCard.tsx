@@ -20,7 +20,7 @@ interface ScoreboardStatCardProps {
 
 // Helper function to get emoji for stat type
 const getStatEmoji = (statName: keyof PlayerStats): string => {
-  const emojiMap: Record<keyof PlayerStats, string> = {
+  const emojiMap: Partial<Record<keyof PlayerStats, string>> = {
     aces: '🔥',
     serveErrors: '❌',
     spikes: '💥',
@@ -32,7 +32,12 @@ const getStatEmoji = (statName: keyof PlayerStats): string => {
     dumps: '🧮',
     footFaults: '👣',
     reaches: '🙋',
-    carries: '🤲'
+    carries: '🤲',
+    points: '✅',
+    outOfBounds: '🚫',
+    faults: '⛔',
+    neutralBlocks: '🔄'
+    // set is a number, not shown with emoji
   };
   return emojiMap[statName] || '📊';
 };
@@ -40,26 +45,36 @@ const getStatEmoji = (statName: keyof PlayerStats): string => {
 // Helper function for stat category color
 const getStatCategoryColor = (statName: keyof PlayerStats): string => {
   // Earned points - Green
-  if (['aces', 'spikes', 'blocks', 'tips', 'dumps', 'digs'].includes(statName)) {
+  if (['aces', 'spikes', 'blocks', 'tips', 'dumps', 'digs', 'points'].includes(statName)) {
     return 'bg-green-500';
   }
-  // Faults - Red (including reaches now)
+  // Neutral - Blue
+  else if (['neutralBlocks'].includes(statName) || statName === 'set') {
+    return 'bg-blue-500';
+  }
+  // Faults - Red
   else {
     return 'bg-red-500';
   }
 };
 
 // Helper function to calculate stats from logs
-const calculateStatsFromLogs = (logs: StatLog[], playerId: string): PlayerStats => {
-  console.log(`[STAT_CALC] Calculating stats for player ${playerId} from ${logs.length} logs`);
+const calculateStatsFromLogs = (logs: StatLog[], playerId: string, setNumber?: number): PlayerStats => {
+  console.log(`[STAT_CALC] Calculating stats for player ${playerId} from ${logs.length} logs${setNumber ? ` for set ${setNumber}` : ''}`);
   
   // Filter logs for this player
-  const playerLogs = logs.filter(log => log.playerId === playerId);
+  let playerLogs = logs.filter(log => log.playerId === playerId);
+  
+  // Filter by set if provided
+  if (setNumber !== undefined) {
+    playerLogs = playerLogs.filter(log => log.set === setNumber);
+    console.log(`[STAT_CALC] Filtered to ${playerLogs.length} logs for set ${setNumber}`);
+  }
   
   console.log(`[STAT_CALC] Found ${playerLogs.length} logs for this player`);
   
   // Initialize empty stats
-  const stats = createEmptyPlayerStats();
+  const stats = createEmptyPlayerStats(setNumber);
   
   // Aggregate stats from logs
   playerLogs.forEach(log => {
@@ -68,11 +83,16 @@ const calculateStatsFromLogs = (logs: StatLog[], playerId: string): PlayerStats 
     }
   });
   
+  // Set the set number on the stats
+  if (setNumber !== undefined) {
+    stats.set = setNumber;
+  }
+  
   console.log(`[STAT_CALC] Calculated stats:`, stats);
   return stats;
 };
 
-const ScoreboardStatCard = ({ player, playerId, matchId, teamId, stats: propStats, isLoading: externalLoading }: ScoreboardStatCardProps) => {
+const ScoreboardStatCard = ({ player, playerId, matchId, teamId, stats: propStats, isLoading: externalLoading, currentSet }: ScoreboardStatCardProps) => {
   const [localStats, setLocalStats] = useState<PlayerStats>(createEmptyPlayerStats());
   const [logsStats, setLogsStats] = useState<PlayerStats>(createEmptyPlayerStats());
   const [teamColor, setTeamColor] = useState<string | null>(null);
@@ -101,8 +121,8 @@ const ScoreboardStatCard = ({ player, playerId, matchId, teamId, stats: propStat
       console.log(`[SCOREBOARD_STAT] Received ${logs.length} stat logs for match ${matchId}`);
       
       if (logs.length > 0) {
-        // Calculate player stats from logs
-        const calculatedStats = calculateStatsFromLogs(logs, playerId);
+        // Calculate player stats from logs, filtering by current set if specified
+        const calculatedStats = calculateStatsFromLogs(logs, playerId, currentSet);
         setLogsStats(calculatedStats);
       }
       setLogsLoading(false);
@@ -112,7 +132,7 @@ const ScoreboardStatCard = ({ player, playerId, matchId, teamId, stats: propStat
       console.log(`[SCOREBOARD_STAT] Removing stat logs listener for match ${matchId}`);
       unsubscribe();
     };
-  }, [matchId, playerId]);
+  }, [matchId, playerId, currentSet]);
   
   // Only set up the listener if stats weren't provided as props (backup)
   useEffect(() => {
@@ -154,24 +174,38 @@ const ScoreboardStatCard = ({ player, playerId, matchId, teamId, stats: propStat
     }
   }, [teamId]);
   
-  // Calculate totals - digs, tips, dumps are earned points now
+  // Calculate totals including new stat types
   const totalEarnedPoints = (stats.aces || 0) + (stats.spikes || 0) + (stats.blocks || 0) +
-    (stats.digs || 0) + (stats.tips || 0) + (stats.dumps || 0);
-  // Reaches are now faults
+    (stats.digs || 0) + (stats.tips || 0) + (stats.dumps || 0) + (stats.points || 0);
+  
+  // All fault types
   const totalFaults = (stats.serveErrors || 0) + (stats.spikeErrors || 0) + 
     (stats.netTouches || 0) + (stats.footFaults || 0) + (stats.carries || 0) +
-    (stats.reaches || 0);
+    (stats.reaches || 0) + (stats.outOfBounds || 0) + (stats.faults || 0);
   
+  // A player has stats if they have either earned points or faults
   const hasStats = totalEarnedPoints > 0 || totalFaults > 0;
+  
+  // Don't show fields that aren't actual stat values in the UI
+  const displayableStatFields = (statName: string): boolean => {
+    return !['set', 'neutralBlocks'].includes(statName);
+  };
   
   return (
     <div 
       className="border border-gray-200 rounded-lg p-4"
       style={teamColor ? { borderColor: teamColor } : {}}
     >
-      <h5 className="font-semibold mb-2" style={teamColor ? { color: teamColor } : {}}>
-        {player.name}
-      </h5>
+      <div className="flex items-center justify-between mb-2">
+        <h5 className="font-semibold" style={teamColor ? { color: teamColor } : {}}>
+          {player.name}
+        </h5>
+        {currentSet && (
+          <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
+            Set {currentSet}
+          </span>
+        )}
+      </div>
       
       {isLoading ? (
         <div className="text-center py-2">
@@ -191,7 +225,7 @@ const ScoreboardStatCard = ({ player, playerId, matchId, teamId, stats: propStat
           
           <div className="flex flex-wrap gap-2">
             {Object.entries(stats).map(([key, value]) => {
-              if (value > 0) {
+              if (value > 0 && displayableStatFields(key)) {
                 const statName = key as keyof PlayerStats;
                 return (
                   <div 

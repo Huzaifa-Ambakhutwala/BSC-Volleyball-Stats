@@ -402,10 +402,10 @@ const StatTrackerPage = () => {
     }
     
     // Only allow advancing if current set is 1 or 2
-    if (currentSetNumber < 1 || currentSetNumber > 2) {
+    if (currentSetNumber >= 3) {
       toast({
-        title: "Cannot Advance",
-        description: `Set ${currentSetNumber} is the final set`,
+        title: "Final Set",
+        description: "Please use 'Submit Complete Match' to finalize the game",
         variant: "destructive",
       });
       return;
@@ -698,7 +698,7 @@ const StatTrackerPage = () => {
                       </div>
                     ) : (
                       <>
-                        {/* Submit current set button with improved visual design */}
+                        {/* Submit current set or match button */}
                         {currentMatch && isSetLocked(currentMatch, currentSet) ? (
                           <div className="bg-gray-100 border-l-4 border-amber-500 p-3 rounded-md shadow-sm">
                             <div className="flex items-center">
@@ -709,7 +709,17 @@ const StatTrackerPage = () => {
                             </div>
                             <p className="text-sm text-gray-600 ml-7 mt-1">This set has been finalized and cannot be modified.</p>
                           </div>
-                        ) : currentSet < 3 ? (
+                        ) : currentSet === 3 ? (
+                          <button 
+                            className="bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-all duration-200 shadow-md flex items-center justify-center font-bold"
+                            onClick={openFinalizeMatchDialog}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Submit Complete Match</span>
+                          </button>
+                        ) : (
                           <button 
                             className="bg-gradient-to-r from-amber-500 to-amber-600 text-white py-3 px-6 rounded-lg hover:from-amber-600 hover:to-amber-700 transition-all duration-200 shadow-md flex items-center justify-center font-bold"
                             onClick={handleAdvanceToNextSet}
@@ -718,16 +728,6 @@ const StatTrackerPage = () => {
                               <path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                             </svg>
                             <span>Finalize Set {currentSet} & Advance to Set {currentSet + 1}</span>
-                          </button>
-                        ) : (
-                          <button 
-                            className="bg-gradient-to-r from-amber-500 to-amber-600 text-white py-3 px-6 rounded-lg hover:from-amber-600 hover:to-amber-700 transition-all duration-200 shadow-md flex items-center justify-center font-bold"
-                            onClick={handleAdvanceToNextSet}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                            <span>Finalize Final Set ({currentSet})</span>
                           </button>
                         )}
                         

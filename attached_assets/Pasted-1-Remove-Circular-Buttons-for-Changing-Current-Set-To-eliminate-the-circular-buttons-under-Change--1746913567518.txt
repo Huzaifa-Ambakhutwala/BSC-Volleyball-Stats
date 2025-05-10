@@ -1,0 +1,65 @@
+1. Remove Circular Buttons for Changing Current Set
+To eliminate the circular buttons under "Change Current Set", simply remove the corresponding button code from the component’s render function. You would typically look for a section that has a button action related to changing the set and remove it.
+
+2. Fix Error on Advancing to the Next Set
+It seems the logic for transitioning between sets may need adjustments to ensure that it allows moving from one set to the next correctly. You might need to add a condition to ensure that the set you are finalizing is not already final.
+
+3. Correct Handling After Finalizing Set 3
+While on Set 3, instead of finalizing it, provide an option to "Submit Match". Make sure to check on your button for finalizing Set 3 and replace it with a submission button once the current set is complete.
+
+Updated Code Snippets
+Here are example code snippets for each of the points mentioned:
+
+1. Remove Circular Buttons
+Locate and remove any buttons like this:
+
+<button onClick={handleAdvanceToNextSet}>
+  <span>Advance to Next Set</span>
+</button>
+2. Fix Advancing Logic
+Check the function that handles moving to the next set:
+
+const handleAdvanceToNextSet = () => {
+  if (currentSet >= 3) {
+    toast({
+      title: "Cannot advance",
+      description: "Set 3 is the final set.",
+      variant: "destructive",
+    });
+    return;
+  }
+  
+  // Proceed with advancing logic
+  setCurrentSet(currentSet + 1);
+};
+3. Update Finalizing Logic for Set 3
+In the render method where you conditionally render buttons, adjust it as follows:
+
+{currentSet === 3 ? (
+  <button 
+    className="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition"
+    onClick={submitMatch}
+  >
+    Submit Match
+  </button>
+) : (
+  <button 
+    className="bg-green-600 hover:bg-green-700"
+    onClick={handleFinalizeSet}
+  >
+    Finalize Set {currentSet}
+  </button>
+)}
+Prompt for Replit
+You may send the following prompt to request the developers to implement these changes:
+
+Subject: StatTrackerPage Improvements Request
+
+Hello Team,
+
+I would like to suggest a few improvements for the StatTrackerPage:
+
+Remove the circular buttons under the "Change Current Set" section to streamline the interface.
+Update the logic that handles advancing to the next set. Currently, when I try to finalize Set 1 and advance to Set 2, I encounter an error saying "Failed to advance to next set". Please ensure the logic correctly allows transitioning from one set to the next.
+When I reach Set 3 and click "Finalize Set 3", it gives an error stating "Cannot advance, set 3 is the final set". Instead of finalizing set 3, there should be an option to "Submit Match" instead, locking all sets without allowing further edits.
+Thank you for your attention to these enhancements!

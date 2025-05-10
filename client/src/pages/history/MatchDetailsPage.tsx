@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'wouter';
-import { getMatchById, getTeamById, getStatLogs, getMatchStats, getPlayers, type StatLog } from '@/lib/firebase';
+import { getMatchById, getTeamById, getStatLogs, getMatchStats, getPlayers, type StatLog, createEmptyPlayerStats } from '@/lib/firebase';
 import type { Match, Team, Player, PlayerStats, MatchStats } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -15,6 +15,7 @@ const MatchDetailsPage = () => {
   const [statLogs, setStatLogs] = useState<StatLog[]>([]);
   const [matchStats, setMatchStats] = useState<MatchStats>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [currentSet, setCurrentSet] = useState<number | null>(null); // null means show all sets
   const { toast } = useToast();
 
   // Helper function to get emoji for stat type

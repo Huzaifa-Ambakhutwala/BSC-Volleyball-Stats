@@ -20,7 +20,7 @@ const MatchDetailsPage = () => {
 
   // Helper function to get emoji for stat type
   const getStatEmoji = (statName: keyof PlayerStats): string => {
-    const emojiMap: Record<keyof PlayerStats, string> = {
+    const emojiMap: Partial<Record<keyof PlayerStats, string>> = {
       aces: '🔥',
       serveErrors: '❌',
       spikes: '💥',
@@ -32,7 +32,11 @@ const MatchDetailsPage = () => {
       dumps: '🧮',
       footFaults: '👣',
       reaches: '🙋',
-      carries: '🤲'
+      carries: '🤲',
+      points: '➕',
+      outOfBounds: '📍',
+      faults: '⚠️',
+      neutralBlocks: '🧱'
     };
     return emojiMap[statName] || '📊';
   };
@@ -40,8 +44,12 @@ const MatchDetailsPage = () => {
   // Helper function for stat category color
   const getStatCategoryColor = (statName: keyof PlayerStats): string => {
     // Earned points - Green
-    if (['aces', 'spikes', 'blocks', 'tips', 'dumps', 'digs'].includes(statName)) {
+    if (['aces', 'spikes', 'blocks', 'tips', 'dumps', 'digs', 'points'].includes(statName)) {
       return 'bg-green-500';
+    }
+    // Neutral - Blue
+    else if (['neutralBlocks'].includes(statName)) {
+      return 'bg-blue-500';
     }
     // Faults - Red (including reaches now)
     else {
@@ -173,6 +181,61 @@ const MatchDetailsPage = () => {
                   <span className="ml-1">Court {match.courtNumber}</span>
                 </div>
               </div>
+              
+              {/* Set Selection */}
+              <div className="flex items-center space-x-1">
+                <button
+                  onClick={() => setCurrentSet(null)}
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    currentSet === null 
+                      ? 'bg-[hsl(var(--vb-blue))] text-white' 
+                      : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                  }`}
+                >
+                  All Sets
+                </button>
+                
+                {match.setScores && (
+                  <>
+                    {match.setScores.set1 && (
+                      <button
+                        onClick={() => setCurrentSet(1)}
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          currentSet === 1 
+                            ? 'bg-[hsl(var(--vb-blue))] text-white' 
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                        }`}
+                      >
+                        Set 1
+                      </button>
+                    )}
+                    {match.setScores.set2 && (
+                      <button
+                        onClick={() => setCurrentSet(2)}
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          currentSet === 2 
+                            ? 'bg-[hsl(var(--vb-blue))] text-white' 
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                        }`}
+                      >
+                        Set 2
+                      </button>
+                    )}
+                    {match.setScores.set3 && (
+                      <button
+                        onClick={() => setCurrentSet(3)}
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          currentSet === 3 
+                            ? 'bg-[hsl(var(--vb-blue))] text-white' 
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                        }`}
+                      >
+                        Set 3
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
@@ -191,9 +254,38 @@ const MatchDetailsPage = () => {
                   )}
                   <h3 className="text-xl font-bold">{teamA?.teamName || 'Team A'}</h3>
                 </div>
+                
+                {/* Show the specific set score if a set is selected, otherwise show match.scoreA */}
                 <div className="text-4xl font-bold" style={{ color: teamAColor }}>
-                  {match.scoreA}
+                  {currentSet && match.setScores 
+                    ? (currentSet === 1 && match.setScores.set1 ? match.setScores.set1.scoreA : 
+                       currentSet === 2 && match.setScores.set2 ? match.setScores.set2.scoreA : 
+                       currentSet === 3 && match.setScores.set3 ? match.setScores.set3.scoreA : 0)
+                    : match.scoreA
+                  }
                 </div>
+                
+                {/* Set score details */}
+                {match.setScores && (
+                  <div className="flex justify-center gap-2 mt-2">
+                    {match.setScores.set1 && (
+                      <div className={`text-sm ${currentSet === 1 ? 'font-bold' : ''}`}>
+                        S1: {match.setScores.set1.scoreA}
+                      </div>
+                    )}
+                    {match.setScores.set2 && (
+                      <div className={`text-sm ${currentSet === 2 ? 'font-bold' : ''}`}>
+                        S2: {match.setScores.set2.scoreA}
+                      </div>
+                    )}
+                    {match.setScores.set3 && (
+                      <div className={`text-sm ${currentSet === 3 ? 'font-bold' : ''}`}>
+                        S3: {match.setScores.set3.scoreA}
+                      </div>
+                    )}
+                  </div>
+                )}
+                
                 <div className="mt-2 text-sm text-gray-500">
                   {teamAPlayers.length} Players
                 </div>
@@ -202,6 +294,11 @@ const MatchDetailsPage = () => {
               {/* VS */}
               <div className="text-center">
                 <div className="text-xl font-bold text-gray-400">vs</div>
+                {match.setScores && match.currentSet && (
+                  <div className="mt-2 text-sm text-gray-500">
+                    {match.currentSet === 3 ? 'Final' : `Set ${match.currentSet} of 3`}
+                  </div>
+                )}
               </div>
               
               {/* Team B */}
@@ -219,9 +316,38 @@ const MatchDetailsPage = () => {
                   )}
                   <h3 className="text-xl font-bold">{teamB?.teamName || 'Team B'}</h3>
                 </div>
+                
+                {/* Show the specific set score if a set is selected, otherwise show match.scoreB */}
                 <div className="text-4xl font-bold" style={{ color: teamBColor }}>
-                  {match.scoreB}
+                  {currentSet && match.setScores 
+                    ? (currentSet === 1 && match.setScores.set1 ? match.setScores.set1.scoreB : 
+                       currentSet === 2 && match.setScores.set2 ? match.setScores.set2.scoreB : 
+                       currentSet === 3 && match.setScores.set3 ? match.setScores.set3.scoreB : 0)
+                    : match.scoreB
+                  }
                 </div>
+                
+                {/* Set score details */}
+                {match.setScores && (
+                  <div className="flex justify-center gap-2 mt-2">
+                    {match.setScores.set1 && (
+                      <div className={`text-sm ${currentSet === 1 ? 'font-bold' : ''}`}>
+                        S1: {match.setScores.set1.scoreB}
+                      </div>
+                    )}
+                    {match.setScores.set2 && (
+                      <div className={`text-sm ${currentSet === 2 ? 'font-bold' : ''}`}>
+                        S2: {match.setScores.set2.scoreB}
+                      </div>
+                    )}
+                    {match.setScores.set3 && (
+                      <div className={`text-sm ${currentSet === 3 ? 'font-bold' : ''}`}>
+                        S3: {match.setScores.set3.scoreB}
+                      </div>
+                    )}
+                  </div>
+                )}
+                
                 <div className="mt-2 text-sm text-gray-500">
                   {teamBPlayers.length} Players
                 </div>
@@ -248,7 +374,37 @@ const MatchDetailsPage = () => {
                 <div className="space-y-4">
                   {teamAPlayers.map(playerId => {
                     const player = playersMap[playerId];
-                    const playerStats = matchStats[playerId] || {};
+                    
+                    // Get player stats based on currentSet
+                    let playerStats = matchStats[playerId] || createEmptyPlayerStats();
+                    
+                    // If a set is selected, only show stats for that set
+                    if (currentSet !== null && playerStats) {
+                      // If stats don't have a set number, assume set 1
+                      const statSet = playerStats.set || 1;
+                      
+                      // Only show if stat's set matches current set
+                      if (statSet !== currentSet) {
+                        // Get stats from logs directly if needed
+                        const filteredLogs = statLogs.filter(
+                          log => log.playerId === playerId && log.set === currentSet
+                        );
+                        
+                        if (filteredLogs.length > 0) {
+                          // Calculate stats from filtered logs
+                          const calculatedStats = createEmptyPlayerStats(currentSet);
+                          filteredLogs.forEach(log => {
+                            if (log.statName) {
+                              calculatedStats[log.statName] = (calculatedStats[log.statName] || 0) + (log.value || 1);
+                            }
+                          });
+                          playerStats = calculatedStats;
+                        } else {
+                          // If no matching logs, use empty stats for this set
+                          playerStats = createEmptyPlayerStats(currentSet);
+                        }
+                      }
+                    }
                     
                     if (!player) return null;
                     

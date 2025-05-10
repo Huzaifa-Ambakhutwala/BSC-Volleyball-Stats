@@ -5,7 +5,8 @@ import {
   listenToPlayerStats, 
   createEmptyPlayerStats, 
   getTeamById,
-  listenToMatchById
+  listenToMatchById,
+  isSetLocked as checkIsSetLocked
 } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, CheckCircle2, Award } from 'lucide-react';
@@ -196,6 +197,8 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
   const [isUpdating, setIsUpdating] = useState(false);
   const [currentSet, setCurrentSet] = useState<number>(1);
   const [blockType, setBlockType] = useState<'point' | 'neutral'>('point');
+  const [currentMatch, setCurrentMatch] = useState<Match | null>(null);
+  const [isSetLocked, setIsSetLocked] = useState<boolean>(false);
 
   // Use prop current set if provided, otherwise get from match data
   useEffect(() => {

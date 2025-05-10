@@ -112,15 +112,30 @@ const ScoreboardPlayerCard = ({ player, playerId, matchId, teamId, stats: propSt
   useEffect(() => {
     if (propStats || !matchId || !playerId) return; // Skip if stats provided as props
     
-    console.log(`[ScoreboardCard] Setting up player stats API listener as fallback`);
+    console.log(`[ScoreboardCard] Setting up player stats API listener as fallback (set: ${currentSet || 'all'})`);
+    
+    // Initialize with empty stats for the current set
+    if (currentSet) {
+      setStatsFromAPI(createEmptyPlayerStats(currentSet));
+    }
     
     const unsubscribe = listenToPlayerStats(matchId, playerId, (playerStats) => {
       console.log(`[ScoreboardCard] Received direct stats for player ${playerId}:`, playerStats);
-      setStatsFromAPI(playerStats);
+      
+      // If currentSet is specified, only show stats for that set
+      if (currentSet) {
+        const statsSet = playerStats.set || 1;
+        if (statsSet === currentSet) {
+          setStatsFromAPI(playerStats);
+        }
+      } else {
+        // If no currentSet specified, show all stats
+        setStatsFromAPI(playerStats);
+      }
     });
     
     return () => unsubscribe();
-  }, [matchId, playerId, propStats]);
+  }, [matchId, playerId, propStats, currentSet]);
   
   // Load team color if teamId is provided
   useEffect(() => {

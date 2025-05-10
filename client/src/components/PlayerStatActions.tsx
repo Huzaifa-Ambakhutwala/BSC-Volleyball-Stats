@@ -34,19 +34,29 @@ const getTotalFaults = (stats: PlayerStats): number => {
     (stats.outOfBounds || 0) + (stats.faults || 0);
 };
 
-const PlayerStatActions = ({ player, playerId, matchId, teamId, isSelected, onSelect }: PlayerStatActionsProps) => {
+const PlayerStatActions = ({ player, playerId, matchId, teamId, isSelected, onSelect, currentSet = 1 }: PlayerStatActionsProps) => {
   const [stats, setStats] = useState<PlayerStats>(createEmptyPlayerStats());
   const [teamColor, setTeamColor] = useState<string | null>(null);
   
   useEffect(() => {
     if (!matchId || !playerId) return;
     
+    // Initialize with empty stats for the current set
+    setStats(createEmptyPlayerStats(currentSet));
+    
     const unsubscribe = listenToPlayerStats(matchId, playerId, (playerStats) => {
-      setStats(playerStats);
+      // Check if stats are for the current set or if set info is missing
+      const statsSet = playerStats.set || 1;
+      if (statsSet === currentSet) {
+        setStats(playerStats);
+      } else {
+        // If stats are for a different set, initialize with empty stats
+        setStats(createEmptyPlayerStats(currentSet));
+      }
     });
     
     return () => unsubscribe();
-  }, [matchId, playerId]);
+  }, [matchId, playerId, currentSet]);
   
   // Load team color if teamId is provided
   useEffect(() => {

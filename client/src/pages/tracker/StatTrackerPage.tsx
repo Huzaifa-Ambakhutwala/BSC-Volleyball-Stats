@@ -252,16 +252,37 @@ const StatTrackerPage = () => {
     if (!currentMatch || !selectedMatchId) return;
     
     try {
-      let newScoreA = currentMatch.scoreA;
-      let newScoreB = currentMatch.scoreB;
+      // Get current set
+      const setNum = currentMatch.currentSet || currentSet;
       
-      if (team === 'A') {
-        newScoreA = Math.max(0, currentMatch.scoreA + increment);
-      } else {
-        newScoreB = Math.max(0, currentMatch.scoreB + increment);
+      // Get current scores for the specific set
+      let currentSetScoreA = currentMatch.scoreA;
+      let currentSetScoreB = currentMatch.scoreB;
+      
+      // Use set-specific scores if available
+      if (currentMatch.setScores) {
+        const setKey = `set${setNum}` as keyof typeof currentMatch.setScores;
+        const setScore = currentMatch.setScores[setKey];
+        if (setScore) {
+          currentSetScoreA = setScore.scoreA;
+          currentSetScoreB = setScore.scoreB;
+        }
       }
       
-      await updateMatchScore(selectedMatchId, newScoreA, newScoreB);
+      // Calculate new scores
+      let newScoreA = currentSetScoreA;
+      let newScoreB = currentSetScoreB;
+      
+      if (team === 'A') {
+        newScoreA = Math.max(0, currentSetScoreA + increment);
+      } else {
+        newScoreB = Math.max(0, currentSetScoreB + increment);
+      }
+      
+      // Update score for the current set
+      await updateMatchScore(selectedMatchId, newScoreA, newScoreB, setNum);
+      
+      console.log(`[SCORE_UPDATE] Updated Set ${setNum} score to ${newScoreA}-${newScoreB}`);
     } catch (error) {
       toast({
         title: "Error",
@@ -547,6 +568,66 @@ const StatTrackerPage = () => {
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? 'Submitting...' : 'Submit Match'}
+                  </button>
+                </div>
+              </div>
+              
+              {/* Set Selection Controls */}
+              <div className="p-4 bg-gray-50 border-b border-gray-200">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                  <div className="flex items-center space-x-4">
+                    <span className="font-bold text-lg">Current Set:</span>
+                    <div className="flex items-center space-x-2">
+                      {/* Set selection buttons */}
+                      <button 
+                        className={`py-1 px-3 rounded-full border ${currentSet === 1 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300'}`}
+                        onClick={() => handleSetChange(1)}
+                      >
+                        Set 1
+                      </button>
+                      <button 
+                        className={`py-1 px-3 rounded-full border ${currentSet === 2 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300'}`}
+                        onClick={() => handleSetChange(2)}
+                      >
+                        Set 2
+                      </button>
+                      <button 
+                        className={`py-1 px-3 rounded-full border ${currentSet === 3 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300'}`}
+                        onClick={() => handleSetChange(3)}
+                      >
+                        Set 3
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Set scores if available */}
+                  {currentMatch.setScores && (
+                    <div className="flex items-center gap-3">
+                      {currentMatch.setScores.set1 && (
+                        <div className="text-sm">
+                          <span className="font-semibold">Set 1:</span> {currentMatch.setScores.set1.scoreA}-{currentMatch.setScores.set1.scoreB}
+                        </div>
+                      )}
+                      {currentMatch.setScores.set2 && (
+                        <div className="text-sm">
+                          <span className="font-semibold">Set 2:</span> {currentMatch.setScores.set2.scoreA}-{currentMatch.setScores.set2.scoreB}
+                        </div>
+                      )}
+                      {currentMatch.setScores.set3 && (
+                        <div className="text-sm">
+                          <span className="font-semibold">Set 3:</span> {currentMatch.setScores.set3.scoreA}-{currentMatch.setScores.set3.scoreB}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Advance set button */}
+                  <button 
+                    className="bg-amber-500 text-white py-1 px-4 rounded-md hover:bg-amber-600 transition flex items-center space-x-2"
+                    onClick={handleAdvanceToNextSet}
+                    disabled={currentSet >= 3}
+                  >
+                    <span>Complete Set {currentSet}</span>
                   </button>
                 </div>
               </div>

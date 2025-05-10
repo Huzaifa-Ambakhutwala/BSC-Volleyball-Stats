@@ -323,14 +323,14 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
       
       {/* Set locked warning */}
       {isSetLocked && (
-        <div className="bg-gray-100 border border-gray-300 p-3 rounded-lg mb-4 text-center">
-          <div className="flex items-center justify-center text-amber-600 mb-1">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+        <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-lg mb-4 shadow-md">
+          <div className="flex items-center mb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-amber-600 mr-3" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
             </svg>
-            <span className="font-semibold">Set {currentSet} is locked</span>
+            <span className="font-bold text-lg text-amber-800">Set {currentSet} is Locked</span>
           </div>
-          <p className="text-sm text-gray-600">This set has been finalized and cannot be modified.</p>
+          <p className="text-amber-700 ml-10">This set has been finalized and cannot be modified. To track stats for another set, please use the set switcher.</p>
         </div>
       )}
       
@@ -384,8 +384,9 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
                   blockType === 'point'
                     ? 'bg-green-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-                onClick={() => setBlockType('point')}
+                } ${isSetLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                onClick={() => !isSetLocked && setBlockType('point')}
+                disabled={isSetLocked}
               >
                 Point Block
               </button>
@@ -394,8 +395,9 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
                   blockType === 'neutral'
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-                onClick={() => setBlockType('neutral')}
+                } ${isSetLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                onClick={() => !isSetLocked && setBlockType('neutral')}
+                disabled={isSetLocked}
               >
                 Neutral Block
               </button>
@@ -418,41 +420,49 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
           label="Serve Error" 
           onClick={() => handleStatUpdate('serveErrors', 'Serve Fault', 'fault')} 
           className="btn-error"
+          disabled={isSetLocked}
         />
         <ActionButton 
           label="Spike Error" 
           onClick={() => handleStatUpdate('spikeErrors', 'Spike Fault', 'fault')} 
           className="btn-error"
+          disabled={isSetLocked}
         />
         <ActionButton 
           label="Net Touch" 
           onClick={() => handleStatUpdate('netTouches', 'Net Touch', 'fault')} 
           className="btn-error"
+          disabled={isSetLocked}
         />
         <ActionButton 
           label="Foot Fault" 
           onClick={() => handleStatUpdate('footFaults', 'Foot Fault', 'fault')} 
           className="btn-error"
+          disabled={isSetLocked}
         />
         <ActionButton 
           label="Reach" 
           onClick={() => handleStatUpdate('reaches', 'Reach', 'fault')} 
           className="btn-error"
+          disabled={isSetLocked}
         />
         <ActionButton 
           label="Carry" 
           onClick={() => handleStatUpdate('carries', 'Carry', 'fault')} 
           className="btn-error"
+          disabled={isSetLocked}
         />
         <ActionButton 
           label="Out of Bounds" 
           onClick={() => handleStatUpdate('outOfBounds', 'Out of Bounds', 'fault')} 
           className="btn-error"
+          disabled={isSetLocked}
         />
         <ActionButton 
           label="Generic Fault" 
           onClick={() => handleStatUpdate('faults', 'Generic Fault', 'fault')} 
           className="btn-error"
+          disabled={isSetLocked}
         />
       </ActionCategory>
     </div>

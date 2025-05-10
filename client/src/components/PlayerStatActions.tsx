@@ -407,6 +407,7 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
               label={blockType === 'point' ? "Block (Point)" : "Block (Touch Only)"}
               onClick={() => handleStatUpdate('blocks', blockType === 'point' ? 'Block Point' : 'Neutral Block', 'earned')} 
               className={blockType === 'point' ? "btn-success" : "bg-blue-500 text-white hover:bg-blue-600"}
+              disabled={isSetLocked}
             />
           </div>
         </div>

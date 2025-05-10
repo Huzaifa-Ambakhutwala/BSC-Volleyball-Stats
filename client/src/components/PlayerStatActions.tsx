@@ -140,7 +140,10 @@ const ActionButton = ({ label, onClick, className = "btn-neutral", disabled = fa
   const [isActive, setIsActive] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   
+  // Handle button click with disabled state check
   const handleClick = () => {
+    if (disabled) return;
+    
     setIsActive(true);
     
     // Call the provided onClick handler
@@ -158,9 +161,11 @@ const ActionButton = ({ label, onClick, className = "btn-neutral", disabled = fa
   
   return (
     <button 
-      className={`${className} w-full text-center py-2 px-3 relative ${isActive ? 'ring-2 ring-white ring-opacity-50' : ''}`}
+      className={`${className} w-full text-center py-2 px-3 relative 
+        ${isActive ? 'ring-2 ring-white ring-opacity-50' : ''} 
+        ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
       onClick={handleClick}
-      disabled={isActive}
+      disabled={isActive || disabled}
     >
       {showSuccess && (
         <span className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20 rounded">
@@ -316,21 +321,37 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
         </div>
       </div>
       
+      {/* Set locked warning */}
+      {isSetLocked && (
+        <div className="bg-gray-100 border border-gray-300 p-3 rounded-lg mb-4 text-center">
+          <div className="flex items-center justify-center text-amber-600 mb-1">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+            </svg>
+            <span className="font-semibold">Set {currentSet} is locked</span>
+          </div>
+          <p className="text-sm text-gray-600">This set has been finalized and cannot be modified.</p>
+        </div>
+      )}
+      
       <ActionCategory title="Earned" className="bg-[hsl(var(--vb-success))] text-white">
         <ActionButton 
           label="Ace" 
           onClick={() => handleStatUpdate('aces', 'Ace', 'earned')} 
           className="btn-success"
+          disabled={isSetLocked}
         />
         <ActionButton 
           label="Kill" 
           onClick={() => handleStatUpdate('spikes', 'Kill', 'earned')} 
           className="btn-success"
+          disabled={isSetLocked}
         />
         <ActionButton 
           label="Tip" 
           onClick={() => handleStatUpdate('tips', 'Tip', 'earned')} 
           className="btn-success"
+          disabled={isSetLocked}
         />
         <ActionButton 
           label="Dump" 

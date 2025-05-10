@@ -357,16 +357,19 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
           label="Dump" 
           onClick={() => handleStatUpdate('dumps', 'Dump', 'earned')} 
           className="btn-success"
+          disabled={isSetLocked}
         />
         <ActionButton 
           label="Point" 
           onClick={() => handleStatUpdate('points', 'Generic Point', 'earned')} 
           className="btn-success"
+          disabled={isSetLocked}
         />
         <ActionButton 
           label="Dig" 
           onClick={() => handleStatUpdate('digs', 'Dig', 'earned')} 
           className="btn-success"
+          disabled={isSetLocked}
         />
       </ActionCategory>
       

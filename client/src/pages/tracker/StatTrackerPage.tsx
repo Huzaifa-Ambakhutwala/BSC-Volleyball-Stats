@@ -438,11 +438,25 @@ const StatTrackerPage = () => {
           2: "Advanced to set 2. Complete this set to unlock the final set.",
           3: "This is the final set. You'll be able to submit the match after completing this set."
         };
-
-        toast({
-          title: `Set ${nextSet}`,
-          description: setMessages[nextSet as keyof typeof setMessages],
-        });
+        
+        // If successful advancement occurred, show appropriate message
+        if (nextSet === 2) {
+          toast({
+            title: "Set 2",
+            description: "Advanced to Set 2. Complete this set to unlock the final set.",
+          });
+        } else if (nextSet === 3) {
+          toast({
+            title: "Final Set",
+            description: "This is the final set. You'll be able to submit the match after completing this set.",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to advance to next set",
+            variant: "destructive",
+          });
+        }
       } else {
         toast({
           title: "Error",

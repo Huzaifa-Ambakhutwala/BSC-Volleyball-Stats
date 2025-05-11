@@ -434,12 +434,15 @@ const StatTrackerPage = () => {
 
         // If this was set 2 and we're advancing to set 3 (final set),
         // Show a hint about finalizing the match
-        if (nextSet === 3) {
-          toast({
-            title: "Final Set",
-            description: "This is the final set. You'll be able to submit the match after completing this set.",
-          });
-        }
+        const setMessages = {
+          2: "Advanced to set 2. Complete this set to unlock the final set.",
+          3: "This is the final set. You'll be able to submit the match after completing this set."
+        };
+
+        toast({
+          title: `Set ${nextSet}`,
+          description: setMessages[nextSet as keyof typeof setMessages],
+        });
       } else {
         toast({
           title: "Error",

@@ -434,12 +434,7 @@ const StatTrackerPage = () => {
 
         // If this was set 2 and we're advancing to set 3 (final set),
         // Show a hint about finalizing the match
-        const setMessages = {
-          2: "Advanced to set 2. Complete this set to unlock the final set.",
-          3: "This is the final set. You'll be able to submit the match after completing this set."
-        };
-        
-        // If successful advancement occurred, show appropriate message
+        // Only show toast based on the nextSet value
         if (nextSet === 2) {
           toast({
             title: "Set 2",
@@ -450,14 +445,8 @@ const StatTrackerPage = () => {
             title: "Final Set",
             description: "This is the final set. You'll be able to submit the match after completing this set.",
           });
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to advance to next set",
-            variant: "destructive",
-          });
         }
-      } else {
+      } else if (!nextSet) {
         toast({
           title: "Error",
           description: "Failed to advance to next set",

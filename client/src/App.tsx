@@ -29,7 +29,13 @@ export const TrackerUserContext = createContext<{
   setTrackerUser: (user: TrackerUser | null) => void;
 }>({
   trackerUser: null,
-  setTrackerUser: () => {},
+  setTrackerUser: () => { },
+});
+
+// Add dark mode context
+export const DarkModeContext = createContext({
+  darkMode: false,
+  setDarkMode: (v: boolean) => { },
 });
 
 // Protected route for stat tracker
@@ -42,19 +48,19 @@ const TrackerRoute = () => {
     // Check if user is logged in as a tracker
     const user = getTrackerUser();
     console.log("TrackerRoute - Retrieved tracker user from localStorage:", user);
-    
+
     if (!user) {
       console.log("TrackerRoute - No user found, redirecting to login");
       setIsLoading(false);
       setLocation('/tracker/login');
       return;
     }
-    
+
     console.log("TrackerRoute - User found, team ID:", user.teamId);
-    
+
     // Important: Set the user state BEFORE setting loading to false
     setTrackerUser(user);
-    
+
     // Slight delay to ensure context is properly updated
     setTimeout(() => {
       setIsLoading(false);
@@ -73,7 +79,7 @@ const TrackerRoute = () => {
   }
 
   console.log("TrackerRoute - Rendering StatTrackerPage with user:", trackerUser);
-  
+
   // Render the StatTrackerPage with context if authenticated
   return (
     <TrackerUserContext.Provider value={{ trackerUser, setTrackerUser }}>
@@ -85,7 +91,6 @@ const TrackerRoute = () => {
 function Router() {
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
       <main className="flex-grow">
         <Switch>
           <Route path="/" component={Home} />
@@ -107,16 +112,16 @@ function Router() {
             {() => {
               const [loading, setLoading] = useState(true);
               const [data, setData] = useState<any>({ matches: {}, teams: {} });
-              
+
               // Load all matches and teams for debugging
               useEffect(() => {
                 const { getMatches, getTeams } = require('./lib/firebase');
-                
+
                 Promise.all([getMatches(), getTeams()])
                   .then(([matches, teams]) => {
                     console.log("DEBUG - All Matches:", matches);
                     console.log("DEBUG - All Teams:", teams);
-                    
+
                     // Log info about each match
                     Object.entries(matches).forEach(([id, match]: [string, any]) => {
                       const trackerTeamName = teams[match.trackerTeam]?.teamName || 'Unknown';
@@ -126,7 +131,7 @@ function Router() {
                       console.log(`- TeamB: ${teams[match.teamB]?.teamName || 'Unknown'} (ID: ${match.teamB})`);
                       console.log('---');
                     });
-                    
+
                     setData({ matches, teams });
                     setLoading(false);
                   })
@@ -135,7 +140,7 @@ function Router() {
                     setLoading(false);
                   });
               }, []);
-              
+
               return (
                 <div className="container mx-auto p-6">
                   <h1 className="text-2xl font-bold mb-4">Debug Information</h1>
@@ -148,9 +153,9 @@ function Router() {
                         <p className="mb-2">Select a team to debug matches for that team:</p>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                           {Object.entries(data.teams).map(([id, team]: [string, any]) => (
-                            <a 
-                              key={id} 
-                              href={`/debug/team/${id}`} 
+                            <a
+                              key={id}
+                              href={`/debug/team/${id}`}
                               className="px-3 py-2 bg-blue-100 hover:bg-blue-200 rounded text-center transition"
                             >
                               {team.teamName} <span className="text-xs text-gray-500">({id})</span>
@@ -158,7 +163,7 @@ function Router() {
                           ))}
                         </div>
                       </div>
-                      
+
                       <h2 className="text-xl font-semibold mt-4 mb-2">Matches ({Object.keys(data.matches).length})</h2>
                       <div className="bg-gray-100 p-4 rounded mb-4">
                         <ul className="space-y-2">
@@ -175,7 +180,7 @@ function Router() {
                           ))}
                         </ul>
                       </div>
-                      
+
                       <h2 className="text-xl font-semibold mt-4 mb-2">Teams ({Object.keys(data.teams).length})</h2>
                       <div className="bg-gray-100 p-4 rounded">
                         <ul className="space-y-2">
@@ -196,22 +201,22 @@ function Router() {
               );
             }}
           </Route>
-          
+
           <Route path="/debug/team/:teamId">
-            {({params}) => {
+            {({ params }) => {
               const [loading, setLoading] = useState(true);
               const [team, setTeam] = useState<any>(null);
               const [matches, setMatches] = useState<Record<string, any>>({});
               const [teamMatches, setTeamMatches] = useState<any[]>([]);
               const [teams, setTeams] = useState<Record<string, any>>({});
-              
+
               useEffect(() => {
                 const teamId = params.teamId;
                 if (!teamId) {
                   setLoading(false);
                   return;
                 }
-                
+
                 Promise.all([
                   import('./lib/firebase').then(module => module.getTeamById(teamId)),
                   import('./lib/firebase').then(module => module.getMatches()),
@@ -220,13 +225,13 @@ function Router() {
                   setTeam(teamData);
                   setMatches(allMatches);
                   setTeams(allTeams);
-                  
+
                   // Filter matches where this team is the tracker
                   const relevantMatches = [];
                   for (const [matchId, match] of Object.entries(allMatches)) {
                     const trackerTeamId = String(match.trackerTeam || '').trim();
                     const currentTeamId = String(teamId || '').trim();
-                    
+
                     if (trackerTeamId === currentTeamId) {
                       relevantMatches.push({
                         ...match,
@@ -234,8 +239,8 @@ function Router() {
                         matchType: 'exact'
                       });
                     } else if (
-                      match.trackerTeam && 
-                      teamId && 
+                      match.trackerTeam &&
+                      teamId &&
                       (trackerTeamId.includes(currentTeamId) || currentTeamId.includes(trackerTeamId))
                     ) {
                       relevantMatches.push({
@@ -245,7 +250,7 @@ function Router() {
                       });
                     }
                   }
-                  
+
                   setTeamMatches(relevantMatches);
                   setLoading(false);
                 }).catch(error => {
@@ -253,20 +258,20 @@ function Router() {
                   setLoading(false);
                 });
               }, [params.teamId]);
-              
+
               if (loading) {
                 return <div className="p-6">Loading match data...</div>;
               }
-              
+
               if (!team) {
                 return <div className="p-6">Team not found with ID: {params.teamId}</div>;
               }
-              
+
               return (
                 <div className="container mx-auto p-6">
                   <div className="bg-white rounded-lg shadow-md p-6 mb-6">
                     <h1 className="text-2xl font-bold mb-2">Team Match Debug</h1>
-                    
+
                     <div className="mb-4 p-3 bg-gray-100 rounded-md">
                       <h2 className="text-lg font-semibold mb-2">Team Information</h2>
                       <div>
@@ -276,12 +281,12 @@ function Router() {
                         <p><strong>Players:</strong> {team.players?.length || 0}</p>
                       </div>
                     </div>
-                    
+
                     <div className="mb-4">
                       <h2 className="text-lg font-semibold mb-2">
                         Matches This Team Is Assigned To Track ({teamMatches.length})
                       </h2>
-                      
+
                       {teamMatches.length === 0 ? (
                         <div className="p-4 bg-yellow-100 text-yellow-800 rounded-md">
                           <p className="font-semibold">No matches found for this team</p>
@@ -292,7 +297,7 @@ function Router() {
                           {teamMatches.map(match => {
                             const teamA = teams[match.teamA];
                             const teamB = teams[match.teamB];
-                            
+
                             return (
                               <div key={match.id} className="border rounded-md p-3 bg-gray-50">
                                 <div className="flex justify-between mb-2">
@@ -308,13 +313,13 @@ function Router() {
                                     </span>
                                   </div>
                                 </div>
-                                
+
                                 <div className="mb-2">
                                   <div><strong>Teams:</strong> {teamA?.teamName || 'Unknown'} vs {teamB?.teamName || 'Unknown'}</div>
                                   <div><strong>Score:</strong> {match.scoreA} - {match.scoreB}</div>
                                   <div><strong>Start Time:</strong> {match.startTime}</div>
                                 </div>
-                                
+
                                 <div className="mt-3 text-xs p-2 bg-gray-200 rounded">
                                   <div><strong>Debug Info:</strong></div>
                                   <div>Match Tracker Team: {match.trackerTeam}</div>
@@ -336,19 +341,44 @@ function Router() {
           <Route component={NotFound} />
         </Switch>
       </main>
-      <Footer />
     </div>
   );
 }
 
 function App() {
+  // Dark mode state and effect
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('darkMode');
+      return stored === 'true';
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (darkMode) {
+      document.body.classList.add('dark');
+    } else {
+      document.body.classList.remove('dark');
+    }
+    localStorage.setItem('darkMode', darkMode ? 'true' : 'false');
+  }, [darkMode]);
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <DarkModeContext.Provider value={{ darkMode, setDarkMode }}>
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-grow">
+          <QueryClientProvider client={queryClient}>
+            <TooltipProvider>
+              <Router />
+              <Toaster />
+            </TooltipProvider>
+          </QueryClientProvider>
+        </main>
+        <Footer />
+      </div>
+    </DarkModeContext.Provider>
   );
 }
 

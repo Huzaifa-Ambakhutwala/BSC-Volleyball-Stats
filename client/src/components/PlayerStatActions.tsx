@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import type { Player, PlayerStats, Match } from '@shared/schema';
-import { 
-  updatePlayerStat, 
-  listenToPlayerStats, 
-  createEmptyPlayerStats, 
+import {
+  updatePlayerStat,
+  listenToPlayerStats,
+  createEmptyPlayerStats,
   getTeamById,
   listenToMatchById,
   isSetLocked as checkIsSetLocked
@@ -23,28 +23,28 @@ interface PlayerStatActionsProps {
 
 // Helper to calculate total points earned - includes all point-earning stats
 const getTotalPointsContribution = (stats: PlayerStats): number => {
-  const earned = stats.aces + stats.spikes + stats.blocks + stats.tips + 
+  const earned = stats.aces + stats.spikes + stats.blocks + stats.tips +
     stats.dumps + (stats.points || 0);
   return earned;
 };
 
 // Helper to calculate total faults - includes all fault types
 const getTotalFaults = (stats: PlayerStats): number => {
-  return stats.serveErrors + stats.spikeErrors + stats.netTouches + 
-    stats.footFaults + stats.carries + stats.reaches + 
+  return stats.serveErrors + stats.spikeErrors + stats.netTouches +
+    stats.footFaults + stats.carries + stats.reaches +
     (stats.outOfBounds || 0) + (stats.faults || 0);
 };
 
 const PlayerStatActions = ({ player, playerId, matchId, teamId, isSelected, onSelect, currentSet = 1 }: PlayerStatActionsProps) => {
   const [stats, setStats] = useState<PlayerStats>(createEmptyPlayerStats());
   const [teamColor, setTeamColor] = useState<string | null>(null);
-  
+
   useEffect(() => {
     if (!matchId || !playerId) return;
-    
+
     // Initialize with empty stats for the current set
     setStats(createEmptyPlayerStats(currentSet));
-    
+
     const unsubscribe = listenToPlayerStats(matchId, playerId, (playerStats) => {
       // Check if stats are for the current set or if set info is missing
       const statsSet = playerStats.set || 1;
@@ -55,10 +55,10 @@ const PlayerStatActions = ({ player, playerId, matchId, teamId, isSelected, onSe
         setStats(createEmptyPlayerStats(currentSet));
       }
     });
-    
+
     return () => unsubscribe();
   }, [matchId, playerId, currentSet]);
-  
+
   // Load team color if teamId is provided
   useEffect(() => {
     if (teamId) {
@@ -69,10 +69,10 @@ const PlayerStatActions = ({ player, playerId, matchId, teamId, isSelected, onSe
       });
     }
   }, [teamId]);
-  
+
   const totalPoints = getTotalPointsContribution(stats);
   const totalFaults = getTotalFaults(stats);
-  
+
   // Get text color based on background color
   const getTextColor = (hexColor: string): string => {
     const color = hexColor.replace('#', '');
@@ -82,33 +82,32 @@ const PlayerStatActions = ({ player, playerId, matchId, teamId, isSelected, onSe
     const brightness = (r * 299 + g * 587 + b * 114) / 1000;
     return brightness > 128 ? 'text-black' : 'text-white';
   };
-  
+
   return (
-    <div 
-      className={`w-full cursor-pointer rounded-lg p-2 transition-colors ${
-        isSelected 
-          ? 'border-2 border-[hsl(var(--vb-blue))]' 
-          : 'border border-gray-200 hover:bg-gray-50'
-      }`}
-      style={teamColor && !isSelected ? { backgroundColor: teamColor + '30' } : {}} 
+    <div
+      className={`w-full cursor-pointer rounded-lg p-2 transition-colors ${isSelected
+        ? 'border-2 border-[hsl(var(--vb-blue))]'
+        : 'border border-gray-200 hover:bg-gray-50'
+        }`}
+      style={teamColor && !isSelected ? { backgroundColor: teamColor + '30' } : {}}
       onClick={onSelect}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-1">
           {teamColor && (
-            <div 
-              className="w-3 h-3 rounded-full" 
+            <div
+              className="w-3 h-3 rounded-full"
               style={{ backgroundColor: teamColor }}
             />
           )}
-          <h4 
+          <h4
             className={`font-semibold text-sm ${teamColor && !isSelected ? getTextColor(teamColor) : 'text-[hsl(var(--vb-blue))]'}`}
             style={isSelected && teamColor ? { color: teamColor } : {}}
           >
             {player.name}
           </h4>
         </div>
-        
+
         {/* Show points and faults if player has stats */}
         {(totalPoints > 0 || totalFaults > 0) && (
           <div className="flex items-center space-x-1">
@@ -139,28 +138,28 @@ interface ActionButtonProps {
 const ActionButton = ({ label, onClick, className = "btn-neutral", disabled = false }: ActionButtonProps) => {
   const [isActive, setIsActive] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  
+
   // Handle button click with disabled state check
   const handleClick = () => {
     if (disabled) return;
-    
+
     setIsActive(true);
-    
+
     // Call the provided onClick handler
     onClick();
-    
+
     // Show success indicator
     setShowSuccess(true);
-    
+
     // Reset after a delay
     setTimeout(() => {
       setIsActive(false);
       setShowSuccess(false);
     }, 1000);
   };
-  
+
   return (
-    <button 
+    <button
       className={`${className} w-full text-center py-2 px-3 relative 
         ${isActive ? 'ring-2 ring-white ring-opacity-50' : ''} 
         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -192,13 +191,14 @@ const ActionCategory = ({ title, className = "bg-gray-100", children }: ActionCa
   </div>
 );
 
-interface StatActionsProps {
+export interface StatActionsProps {
   matchId: string;
   selectedPlayerId: string | null;
   currentSet?: number;
+  onStatEntered?: () => void;
 }
 
-export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrentSet }: StatActionsProps) => {
+export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrentSet, onStatEntered }: StatActionsProps) => {
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
   const [currentSet, setCurrentSet] = useState<number>(1);
@@ -213,13 +213,13 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
     if (propCurrentSet !== undefined) {
       setCurrentSet(propCurrentSet);
     }
-    
+
     // Always listen to the match for current state and set locking
     if (!matchId) return;
-    
+
     const unsubscribe = listenToMatchById(matchId, (match: Match | null) => {
       setCurrentMatch(match);
-      
+
       if (match) {
         // Check if the set is locked
         if (propCurrentSet !== undefined) {
@@ -230,14 +230,14 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
           setCurrentSet(match.currentSet);
           setIsSetLocked(checkIsSetLocked(match, match.currentSet));
         }
-        
+
         // If match is completed, disable all actions
         if (match.status === 'completed') {
           setIsSetLocked(true);
         }
       }
     });
-    
+
     return () => unsubscribe();
   }, [matchId, propCurrentSet]);
 
@@ -248,23 +248,23 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
       </div>
     );
   }
-  
+
   // Display which set is being tracked
   const setDisplay = currentSet ? `Set ${currentSet}` : "Unknown Set";
 
   const handleStatUpdate = (statName: keyof PlayerStats, label: string, category: 'earned' | 'fault' | 'neutral' = 'earned') => {
     if (!selectedPlayerId || !matchId) return;
-    
+
     // Set loading state
     setIsUpdating(true);
-    
+
     // Special handling for blocks based on selected type
     if (statName === 'blocks' && blockType === 'neutral') {
       statName = 'neutralBlocks' as keyof PlayerStats;
       label = 'Neutral Block';
       category = 'neutral'; // Change to neutral category - counted but doesn't affect score
     }
-    
+
     // Update the stat with category to properly handle scoring, and include current set
     updatePlayerStat(matchId, selectedPlayerId, statName, 1, category, currentSet)
       .then(() => {
@@ -274,6 +274,7 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
           description: `${label} stat updated successfully (Set ${currentSet})`,
           variant: "default",
         });
+        if (onStatEntered) onStatEntered();
       })
       .catch((error) => {
         toast({
@@ -294,14 +295,14 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
           <Loader2 className="h-8 w-8 animate-spin text-white" />
         </div>
       )}
-      
+
       {/* Set indicator banner */}
       <div className="mb-4">
         <div className="bg-blue-600 text-white text-center py-2 rounded-lg font-semibold">
           Recording Stats for {setDisplay}
         </div>
       </div>
-      
+
       {/* Set locked warning */}
       {isSetLocked && (
         <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-lg mb-4 shadow-md">
@@ -314,138 +315,134 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
           <p className="text-amber-700 ml-10">This set has been finalized and cannot be modified. To track stats for another set, please use the set switcher.</p>
         </div>
       )}
-      
-      <ActionCategory title="Earned" className="bg-[hsl(var(--vb-success))] text-white">
-        <ActionButton 
-          label="Ace" 
-          onClick={() => handleStatUpdate('aces', 'Ace', 'earned')} 
-          className="btn-success"
-          disabled={isSetLocked}
-        />
-        <ActionButton 
-          label="Kill" 
-          onClick={() => handleStatUpdate('spikes', 'Kill', 'earned')} 
-          className="btn-success"
-          disabled={isSetLocked}
-        />
-        <ActionButton 
-          label="Tip" 
-          onClick={() => handleStatUpdate('tips', 'Tip', 'earned')} 
-          className="btn-success"
-          disabled={isSetLocked}
-        />
-        <ActionButton 
-          label="Dump" 
-          onClick={() => handleStatUpdate('dumps', 'Dump', 'earned')} 
-          className="btn-success"
-          disabled={isSetLocked}
-        />
-        <ActionButton 
-          label="Point" 
-          onClick={() => handleStatUpdate('points', 'Generic Point', 'earned')} 
-          className="btn-success"
-          disabled={isSetLocked}
-        />
-        <ActionButton 
-          label="Dig" 
-          onClick={() => handleStatUpdate('digs', 'Dig', 'earned')} 
-          className="btn-success"
-          disabled={isSetLocked}
-        />
-      </ActionCategory>
-      
-      {/* Block tracking with more specific options */}
-      <div className="mb-4">
-        <h4 className="bg-[hsl(var(--vb-success))] text-white text-center font-semibold py-2 rounded-t-lg">Block</h4>
-        <div className="border border-t-0 border-gray-200 p-3 rounded-b-lg">
-          <div className="grid grid-cols-1 gap-2 mb-2">
-            <div className="flex justify-center space-x-2">
-              <button
-                className={`px-3 py-1 rounded-md ${
-                  blockType === 'point'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                } ${isSetLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
-                onClick={() => !isSetLocked && setBlockType('point')}
-                disabled={isSetLocked}
-              >
-                Point Block
-              </button>
-              <button
-                className={`px-3 py-1 rounded-md ${
-                  blockType === 'neutral'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                } ${isSetLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
-                onClick={() => !isSetLocked && setBlockType('neutral')}
-                disabled={isSetLocked}
-              >
-                Neutral Block
-              </button>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 gap-2">
-            <ActionButton 
-              label={blockType === 'point' ? "Block (Point)" : "Block (Touch Only)"}
-              onClick={() => handleStatUpdate('blocks', blockType === 'point' ? 'Block Point' : 'Neutral Block', 'earned')} 
-              className={blockType === 'point' ? "btn-success" : "bg-blue-500 text-white hover:bg-blue-600"}
-              disabled={isSetLocked}
-            />
-          </div>
+
+      {/* Earned Section */}
+      <div className="mb-2 mt-4">
+        <div className="text-lg font-bold text-left text-gray-700 border-l-4 border-green-500 pl-2 mb-2">Earned</div>
+        <div className="grid grid-cols-3 gap-2 mb-2">
+          <ActionButton
+            label="Ace"
+            onClick={() => handleStatUpdate('aces', 'Ace', 'earned')}
+            className="btn-success"
+            disabled={isSetLocked}
+          />
+          <ActionButton
+            label="Kill"
+            onClick={() => handleStatUpdate('spikes', 'Kill', 'earned')}
+            className="btn-success"
+            disabled={isSetLocked}
+          />
+          <ActionButton
+            label="Tip"
+            onClick={() => handleStatUpdate('tips', 'Tip', 'earned')}
+            className="btn-success"
+            disabled={isSetLocked}
+          />
+          <ActionButton
+            label="Dump"
+            onClick={() => handleStatUpdate('dumps', 'Dump', 'earned')}
+            className="btn-success"
+            disabled={isSetLocked}
+          />
+          <ActionButton
+            label="Point"
+            onClick={() => handleStatUpdate('points', 'Generic Point', 'earned')}
+            className="btn-success"
+            disabled={isSetLocked}
+          />
         </div>
       </div>
-      
-      <ActionCategory title="Fault" className="bg-[hsl(var(--vb-error))] text-white">
-        <ActionButton 
-          label="Serve Error" 
-          onClick={() => handleStatUpdate('serveErrors', 'Serve Fault', 'fault')} 
-          className="btn-error"
-          disabled={isSetLocked}
-        />
-        <ActionButton 
-          label="Spike Error" 
-          onClick={() => handleStatUpdate('spikeErrors', 'Spike Fault', 'fault')} 
-          className="btn-error"
-          disabled={isSetLocked}
-        />
-        <ActionButton 
-          label="Net Touch" 
-          onClick={() => handleStatUpdate('netTouches', 'Net Touch', 'fault')} 
-          className="btn-error"
-          disabled={isSetLocked}
-        />
-        <ActionButton 
-          label="Foot Fault" 
-          onClick={() => handleStatUpdate('footFaults', 'Foot Fault', 'fault')} 
-          className="btn-error"
-          disabled={isSetLocked}
-        />
-        <ActionButton 
-          label="Reach" 
-          onClick={() => handleStatUpdate('reaches', 'Reach', 'fault')} 
-          className="btn-error"
-          disabled={isSetLocked}
-        />
-        <ActionButton 
-          label="Carry" 
-          onClick={() => handleStatUpdate('carries', 'Carry', 'fault')} 
-          className="btn-error"
-          disabled={isSetLocked}
-        />
-        <ActionButton 
-          label="Out of Bounds" 
-          onClick={() => handleStatUpdate('outOfBounds', 'Out of Bounds', 'fault')} 
-          className="btn-error"
-          disabled={isSetLocked}
-        />
-        <ActionButton 
-          label="Generic Fault" 
-          onClick={() => handleStatUpdate('faults', 'Generic Fault', 'fault')} 
-          className="btn-error"
-          disabled={isSetLocked}
-        />
-      </ActionCategory>
+
+      {/* Block Section */}
+      <div className="mb-2 mt-4">
+        <div className="text-lg font-bold text-left text-gray-700 border-l-4 border-blue-500 pl-2 mb-2">Block</div>
+        <div className="grid grid-cols-2 gap-2 mb-2">
+          <button
+            className={`px-3 py-1 rounded-md ${blockType === 'point'
+              ? 'bg-green-600 text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              } ${isSetLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+            onClick={() => !isSetLocked && setBlockType('point')}
+            disabled={isSetLocked}
+          >
+            Point Block
+          </button>
+          <button
+            className={`px-3 py-1 rounded-md ${blockType === 'neutral'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              } ${isSetLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+            onClick={() => !isSetLocked && setBlockType('neutral')}
+            disabled={isSetLocked}
+          >
+            Neutral Block
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 gap-2">
+          <ActionButton
+            label={blockType === 'point' ? "Block (Point)" : "Block (Touch Only)"}
+            onClick={() => handleStatUpdate('blocks', blockType === 'point' ? 'Block Point' : 'Neutral Block', 'earned')}
+            className={blockType === 'point' ? "btn-success" : "bg-blue-500 text-white hover:bg-blue-600"}
+            disabled={isSetLocked}
+          />
+        </div>
+      </div>
+
+      {/* Fault Section */}
+      <div className="mb-2 mt-4">
+        <div className="text-lg font-bold text-left text-gray-700 border-l-4 border-red-500 pl-2 mb-2">Fault</div>
+        <div className="grid grid-cols-3 gap-2 mb-2">
+          <ActionButton
+            label="Serve Error"
+            onClick={() => handleStatUpdate('serveErrors', 'Serve Fault', 'fault')}
+            className="btn-error"
+            disabled={isSetLocked}
+          />
+          <ActionButton
+            label="Spike Error"
+            onClick={() => handleStatUpdate('spikeErrors', 'Spike Fault', 'fault')}
+            className="btn-error"
+            disabled={isSetLocked}
+          />
+          <ActionButton
+            label="Net Touch"
+            onClick={() => handleStatUpdate('netTouches', 'Net Touch', 'fault')}
+            className="btn-error"
+            disabled={isSetLocked}
+          />
+          <ActionButton
+            label="Foot Fault"
+            onClick={() => handleStatUpdate('footFaults', 'Foot Fault', 'fault')}
+            className="btn-error"
+            disabled={isSetLocked}
+          />
+          <ActionButton
+            label="Reach"
+            onClick={() => handleStatUpdate('reaches', 'Reach', 'fault')}
+            className="btn-error"
+            disabled={isSetLocked}
+          />
+          <ActionButton
+            label="Carry"
+            onClick={() => handleStatUpdate('carries', 'Carry', 'fault')}
+            className="btn-error"
+            disabled={isSetLocked}
+          />
+          <ActionButton
+            label="Out of Bounds"
+            onClick={() => handleStatUpdate('outOfBounds', 'Out of Bounds', 'fault')}
+            className="btn-error"
+            disabled={isSetLocked}
+          />
+          <ActionButton
+            label="Generic Fault"
+            onClick={() => handleStatUpdate('faults', 'Generic Fault', 'fault')}
+            className="btn-error"
+            disabled={isSetLocked}
+          />
+        </div>
+      </div>
     </div>
   );
 };

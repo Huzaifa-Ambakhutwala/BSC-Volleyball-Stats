@@ -953,46 +953,6 @@ const StatTrackerPage = () => {
                       </span>
                     </div>
                   </div>
-                  <div className="flex space-x-6">
-                    <div className="flex flex-col items-center">
-                      <div className="text-sm text-[hsl(var(--vb-blue))] font-semibold mb-1">
-                        {teamA?.teamName || 'Team A'}
-                      </div>
-                      <div className="flex space-x-2">
-                        <button
-                          className="bg-red-500 text-white w-10 h-10 rounded-md hover:bg-red-600 transition flex items-center justify-center font-bold"
-                          onClick={() => handleScoreUpdate('A', -1)}
-                        >
-                          -
-                        </button>
-                        <button
-                          className="bg-[hsl(var(--vb-blue))] text-white w-10 h-10 rounded-md hover:bg-blue-700 transition flex items-center justify-center font-bold"
-                          onClick={() => handleScoreUpdate('A', 1)}
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <div className="text-sm text-[hsl(var(--vb-yellow))] font-semibold mb-1">
-                        {teamB?.teamName || 'Team B'}
-                      </div>
-                      <div className="flex space-x-2">
-                        <button
-                          className="bg-red-500 text-white w-10 h-10 rounded-md hover:bg-red-600 transition flex items-center justify-center font-bold"
-                          onClick={() => handleScoreUpdate('B', -1)}
-                        >
-                          -
-                        </button>
-                        <button
-                          className="bg-[hsl(var(--vb-yellow))] text-white w-10 h-10 rounded-md hover:bg-amber-600 transition flex items-center justify-center font-bold"
-                          onClick={() => handleScoreUpdate('B', 1)}
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
 
@@ -1033,6 +993,7 @@ const StatTrackerPage = () => {
                       matchId={selectedMatchId}
                       selectedPlayerId={selectedPlayerId}
                       currentSet={currentSet}
+                      onStatEntered={() => setSelectedPlayerId(null)}
                     />
                   </div>
 

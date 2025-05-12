@@ -7,11 +7,11 @@ const Home = () => {
       <div className="container mx-auto px-4">
         <div className="max-w-5xl mx-auto text-center mb-12">
           <VolleyballIcon className="h-24 w-24 text-[hsl(var(--vb-blue))] mx-auto mb-6" />
-          <h1 className="text-4xl font-bold mb-4">BSCVolleyballStats</h1>
+          <h1 className="text-4xl font-bold mb-4">BSC Volleyball Stat Tracker</h1>
           <p className="text-xl text-gray-600 mb-8">
             Real-time volleyball statistics tracking for tournaments
           </p>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-12">
             <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition">
               <div className="w-16 h-16 bg-[hsl(var(--vb-blue))] text-white rounded-full flex items-center justify-center mx-auto mb-4">
@@ -27,7 +27,7 @@ const Home = () => {
                 Access Admin
               </Link>
             </div>
-            
+
             <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition">
               <div className="w-16 h-16 bg-[hsl(var(--vb-yellow))] text-white rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -42,7 +42,7 @@ const Home = () => {
                 Track Stats
               </Link>
             </div>
-            
+
             <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition">
               <div className="w-16 h-16 bg-[hsl(var(--vb-success))] text-white rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -57,7 +57,7 @@ const Home = () => {
                 View Scoreboard
               </Link>
             </div>
-            
+
             <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition">
               <div className="w-16 h-16 bg-[hsl(var(--vb-purple))] text-white rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -74,28 +74,28 @@ const Home = () => {
             </div>
           </div>
         </div>
-        
+
         {/* Features Section */}
         <div className="mt-16">
           <h2 className="text-2xl font-bold text-center mb-8">Tournament Management Made Easy</h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="bg-white p-6 rounded-lg shadow-md">
               <h3 className="text-lg font-bold mb-3">Real-time Stats Tracking</h3>
               <p>
-                Track aces, kills, blocks, digs, and more for every player. 
+                Track aces, kills, blocks, digs, and more for every player.
                 See stats update instantly across all devices.
               </p>
             </div>
-            
+
             <div className="bg-white p-6 rounded-lg shadow-md">
               <h3 className="text-lg font-bold mb-3">Powerful Admin Controls</h3>
               <p>
-                Easily add players in bulk, create balanced teams, and 
+                Easily add players in bulk, create balanced teams, and
                 schedule matches across multiple courts.
               </p>
             </div>
-            
+
             <div className="bg-white p-6 rounded-lg shadow-md">
               <h3 className="text-lg font-bold mb-3">Live Scoreboards</h3>
               <p>
@@ -103,7 +103,7 @@ const Home = () => {
                 Scores update in real-time as points are earned.
               </p>
             </div>
-            
+
             <div className="bg-white p-6 rounded-lg shadow-md">
               <h3 className="text-lg font-bold mb-3">Responsive Design</h3>
               <p>

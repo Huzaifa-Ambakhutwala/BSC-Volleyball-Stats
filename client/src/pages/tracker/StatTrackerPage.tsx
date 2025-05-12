@@ -1,19 +1,19 @@
 import { useState, useEffect, useContext } from 'react';
-import { 
-  getTeamById, 
-  getPlayers, 
-  updateMatchScore, 
-  listenToMatchById, 
-  logoutStatTracker, 
-  listenToMatchesForTracker, 
+import {
+  getTeamById,
+  getPlayers,
+  updateMatchScore,
+  listenToMatchById,
+  logoutStatTracker,
+  listenToMatchesForTracker,
   getMatchesForTracker,
-  listenToStatLogs, 
+  listenToStatLogs,
   deleteStatLog,
   getTrackerUser,
   advanceToNextSet,
   isSetLocked,
   finalizeMatch,
-  type StatLog 
+  type StatLog
 } from '@/lib/firebase';
 import type { Match, Team, Player } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
@@ -391,6 +391,14 @@ const StatTrackerPage = () => {
     // Get the current set or default to 1
     const currentSetNumber = currentMatch.currentSet || 1;
 
+    // Log current match state before advancing
+    console.log('[AdvanceSet] Attempting to advance', {
+      matchId: selectedMatchId,
+      currentSetNumber,
+      completedSets: currentMatch.completedSets,
+      match: currentMatch
+    });
+
     // Check if the current set is already locked
     if (currentMatch && isSetLocked(currentMatch, currentSetNumber)) {
       toast({
@@ -419,6 +427,15 @@ const StatTrackerPage = () => {
     try {
       // Use the advanceToNextSet function
       const nextSet = await advanceToNextSet(selectedMatchId, currentSetNumber);
+      console.log('[AdvanceSet] advanceToNextSet result:', nextSet);
+
+      // Always reload match state after attempting to advance
+      listenToMatchById(selectedMatchId, (updatedMatch) => {
+        console.log('[AdvanceSet] Reloaded match after advancing:', updatedMatch);
+        if (updatedMatch) {
+          setCurrentMatch(updatedMatch);
+        }
+      });
 
       // If successful, move to the next set
       if (nextSet > currentSetNumber) {
@@ -446,18 +463,30 @@ const StatTrackerPage = () => {
             description: "This is the final set. You'll be able to submit the match after completing this set.",
           });
         }
-      } else if (!nextSet) {
+      } else {
+        // Log error details for debugging
+        console.error('[AdvanceSet] Failed to advance. Current match state:', {
+          matchId: selectedMatchId,
+          currentSetNumber,
+          completedSets: currentMatch.completedSets,
+          match: currentMatch
+        });
         toast({
           title: "Error",
-          description: "Failed to advance to next set",
+          description: "Failed to advance to next set. Please check your internet connection or contact an admin if this persists.",
           variant: "destructive",
         });
       }
     } catch (error) {
-      console.error("Error advancing to next set:", error);
+      console.error("Error advancing to next set:", error, {
+        matchId: selectedMatchId,
+        currentSetNumber,
+        completedSets: currentMatch.completedSets,
+        match: currentMatch
+      });
       toast({
         title: "Error",
-        description: "Failed to advance to the next set",
+        description: "Failed to advance to the next set due to a system error. Please try again or contact support.",
         variant: "destructive",
       });
     }
@@ -552,7 +581,7 @@ const StatTrackerPage = () => {
             <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
             <p>Loading match data...</p>
             <p className="text-sm text-gray-500 mt-2">
-              {Object.keys(matches).length > 0 ? 
+              {Object.keys(matches).length > 0 ?
                 "Matches available but still loading details..." :
                 "Waiting for assigned matches..."}
             </p>
@@ -588,7 +617,7 @@ const StatTrackerPage = () => {
           <div className="p-6 border-b border-gray-200">
             <h3 className="text-lg font-semibold mb-4">Select Match</h3>
             <div className="max-w-md">
-              <select 
+              <select
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-[hsl(var(--vb-blue))] focus:border-[hsl(var(--vb-blue))]"
                 value={selectedMatchId}
                 onChange={handleMatchChange}
@@ -669,7 +698,7 @@ const StatTrackerPage = () => {
 
                         return (
                           <div key={setNum} className="flex flex-col items-center">
-                            <button 
+                            <button
                               className={`py-1 px-4 rounded-full border-2 ${buttonStyle} relative flex items-center`}
                               onClick={() => !isLocked && handleSetChange(setNum)}
                               disabled={isLocked}
@@ -681,11 +710,10 @@ const StatTrackerPage = () => {
                               )}
                               Set {setNum}
                             </button>
-                            <span className={`text-xs mt-1 ${
-                              isCurrentSet ? 'text-blue-600 font-semibold' : 
-                              isLocked ? 'text-amber-600' : 
-                              'text-green-600'
-                            }`}>
+                            <span className={`text-xs mt-1 ${isCurrentSet ? 'text-blue-600 font-semibold' :
+                              isLocked ? 'text-amber-600' :
+                                'text-green-600'
+                              }`}>
                               {statusLabel}
                             </span>
                           </div>
@@ -716,7 +744,7 @@ const StatTrackerPage = () => {
                             <p className="text-sm text-gray-600 ml-7 mt-1">This set has been finalized and cannot be modified.</p>
                           </div>
                         ) : currentSet === 3 ? (
-                          <button 
+                          <button
                             className="bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-all duration-200 shadow-md flex items-center justify-center font-bold"
                             onClick={openFinalizeMatchDialog}
                           >
@@ -726,7 +754,7 @@ const StatTrackerPage = () => {
                             <span>Submit Complete Match</span>
                           </button>
                         ) : (
-                          <button 
+                          <button
                             className="bg-gradient-to-r from-amber-500 to-amber-600 text-white py-3 px-6 rounded-lg hover:from-amber-600 hover:to-amber-700 transition-all duration-200 shadow-md flex items-center justify-center font-bold"
                             onClick={handleAdvanceToNextSet}
                           >
@@ -738,17 +766,17 @@ const StatTrackerPage = () => {
                         )}
 
                         {/* Submit full match button - only show when all required sets are completed */}
-                        {currentMatch && currentMatch.completedSets && 
-                         ((currentMatch.completedSets.set1 && currentMatch.completedSets.set2) ||
-                          (currentMatch.completedSets.set1 && currentMatch.completedSets.set3) ||
-                          (currentMatch.completedSets.set2 && currentMatch.completedSets.set3)) && (
-                          <button 
-                            className="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition flex items-center justify-center space-x-2 font-semibold"
-                            onClick={openFinalizeMatchDialog}
-                          >
-                            <span>Submit Full Match</span>
-                          </button>
-                        )}
+                        {currentMatch && currentMatch.completedSets &&
+                          ((currentMatch.completedSets.set1 && currentMatch.completedSets.set2) ||
+                            (currentMatch.completedSets.set1 && currentMatch.completedSets.set3) ||
+                            (currentMatch.completedSets.set2 && currentMatch.completedSets.set3)) && (
+                            <button
+                              className="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition flex items-center justify-center space-x-2 font-semibold"
+                              onClick={openFinalizeMatchDialog}
+                            >
+                              <span>Submit Full Match</span>
+                            </button>
+                          )}
                       </>
                     )}
                   </div>
@@ -760,13 +788,12 @@ const StatTrackerPage = () => {
                 <div className="mt-4">
                   <h4 className="text-sm font-semibold text-gray-600 mb-2">Set Scores Summary</h4>
                   <div className="grid grid-cols-3 gap-3">
-                    <div className={`rounded-lg p-3 relative ${
-                      currentSet === 1 
-                        ? 'bg-blue-50 border-2 border-blue-400' 
-                        : (currentMatch.completedSets?.set1)
-                          ? 'bg-green-50 border border-green-300' 
-                          : 'bg-white border border-gray-200'
-                    }`}>
+                    <div className={`rounded-lg p-3 relative ${currentSet === 1
+                      ? 'bg-blue-50 border-2 border-blue-400'
+                      : (currentMatch.completedSets?.set1)
+                        ? 'bg-green-50 border border-green-300'
+                        : 'bg-white border border-gray-200'
+                      }`}>
                       <div className="text-center font-semibold mb-2">Set 1</div>
                       <div className="flex justify-center items-center gap-2">
                         <span className="inline-block px-2 py-1 rounded bg-[hsl(var(--vb-blue))] text-white font-bold min-w-[30px] text-center">
@@ -802,15 +829,14 @@ const StatTrackerPage = () => {
                       )}
                     </div>
 
-                    <div className={`rounded-lg p-3 relative ${
-                      currentSet === 2 
-                        ? 'bg-blue-50 border-2 border-blue-400' 
-                        : (currentMatch.completedSets?.set2)
-                          ? 'bg-green-50 border border-green-300' 
-                          : (currentMatch.currentSet && currentMatch.currentSet > 1)
-                            ? 'bg-white border border-gray-200' 
-                            : 'bg-gray-50 border border-gray-200 opacity-75'
-                    }`}>
+                    <div className={`rounded-lg p-3 relative ${currentSet === 2
+                      ? 'bg-blue-50 border-2 border-blue-400'
+                      : (currentMatch.completedSets?.set2)
+                        ? 'bg-green-50 border border-green-300'
+                        : (currentMatch.currentSet && currentMatch.currentSet > 1)
+                          ? 'bg-white border border-gray-200'
+                          : 'bg-gray-50 border border-gray-200 opacity-75'
+                      }`}>
                       <div className="text-center font-semibold mb-2">Set 2</div>
                       <div className="flex justify-center items-center gap-2">
                         <span className="inline-block px-2 py-1 rounded bg-[hsl(var(--vb-blue))] text-white font-bold min-w-[30px] text-center">
@@ -853,15 +879,14 @@ const StatTrackerPage = () => {
                       )}
                     </div>
 
-                    <div className={`rounded-lg p-3 relative ${
-                      currentSet === 3 
-                        ? 'bg-blue-50 border-2 border-blue-400' 
-                        : (currentMatch.completedSets?.set3)
-                          ? 'bg-green-50 border border-green-300' 
-                          : (currentMatch.currentSet && currentMatch.currentSet > 2)
-                            ? 'bg-white border border-gray-200' 
-                            : 'bg-gray-50 border border-gray-200 opacity-75'
-                    }`}>
+                    <div className={`rounded-lg p-3 relative ${currentSet === 3
+                      ? 'bg-blue-50 border-2 border-blue-400'
+                      : (currentMatch.completedSets?.set3)
+                        ? 'bg-green-50 border border-green-300'
+                        : (currentMatch.currentSet && currentMatch.currentSet > 2)
+                          ? 'bg-white border border-gray-200'
+                          : 'bg-gray-50 border border-gray-200 opacity-75'
+                      }`}>
                       <div className="text-center font-semibold mb-2">Set 3</div>
                       <div className="flex justify-center items-center gap-2">
                         <span className="inline-block px-2 py-1 rounded bg-[hsl(var(--vb-blue))] text-white font-bold min-w-[30px] text-center">
@@ -916,14 +941,14 @@ const StatTrackerPage = () => {
                     </span>
                     <div className="flex items-center space-x-1">
                       <span className="text-[hsl(var(--vb-blue))] font-bold text-3xl">
-                        {currentMatch.setScores && currentMatch.setScores[`set${currentSet}` as keyof typeof currentMatch.setScores] 
-                          ? (currentMatch.setScores[`set${currentSet}` as keyof typeof currentMatch.setScores] as any).scoreA 
+                        {currentMatch.setScores && currentMatch.setScores[`set${currentSet}` as keyof typeof currentMatch.setScores]
+                          ? (currentMatch.setScores[`set${currentSet}` as keyof typeof currentMatch.setScores] as any).scoreA
                           : currentMatch.scoreA}
                       </span>
                       <span className="text-gray-500 text-xl">-</span>
                       <span className="text-[hsl(var(--vb-yellow))] font-bold text-3xl">
-                        {currentMatch.setScores && currentMatch.setScores[`set${currentSet}` as keyof typeof currentMatch.setScores] 
-                          ? (currentMatch.setScores[`set${currentSet}` as keyof typeof currentMatch.setScores] as any).scoreB 
+                        {currentMatch.setScores && currentMatch.setScores[`set${currentSet}` as keyof typeof currentMatch.setScores]
+                          ? (currentMatch.setScores[`set${currentSet}` as keyof typeof currentMatch.setScores] as any).scoreB
                           : currentMatch.scoreB}
                       </span>
                     </div>
@@ -934,13 +959,13 @@ const StatTrackerPage = () => {
                         {teamA?.teamName || 'Team A'}
                       </div>
                       <div className="flex space-x-2">
-                        <button 
+                        <button
                           className="bg-red-500 text-white w-10 h-10 rounded-md hover:bg-red-600 transition flex items-center justify-center font-bold"
                           onClick={() => handleScoreUpdate('A', -1)}
                         >
                           -
                         </button>
-                        <button 
+                        <button
                           className="bg-[hsl(var(--vb-blue))] text-white w-10 h-10 rounded-md hover:bg-blue-700 transition flex items-center justify-center font-bold"
                           onClick={() => handleScoreUpdate('A', 1)}
                         >
@@ -953,13 +978,13 @@ const StatTrackerPage = () => {
                         {teamB?.teamName || 'Team B'}
                       </div>
                       <div className="flex space-x-2">
-                        <button 
+                        <button
                           className="bg-red-500 text-white w-10 h-10 rounded-md hover:bg-red-600 transition flex items-center justify-center font-bold"
                           onClick={() => handleScoreUpdate('B', -1)}
                         >
                           -
                         </button>
-                        <button 
+                        <button
                           className="bg-[hsl(var(--vb-yellow))] text-white w-10 h-10 rounded-md hover:bg-amber-600 transition flex items-center justify-center font-bold"
                           onClick={() => handleScoreUpdate('B', 1)}
                         >
@@ -984,10 +1009,10 @@ const StatTrackerPage = () => {
                         {teamA.players.map(playerId => {
                           const player = playersMap[playerId];
                           return player ? (
-                            <PlayerStatActions 
-                              key={playerId} 
-                              player={player} 
-                              playerId={playerId} 
+                            <PlayerStatActions
+                              key={playerId}
+                              player={player}
+                              playerId={playerId}
                               matchId={selectedMatchId}
                               teamId={teamA.id}
                               isSelected={selectedPlayerId === playerId}
@@ -1004,7 +1029,7 @@ const StatTrackerPage = () => {
 
                   {/* Actions - Middle Column */}
                   <div className="lg:col-span-3">
-                    <StatActions 
+                    <StatActions
                       matchId={selectedMatchId}
                       selectedPlayerId={selectedPlayerId}
                       currentSet={currentSet}
@@ -1021,10 +1046,10 @@ const StatTrackerPage = () => {
                         {teamB.players.map(playerId => {
                           const player = playersMap[playerId];
                           return player ? (
-                            <PlayerStatActions 
-                              key={playerId} 
-                              player={player} 
-                              playerId={playerId} 
+                            <PlayerStatActions
+                              key={playerId}
+                              player={player}
+                              playerId={playerId}
                               matchId={selectedMatchId}
                               teamId={teamB.id}
                               isSelected={selectedPlayerId === playerId}
@@ -1073,53 +1098,52 @@ const StatTrackerPage = () => {
                       {statLogs
                         .filter(log => log.set === currentSet) // Only show logs for the current set
                         .map((log, index) => (
-                        <tr key={log.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
-                            <div className="flex items-center">
-                              <Clock className="w-3 h-3 mr-1 text-gray-400" />
-                              {format(new Date(log.timestamp), 'HH:mm:ss')}
-                            </div>
-                          </td>
-                          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {log.playerName}
-                          </td>
-                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
-                            {log.teamName}
-                          </td>
-                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                            <span className="capitalize">{log.statName}</span> (+{log.value})
-                          </td>
-                          <td className="px-4 py-2 whitespace-nowrap text-sm">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              log.category === 'earned' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                            }`}>
-                              {log.category}
-                            </span>
-                          </td>
-                          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-center">
-                            {log.set ? (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                Set {log.set}
+                          <tr key={log.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                              <div className="flex items-center">
+                                <Clock className="w-3 h-3 mr-1 text-gray-400" />
+                                {format(new Date(log.timestamp), 'HH:mm:ss')}
+                              </div>
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {log.playerName}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                              {log.teamName}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                              <span className="capitalize">{log.statName}</span> (+{log.value})
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${log.category === 'earned' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                }`}>
+                                {log.category}
                               </span>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
-                            {/* Only show delete button for the most recent log (first in the array) */}
-                            {index === 0 && (
-                              <button
-                                onClick={() => handleDeleteLog(log.id)}
-                                disabled={isDeletingLog}
-                                className="text-red-500 hover:text-red-700 focus:outline-none disabled:opacity-50"
-                                title="Delete this log entry"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-center">
+                              {log.set ? (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                  Set {log.set}
+                                </span>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
+                              {/* Only show delete button for the most recent log (first in the array) */}
+                              {index === 0 && (
+                                <button
+                                  onClick={() => handleDeleteLog(log.id)}
+                                  disabled={isDeletingLog}
+                                  className="text-red-500 hover:text-red-700 focus:outline-none disabled:opacity-50"
+                                  title="Delete this log entry"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
                     </tbody>
                   </table>
                 </div>
@@ -1156,11 +1180,11 @@ const StatTrackerPage = () => {
               <div className="mt-4 p-3 bg-gray-50 rounded-md">
                 <div className="font-medium">Match Summary:</div>
                 <div className="mt-1 text-sm flex items-center justify-between">
-                  <span>{teamA?.teamName || 'Team A'}:</span> 
+                  <span>{teamA?.teamName || 'Team A'}:</span>
                   <span className="font-semibold">{currentMatch?.scoreA || 0}</span>
                 </div>
                 <div className="text-sm flex items-center justify-between">
-                  <span>{teamB?.teamName || 'Team B'}:</span> 
+                  <span>{teamB?.teamName || 'Team B'}:</span>
                   <span className="font-semibold">{currentMatch?.scoreB || 0}</span>
                 </div>
 
@@ -1187,7 +1211,7 @@ const StatTrackerPage = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={handleCancelSubmit}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleConfirmSubmit}
               className="bg-green-600 hover:bg-green-700 focus:ring-green-500"
             >
@@ -1264,7 +1288,7 @@ const StatTrackerPage = () => {
                       <div className="font-bold text-lg text-blue-600">{currentMatch?.scoreA || 0}</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-xs font-medium text-gray-500">{teamB?.teamName || 'Team B'}</div> 
+                      <div className="text-xs font-medium text-gray-500">{teamB?.teamName || 'Team B'}</div>
                       <div className="font-bold text-lg text-amber-500">{currentMatch?.scoreB || 0}</div>
                     </div>
                   </div>

@@ -69,7 +69,7 @@ const Home = () => {
               <div className="w-16 h-16 bg-[hsl(var(--vb-purple))] text-white rounded-full flex items-center justify-center mb-4">
                 {/* Trophy Icon */}
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 21h8m-4-4v4m0-4a7 7 0 007-7V5a1 1 0 00-1-1H4a1 1 0 00-1 1v5a7 7 0 007 7z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
               <h3 className="text-xl font-bold mb-2">Leaderboard</h3>
@@ -84,9 +84,9 @@ const Home = () => {
             {/* History */}
             <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition flex flex-col items-center">
               <div className="w-16 h-16 bg-[hsl(var(--vb-orange))] text-white rounded-full flex items-center justify-center mb-4">
-                {/* History/Clock Icon */}
+                {/* History Icon */}
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
               </div>
               <h3 className="text-xl font-bold mb-2">History</h3>
@@ -103,8 +103,7 @@ const Home = () => {
               <div className="w-16 h-16 bg-[hsl(var(--vb-cyan))] text-white rounded-full flex items-center justify-center mb-4">
                 {/* Calendar Icon */}
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <rect x="3" y="8" width="18" height="13" rx="2" ry="2" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 2v4M8 2v4M3 10h18" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
               <h3 className="text-xl font-bold mb-2">Schedule</h3>

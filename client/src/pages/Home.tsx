@@ -17,7 +17,7 @@ const Home = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
             {/* Admin Panel */}
             <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition flex flex-col items-center">
-              <div className="w-16 h-16 bg-[hsl(var(--vb-blue))] text-white rounded-full flex items-center justify-center mb-4">
+              <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center mb-4">
                 {/* Settings Icon */}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -48,7 +48,7 @@ const Home = () => {
 
             {/* Stat Tracker */}
             <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition flex flex-col items-center">
-              <div className="w-16 h-16 bg-[hsl(var(--vb-yellow))] text-white rounded-full flex items-center justify-center mb-4">
+              <div className="w-16 h-16 bg-yellow-500 text-white rounded-full flex items-center justify-center mb-4">
                 {/* Bar Chart Icon */}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -79,7 +79,7 @@ const Home = () => {
 
             {/* Scoreboard */}
             <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition flex flex-col items-center">
-              <div className="w-16 h-16 bg-[hsl(var(--vb-success))] text-white rounded-full flex items-center justify-center mb-4">
+              <div className="w-16 h-16 bg-green-500 text-white rounded-full flex items-center justify-center mb-4">
                 {/* Monitor Icon */}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -110,7 +110,7 @@ const Home = () => {
 
             {/* Leaderboard */}
             <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition flex flex-col items-center">
-              <div className="w-16 h-16 bg-[hsl(var(--vb-purple))] text-white rounded-full flex items-center justify-center mb-4">
+              <div className="w-16 h-16 bg-purple-600 text-white rounded-full flex items-center justify-center mb-4">
                 {/* Group Icon */}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -141,7 +141,7 @@ const Home = () => {
 
             {/* History */}
             <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition flex flex-col items-center">
-              <div className="w-16 h-16 bg-[hsl(var(--vb-orange))] text-white rounded-full flex items-center justify-center mb-4">
+              <div className="w-16 h-16 bg-orange-500 text-white rounded-full flex items-center justify-center mb-4">
                 {/* Document Stack Icon */}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -172,7 +172,7 @@ const Home = () => {
 
             {/* Schedule */}
             <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition flex flex-col items-center">
-              <div className="w-16 h-16 bg-[hsl(var(--vb-cyan))] text-white rounded-full flex items-center justify-center mb-4">
+              <div className="w-16 h-16 bg-cyan-500 text-white rounded-full flex items-center justify-center mb-4">
                 {/* Detailed Calendar Icon */}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

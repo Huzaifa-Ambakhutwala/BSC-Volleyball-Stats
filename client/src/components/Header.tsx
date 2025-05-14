@@ -33,6 +33,12 @@ const Header = () => {
                 </Link>
               </li>
               <li>
+                <Link href="/schedule"
+                  className={`hover:text-[hsl(var(--vb-yellow))] transition ${location.startsWith('/schedule') ? 'text-[hsl(var(--vb-yellow))]' : ''}`}>
+                  Schedule
+                </Link>
+              </li>
+              <li>
                 <Link href="/history"
                   className={`hover:text-[hsl(var(--vb-yellow))] transition ${location.startsWith('/history') ? 'text-[hsl(var(--vb-yellow))]' : ''}`}>
                   History

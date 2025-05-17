@@ -53,7 +53,10 @@ const TrackerRoute = () => {
     if (!user) {
       console.log("TrackerRoute - No user found, redirecting to login");
       setIsLoading(false);
-      setLocation('/tracker/login');
+      // Use the current path to determine which login route to redirect to
+      const currentPath = window.location.pathname;
+      const loginPath = currentPath.includes('stat-tracker') ? '/stat-tracker/login' : '/tracker/login';
+      setLocation(loginPath);
       return;
     }
 
@@ -76,7 +79,9 @@ const TrackerRoute = () => {
   // Redirect to login if not authenticated
   if (!trackerUser) {
     console.log("TrackerRoute - TrackerUser is null after loading, redirecting to login");
-    return <Redirect to="/tracker/login" />;
+    const currentPath = window.location.pathname;
+    const loginPath = currentPath.includes('stat-tracker') ? '/stat-tracker/login' : '/tracker/login';
+    return <Redirect to={loginPath} />;
   }
 
   console.log("TrackerRoute - Rendering StatTrackerPage with user:", trackerUser);
@@ -98,10 +103,17 @@ function Router() {
           <Route path="/admin" component={LoginPage} />
           <Route path="/admin/dashboard" component={AdminDashboard} />
           <Route path="/tracker" component={TrackerRoute} />
+          <Route path="/stat-tracker" component={TrackerRoute} />
           <Route path="/tracker/login">
             {() => {
               const user = getTrackerUser();
               return user ? <Redirect to="/tracker" /> : <StatTrackerLogin />;
+            }}
+          </Route>
+          <Route path="/stat-tracker/login">
+            {() => {
+              const user = getTrackerUser();
+              return user ? <Redirect to="/stat-tracker" /> : <StatTrackerLogin />;
             }}
           </Route>
           <Route path="/scoreboard/all" component={AllCourtsScoreboard} />
@@ -205,7 +217,8 @@ function Router() {
           </Route>
 
           <Route path="/debug/team/:teamId">
-            {({ params }) => {
+            {(params) => {
+              const teamId = params.teamId;
               const [loading, setLoading] = useState(true);
               const [team, setTeam] = useState<any>(null);
               const [matches, setMatches] = useState<Record<string, any>>({});
@@ -213,7 +226,6 @@ function Router() {
               const [teams, setTeams] = useState<Record<string, any>>({});
 
               useEffect(() => {
-                const teamId = params.teamId;
                 if (!teamId) {
                   setLoading(false);
                   return;

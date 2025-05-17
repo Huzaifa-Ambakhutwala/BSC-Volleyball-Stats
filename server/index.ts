@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import path from "path";
 
 const app = express();
 app.use(express.json());
@@ -54,6 +55,10 @@ app.use((req, res, next) => {
     await setupVite(app, server);
   } else {
     serveStatic(app);
+    // Add catch-all route handler for client-side routing
+    app.get('*', (req, res) => {
+      res.sendFile(path.resolve(import.meta.dirname, 'dist/public/index.html'));
+    });
   }
 
   // ALWAYS serve the app on port 5000

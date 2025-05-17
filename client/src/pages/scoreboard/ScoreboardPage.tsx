@@ -68,7 +68,7 @@ const ScoreboardPage = () => {
         console.log(`[SCOREBOARD] Setting current match to: ${matchId}`);
 
         // Create match object with ID
-        setCurrentMatch({ 
+        setCurrentMatch({
           ...firstMatch,
           id: matchId
         });
@@ -252,17 +252,17 @@ const ScoreboardPage = () => {
         });
 
         // Count the stats for this player
-        const earnedPoints = (cleanedStats[playerId].aces || 0) + 
-          (cleanedStats[playerId].spikes || 0) + 
-          (cleanedStats[playerId].blocks || 0) + 
-          (cleanedStats[playerId].digs || 0) + 
-          (cleanedStats[playerId].tips || 0) + 
+        const earnedPoints = (cleanedStats[playerId].aces || 0) +
+          (cleanedStats[playerId].spikes || 0) +
+          (cleanedStats[playerId].blocks || 0) +
+          (cleanedStats[playerId].digs || 0) +
+          (cleanedStats[playerId].tips || 0) +
           (cleanedStats[playerId].dumps || 0);
 
-        const faults = (cleanedStats[playerId].serveErrors || 0) + 
-          (cleanedStats[playerId].spikeErrors || 0) + 
-          (cleanedStats[playerId].netTouches || 0) + 
-          (cleanedStats[playerId].footFaults || 0) + 
+        const faults = (cleanedStats[playerId].serveErrors || 0) +
+          (cleanedStats[playerId].spikeErrors || 0) +
+          (cleanedStats[playerId].netTouches || 0) +
+          (cleanedStats[playerId].footFaults || 0) +
           (cleanedStats[playerId].carries || 0) +
           (cleanedStats[playerId].reaches || 0);
 
@@ -372,7 +372,7 @@ const ScoreboardPage = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Team A Stats */}
                     <div>
-                      <h4 
+                      <h4
                         className="text-md font-semibold mb-3 pb-2 border-b"
                         style={{ color: teamA?.teamColor, borderColor: teamA?.teamColor }}
                       >
@@ -387,8 +387,8 @@ const ScoreboardPage = () => {
                           console.log(`[STATS-CHECK] Player ${player.id} has stats:`, !!matchStatsData[player.id]);
 
                           // Hard-code a temporary test with the IDs from our logs
-                          const knownStatsIds = ["-OP2UkL0-hoG-HnZYJlU", "-OP2UkP00FgMO0IqPgR2", "-OP2UkrEwTsLlzAfKkPv", 
-                                                "-OP2UktLuETRCYgo3z0E", "-OP2UktusIt0eOLwnIrI", "-OP2UkvC167jMXB_qvOZ"];
+                          const knownStatsIds = ["-OP2UkL0-hoG-HnZYJlU", "-OP2UkP00FgMO0IqPgR2", "-OP2UkrEwTsLlzAfKkPv",
+                            "-OP2UktLuETRCYgo3z0E", "-OP2UktusIt0eOLwnIrI", "-OP2UkvC167jMXB_qvOZ"];
 
                           // See if player.id matches any known ID with stats
                           const isKnownId = knownStatsIds.includes(player.id);
@@ -398,11 +398,11 @@ const ScoreboardPage = () => {
                           const playerData = matchStatsData[player.id] || {};
 
                           // Calculate totals
-                          const totalEarnedPoints = (playerData.aces || 0) + (playerData.spikes || 0) + 
-                            (playerData.blocks || 0) + (playerData.digs || 0) + (playerData.tips || 0) + 
+                          const totalEarnedPoints = (playerData.aces || 0) + (playerData.spikes || 0) +
+                            (playerData.blocks || 0) + (playerData.digs || 0) + (playerData.tips || 0) +
                             (playerData.dumps || 0);
 
-                          const totalFaults = (playerData.serveErrors || 0) + (playerData.spikeErrors || 0) + 
+                          const totalFaults = (playerData.serveErrors || 0) + (playerData.spikeErrors || 0) +
                             (playerData.netTouches || 0) + (playerData.footFaults || 0) + (playerData.carries || 0) +
                             (playerData.reaches || 0);
 
@@ -435,8 +435,8 @@ const ScoreboardPage = () => {
                                       if (value && typeof value === 'number' && value > 0) {
                                         const statName = key as keyof PlayerStats;
                                         return (
-                                          <div 
-                                            key={key} 
+                                          <div
+                                            key={key}
                                             className={`flex items-center py-1 px-2 rounded text-white text-xs ${getStatCategoryColor(statName)}`}
                                             title={`${statName}: ${value}`}
                                           >
@@ -460,7 +460,7 @@ const ScoreboardPage = () => {
 
                     {/* Team B Stats */}
                     <div>
-                      <h4 
+                      <h4
                         className="text-md font-semibold mb-3 pb-2 border-b"
                         style={{ color: teamB?.teamColor, borderColor: teamB?.teamColor }}
                       >
@@ -475,8 +475,8 @@ const ScoreboardPage = () => {
                           console.log(`[STATS-CHECK] Player ${player.id} has stats:`, !!matchStatsData[player.id]);
 
                           // Hard-code a temporary test with the IDs from our logs
-                          const knownStatsIds = ["-OP2UkL0-hoG-HnZYJlU", "-OP2UkP00FgMO0IqPgR2", "-OP2UkrEwTsLlzAfKkPv", 
-                                                "-OP2UktLuETRCYgo3z0E", "-OP2UktusIt0eOLwnIrI", "-OP2UkvC167jMXB_qvOZ"];
+                          const knownStatsIds = ["-OP2UkL0-hoG-HnZYJlU", "-OP2UkP00FgMO0IqPgR2", "-OP2UkrEwTsLlzAfKkPv",
+                            "-OP2UktLuETRCYgo3z0E", "-OP2UktusIt0eOLwnIrI", "-OP2UkvC167jMXB_qvOZ"];
 
                           // See if player.id matches any known ID with stats
                           const isKnownId = knownStatsIds.includes(player.id);
@@ -486,11 +486,11 @@ const ScoreboardPage = () => {
                           const playerData = matchStatsData[player.id] || {};
 
                           // Calculate totals
-                          const totalEarnedPoints = (playerData.aces || 0) + (playerData.spikes || 0) + 
-                            (playerData.blocks || 0) + (playerData.digs || 0) + (playerData.tips || 0) + 
+                          const totalEarnedPoints = (playerData.aces || 0) + (playerData.spikes || 0) +
+                            (playerData.blocks || 0) + (playerData.digs || 0) + (playerData.tips || 0) +
                             (playerData.dumps || 0);
 
-                          const totalFaults = (playerData.serveErrors || 0) + (playerData.spikeErrors || 0) + 
+                          const totalFaults = (playerData.serveErrors || 0) + (playerData.spikeErrors || 0) +
                             (playerData.netTouches || 0) + (playerData.footFaults || 0) + (playerData.carries || 0) +
                             (playerData.reaches || 0);
 
@@ -522,8 +522,8 @@ const ScoreboardPage = () => {
                                       if (value && typeof value === 'number' && value > 0) {
                                         const statName = key as keyof PlayerStats;
                                         return (
-                                          <div 
-                                            key={key} 
+                                          <div
+                                            key={key}
                                             className={`flex items-center py-1 px-2 rounded text-white text-xs ${getStatCategoryColor(statName)}`}
                                             title={`${statName}: ${value}`}
                                           >

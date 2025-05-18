@@ -976,8 +976,13 @@ const StatTrackerPage = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
                   {/* Team A Players - Left Column */}
                   <div className="lg:col-span-1">
-                    <h3 className="text-lg font-semibold mb-4 text-[hsl(var(--vb-blue))]">
-                      {teamA?.teamName || 'Team A'}
+                    <h3 className="text-lg font-semibold mb-4" 
+                       style={{ color: !swapTeamPositions 
+                              ? (teamA?.teamColor || 'hsl(var(--vb-blue))')
+                              : (teamB?.teamColor || 'hsl(var(--vb-yellow))') }}>
+                      {!swapTeamPositions 
+                        ? (teamA?.teamName || 'Team A') 
+                        : (teamB?.teamName || 'Team B')}
                     </h3>
                     {teamA ? (
                       <div className="space-y-2">

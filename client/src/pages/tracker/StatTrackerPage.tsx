@@ -966,22 +966,22 @@ const StatTrackerPage = () => {
                     className="flex items-center gap-1 bg-white text-gray-700 border border-gray-300 rounded-md px-3 py-1.5 text-sm font-medium hover:bg-gray-50 transition-colors"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M7 16V4m0 0L3 8m4-4l4 4"/>
-                      <path d="M17 8v12m0 0l4-4m-4 4l-4-4"/>
+                      <path d="M7 16V4m0 0L3 8m4-4l4 4" />
+                      <path d="M17 8v12m0 0l4-4m-4 4l-4-4" />
                     </svg>
                     Swap Team Positions
                   </button>
                 </div>
-                
+
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                  {/* Team A Players - Left Column */}
+                  {/* Team Players - Left Column */}
                   <div className="lg:col-span-1">
-                    <h3 className="text-lg font-semibold mb-4 text-[hsl(var(--vb-blue))]">
-                      {teamA?.teamName || 'Team A'}
+                    <h3 className="text-lg font-semibold mb-4" style={{ color: (swapTeamPositions ? teamB?.teamColor : teamA?.teamColor) || undefined }}>
+                      {(swapTeamPositions ? teamB?.teamName : teamA?.teamName) || (swapTeamPositions ? 'Team B' : 'Team A')}
                     </h3>
-                    {teamA ? (
+                    {(swapTeamPositions ? teamB : teamA) ? (
                       <div className="space-y-2">
-                        {teamA.players.map(playerId => {
+                        {(swapTeamPositions ? teamB : teamA)?.players.map(playerId => {
                           const player = playersMap[playerId];
                           return player ? (
                             <PlayerStatActions
@@ -989,7 +989,7 @@ const StatTrackerPage = () => {
                               player={player}
                               playerId={playerId}
                               matchId={selectedMatchId}
-                              teamId={teamA.id}
+                              teamId={(swapTeamPositions ? teamB : teamA)?.id}
                               isSelected={selectedPlayerId === playerId}
                               onSelect={() => handlePlayerSelect(playerId)}
                               currentSet={currentSet}
@@ -1012,14 +1012,14 @@ const StatTrackerPage = () => {
                     />
                   </div>
 
-                  {/* Team B Players - Right Column */}
+                  {/* Team Players - Right Column */}
                   <div className="lg:col-span-1">
-                    <h3 className="text-lg font-semibold mb-4 text-[hsl(var(--vb-yellow))]">
-                      {teamB?.teamName || 'Team B'}
+                    <h3 className="text-lg font-semibold mb-4" style={{ color: (swapTeamPositions ? teamA?.teamColor : teamB?.teamColor) || undefined }}>
+                      {(swapTeamPositions ? teamA?.teamName : teamB?.teamName) || (swapTeamPositions ? 'Team A' : 'Team B')}
                     </h3>
-                    {teamB ? (
+                    {(swapTeamPositions ? teamA : teamB) ? (
                       <div className="space-y-2">
-                        {teamB.players.map(playerId => {
+                        {(swapTeamPositions ? teamA : teamB)?.players.map(playerId => {
                           const player = playersMap[playerId];
                           return player ? (
                             <PlayerStatActions
@@ -1027,7 +1027,7 @@ const StatTrackerPage = () => {
                               player={player}
                               playerId={playerId}
                               matchId={selectedMatchId}
-                              teamId={teamB.id}
+                              teamId={(swapTeamPositions ? teamA : teamB)?.id}
                               isSelected={selectedPlayerId === playerId}
                               onSelect={() => handlePlayerSelect(playerId)}
                               currentSet={currentSet}

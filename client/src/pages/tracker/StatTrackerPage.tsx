@@ -47,6 +47,7 @@ const StatTrackerPage = () => {
   const [statLogs, setStatLogs] = useState<StatLog[]>([]);
   const [isDeletingLog, setIsDeletingLog] = useState(false);
   const [currentSet, setCurrentSet] = useState<number>(1); // Default to set 1
+  const [swapTeamPositions, setSwapTeamPositions] = useState<boolean>(false); // State for team position swapping
   const { toast } = useToast();
   const [_, setLocation] = useLocation();
   const { trackerUser, setTrackerUser } = useContext(TrackerUserContext);
@@ -958,6 +959,20 @@ const StatTrackerPage = () => {
 
               {/* Revised Layout: Team A (left), Actions (middle), Team B (right) */}
               <div className="p-6">
+                {/* Swap Teams Button */}
+                <div className="flex justify-end mb-4">
+                  <button
+                    onClick={() => setSwapTeamPositions(!swapTeamPositions)}
+                    className="flex items-center gap-1 bg-white text-gray-700 border border-gray-300 rounded-md px-3 py-1.5 text-sm font-medium hover:bg-gray-50 transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M7 16V4m0 0L3 8m4-4l4 4"/>
+                      <path d="M17 8v12m0 0l4-4m-4 4l-4-4"/>
+                    </svg>
+                    Swap Team Positions
+                  </button>
+                </div>
+                
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
                   {/* Team A Players - Left Column */}
                   <div className="lg:col-span-1">

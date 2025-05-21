@@ -104,8 +104,13 @@ const PlayerStatActions = ({ player, playerId, matchId, teamId, isSelected, onSe
             className={`font-semibold text-sm ${teamColor && !isSelected ? getTextColor(teamColor) : 'text-[hsl(var(--vb-blue))]'}`}
             style={isSelected && teamColor ? { color: teamColor } : {}}
           >
-            {player.name}
+            {player.jerseyNumber ? `${player.jerseyNumber} - ${player.jerseyName || ''}` : player.name}
           </h4>
+          {player.jerseyNumber && player.jerseyName && (
+            <p className="text-xs text-gray-500 -mt-1">
+              {player.name}
+            </p>
+          )}
         </div>
 
         {/* Show points and faults if player has stats */}

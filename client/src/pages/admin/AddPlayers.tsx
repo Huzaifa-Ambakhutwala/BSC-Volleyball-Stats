@@ -40,7 +40,7 @@ const AddPlayers = () => {
     if (!playersText.trim()) {
       toast({
         title: "Error",
-        description: "Please enter at least one player name",
+        description: "Please enter player data in the required format",
         variant: "destructive",
       });
       return;
@@ -49,25 +49,58 @@ const AddPlayers = () => {
     setIsSubmitting(true);
 
     try {
-      // Split by commas or newlines
-      const playerNames = playersText
-        .split(/[,\n]/)
-        .map(name => name.trim())
-        .filter(name => name.length > 0);
+      // Split by newlines
+      const playerLines = playersText
+        .split(/\n/)
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
 
-      if (playerNames.length === 0) {
-        throw new Error("No valid player names found");
+      if (playerLines.length === 0) {
+        throw new Error("No valid player data found");
       }
 
-      // Add each player
-      for (const name of playerNames) {
-        await addPlayer(name);
-        // No need to update local state - Firebase listener will handle it
+      let successCount = 0;
+      let errorCount = 0;
+
+      // Process each line (format: jersey number, jersey name, full player name)
+      for (const line of playerLines) {
+        try {
+          // Try to split by comma
+          const parts = line.split(',').map(part => part.trim());
+          
+          if (parts.length < 3) {
+            console.error('Invalid player format. Expected: jerseyNumber, jerseyName, fullName', line);
+            errorCount++;
+            continue;
+          }
+          
+          const [jerseyNumberStr, jerseyName, playerName] = parts;
+          const jerseyNumber = parseInt(jerseyNumberStr);
+          
+          if (isNaN(jerseyNumber)) {
+            console.error('Invalid jersey number:', jerseyNumberStr);
+            errorCount++;
+            continue;
+          }
+          
+          if (!jerseyName || !playerName) {
+            console.error('Missing jersey name or player name:', line);
+            errorCount++;
+            continue;
+          }
+          
+          await addPlayer(playerName, jerseyNumber, jerseyName);
+          successCount++;
+        } catch (lineError) {
+          console.error('Error processing player line:', line, lineError);
+          errorCount++;
+        }
       }
 
       toast({
-        title: "Success",
-        description: `Added ${playerNames.length} players to the database`,
+        title: "Import Complete",
+        description: `Added ${successCount} players to the database. ${errorCount > 0 ? `Failed to add ${errorCount} players.` : ''}`,
+        variant: errorCount > 0 ? "destructive" : "default",
       });
       
       // Clear the input
@@ -86,19 +119,46 @@ const AddPlayers = () => {
   const handleEditClick = (player: Player) => {
     setEditingPlayerId(player.id);
     setEditPlayerName(player.name);
+    
+    // Set jersey information from player data
+    setEditJerseyNumber(player.jerseyNumber || 0);
+    setEditJerseyName(player.jerseyName || '');
   };
 
   const handleCancelEdit = () => {
     setEditingPlayerId(null);
     setEditPlayerName('');
+    setEditJerseyNumber(0);
+    setEditJerseyName('');
   };
 
   const handleSaveEdit = async () => {
-    if (!editingPlayerId || !editPlayerName.trim()) return;
+    if (!editingPlayerId || !editPlayerName.trim()) {
+      toast({
+        title: "Error",
+        description: "Player name is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (editJerseyName.trim() === '') {
+      toast({
+        title: "Error",
+        description: "Jersey name is required",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
-      // Update player in database
-      await updatePlayer(editingPlayerId, editPlayerName);
+      // Update player in database with all fields
+      await updatePlayer(
+        editingPlayerId, 
+        editPlayerName, 
+        editJerseyNumber, 
+        editJerseyName
+      );
       
       // No need to update local state - Firebase listener will handle it
       
@@ -110,6 +170,8 @@ const AddPlayers = () => {
       // Exit edit mode
       setEditingPlayerId(null);
       setEditPlayerName('');
+      setEditJerseyNumber(0);
+      setEditJerseyName('');
     } catch (error) {
       toast({
         title: "Error",
@@ -362,9 +424,11 @@ const AddPlayers = () => {
         
         {/* Players List */}
         <div className="border rounded-md overflow-hidden">
-          <div className="bg-gray-100 px-4 py-2 font-medium flex">
-            <div className="flex-grow">Player Name</div>
-            <div className="w-24 text-center">Actions</div>
+          <div className="bg-gray-100 px-4 py-2 font-medium grid grid-cols-8 gap-2">
+            <div className="col-span-1">Jersey #</div>
+            <div className="col-span-1">Jersey Name</div>
+            <div className="col-span-5">Player Name</div>
+            <div className="col-span-1 text-center">Actions</div>
           </div>
           
           {isLoading ? (
@@ -379,36 +443,59 @@ const AddPlayers = () => {
           ) : (
             <div className="divide-y">
               {Object.entries(playersList).map(([playerId, player]) => (
-                <div key={playerId} className="px-4 py-3 flex items-center">
+                <div key={playerId} className="px-4 py-3 grid grid-cols-8 gap-2 items-center">
                   {editingPlayerId === playerId ? (
                     // Edit mode
-                    <div className="flex-grow flex space-x-2">
-                      <input
-                        type="text"
-                        className="flex-grow px-3 py-1 border border-gray-300 rounded-md"
-                        value={editPlayerName}
-                        onChange={(e) => setEditPlayerName(e.target.value)}
-                      />
-                      <button 
-                        className="text-green-500 p-1 hover:bg-green-50 rounded" 
-                        onClick={handleSaveEdit}
-                        title="Save"
-                      >
-                        <Save className="h-5 w-5" />
-                      </button>
-                      <button 
-                        className="text-gray-500 p-1 hover:bg-gray-100 rounded" 
-                        onClick={handleCancelEdit}
-                        title="Cancel"
-                      >
-                        <X className="h-5 w-5" />
-                      </button>
-                    </div>
+                    <>
+                      <div className="col-span-1">
+                        <input
+                          type="number"
+                          className="w-full px-3 py-1 border border-gray-300 rounded-md"
+                          value={editJerseyNumber}
+                          onChange={(e) => setEditJerseyNumber(e.target.value ? parseInt(e.target.value) : 0)}
+                          min="0"
+                        />
+                      </div>
+                      <div className="col-span-1">
+                        <input
+                          type="text"
+                          className="w-full px-3 py-1 border border-gray-300 rounded-md"
+                          value={editJerseyName}
+                          onChange={(e) => setEditJerseyName(e.target.value)}
+                        />
+                      </div>
+                      <div className="col-span-5">
+                        <input
+                          type="text"
+                          className="w-full px-3 py-1 border border-gray-300 rounded-md"
+                          value={editPlayerName}
+                          onChange={(e) => setEditPlayerName(e.target.value)}
+                        />
+                      </div>
+                      <div className="col-span-1 flex justify-center space-x-1">
+                        <button 
+                          className="text-green-500 p-1 hover:bg-green-50 rounded" 
+                          onClick={handleSaveEdit}
+                          title="Save"
+                        >
+                          <Save className="h-5 w-5" />
+                        </button>
+                        <button 
+                          className="text-gray-500 p-1 hover:bg-gray-100 rounded" 
+                          onClick={handleCancelEdit}
+                          title="Cancel"
+                        >
+                          <X className="h-5 w-5" />
+                        </button>
+                      </div>
+                    </>
                   ) : (
                     // Display mode
                     <>
-                      <div className="flex-grow">{player.name}</div>
-                      <div className="w-24 flex justify-end space-x-1">
+                      <div className="col-span-1 font-medium">{player.jerseyNumber || '-'}</div>
+                      <div className="col-span-1">{player.jerseyName || '-'}</div>
+                      <div className="col-span-5">{player.name}</div>
+                      <div className="col-span-1 flex justify-center space-x-1">
                         <button 
                           className="text-blue-500 p-1 hover:bg-blue-50 rounded" 
                           onClick={() => handleEditClick({ ...player, id: playerId })}
@@ -437,11 +524,22 @@ const AddPlayers = () => {
       {/* Bulk Add Players Section */}
       <div>
         <h3 className="text-lg font-semibold mb-4">Bulk Add Players</h3>
-        <p className="text-gray-600 mb-4">Enter player names separated by commas or new lines.</p>
+        <p className="text-gray-600 mb-4">
+          Enter player data with each player on a new line using this format: <br />
+          <code className="bg-gray-100 px-2 py-1 rounded text-sm">Jersey Number, Jersey Name, Full Player Name</code>
+        </p>
+        <div className="bg-amber-50 p-3 rounded-md mb-4 text-sm">
+          <p className="font-semibold text-amber-700">Example:</p>
+          <pre className="text-amber-800 mt-1">
+            23, Mehdi, Huzaifa Mehdi<br />
+            3, Mo, Moiz Ghadiali<br />
+            7, Alam, Mohammed Alam
+          </pre>
+        </div>
         <div className="space-y-4">
           <textarea 
             className="w-full h-40 px-4 py-2 border border-gray-300 rounded-md focus:ring-[hsl(var(--vb-blue))] focus:border-[hsl(var(--vb-blue))]" 
-            placeholder="John Doe, Jane Smith, Mike Johnson..."
+            placeholder="23, Mehdi, Huzaifa Mehdi&#10;3, Mo, Moiz Ghadiali&#10;7, Alam, Mohammed Alam"
             value={playersText}
             onChange={(e) => setPlayersText(e.target.value)}
           ></textarea>

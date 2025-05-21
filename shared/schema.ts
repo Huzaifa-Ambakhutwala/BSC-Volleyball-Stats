@@ -8,6 +8,8 @@ import { relations } from "drizzle-orm";
 export type Player = {
   id: string;
   name: string;
+  jerseyNumber?: number;
+  jerseyName?: string;
 };
 
 export type Team = {

@@ -84,6 +84,8 @@ export const users = pgTable("users", {
 export const players = pgTable("players", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  jerseyNumber: integer("jersey_number").notNull(),
+  jerseyName: text("jersey_name").notNull(),
 });
 
 export const teams = pgTable("teams", {
@@ -208,7 +210,10 @@ export const insertUserSchema = createInsertSchema(users, {
   isAdmin: true,
 });
 
-export const insertPlayerSchema = createInsertSchema(players);
+export const insertPlayerSchema = createInsertSchema(players).extend({
+  jerseyNumber: z.number().int().positive(),
+  jerseyName: z.string().min(1)
+});
 export const insertTeamSchema = createInsertSchema(teams);
 export const insertTeamPlayerSchema = createInsertSchema(teamPlayers);
 export const insertMatchSchema = createInsertSchema(matches, {

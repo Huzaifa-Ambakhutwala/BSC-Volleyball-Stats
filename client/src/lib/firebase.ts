@@ -39,10 +39,14 @@ export { ref, get, set, update, push, remove, onValue, off };
 export { database };
 
 // Players API
-export const addPlayer = async (name: string) => {
+export const addPlayer = async (name: string, jerseyNumber?: number, jerseyName?: string) => {
   const playersRef = ref(database, 'players');
   const newPlayerRef = push(playersRef);
-  await set(newPlayerRef, { name });
+  await set(newPlayerRef, { 
+    name,
+    jerseyNumber: jerseyNumber || 0,
+    jerseyName: jerseyName || ''
+  });
   return newPlayerRef.key;
 };
 
@@ -72,11 +76,22 @@ export const listenToPlayers = (callback: (players: Record<string, Player>) => v
   };
 };
 
-export const updatePlayer = async (playerId: string, name: string) => {
+export const updatePlayer = async (playerId: string, name: string, jerseyNumber?: number, jerseyName?: string) => {
   try {
-    console.log(`Updating player with ID: ${playerId}, name: ${name}`);
+    console.log(`Updating player with ID: ${playerId}, name: ${name}, jersey: ${jerseyNumber}, jerseyName: ${jerseyName}`);
     const playerRef = ref(database, `players/${playerId}`);
-    await update(playerRef, { name });
+    
+    const updates: any = { name };
+    
+    if (jerseyNumber !== undefined) {
+      updates.jerseyNumber = jerseyNumber;
+    }
+    
+    if (jerseyName !== undefined) {
+      updates.jerseyName = jerseyName;
+    }
+    
+    await update(playerRef, updates);
     console.log('Player update completed successfully');
     return true;
   } catch (error) {

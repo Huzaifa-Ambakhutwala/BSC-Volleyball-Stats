@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getDatabase, ref, set, get, update, push, onValue, off, remove, child } from "firebase/database";
+import { getDatabase, ref, set, get, update, push, onValue, off, remove, child, serverTimestamp } from "firebase/database";
 import type { Player, Team, Match, PlayerStats, MatchStats } from "@shared/schema";
 
 // Type definition for StatLog with explicit ID field
@@ -112,7 +112,7 @@ export const unlockMatch = async (matchId: string, adminUsername: string) => {
     const newLogRef = push(unlockLogsRef);
     await set(newLogRef, {
       adminUsername,
-      timestamp: serverTimestamp(),
+      timestamp: Date.now(),
       previousStatus: match.status || 'unknown'
     });
     
@@ -155,16 +155,8 @@ export const unlockMatch = async (matchId: string, adminUsername: string) => {
       type: 'match_unlocked',
       matchId,
       adminUsername,
-      timestamp: serverTimestamp(),
+      timestamp: Date.now(),
       message: `Match on Court ${match.courtNumber} was unlocked by admin ${adminUsername}`
-    });
-    
-    // Log the unlock action
-    const unlockLogRef = push(ref(database, 'unlockLogs'));
-    await set(unlockLogRef, {
-      matchId,
-      adminUsername,
-      timestamp: Date.now()
     });
     
     return true;

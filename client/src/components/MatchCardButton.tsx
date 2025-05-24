@@ -36,46 +36,46 @@ const MatchCardButton: React.FC<MatchCardButtonProps> = ({
   
   return (
     <button
-      className={`relative flex flex-col p-3 rounded-lg shadow transition-all ${
+      className={`relative flex flex-col p-4 rounded-xl shadow-md transition-all w-64 ${
         isSelected 
-          ? 'ring-2 ring-offset-2 ring-[hsl(var(--vb-blue))]' 
+          ? 'ring-2 ring-offset-1 ring-[hsl(var(--vb-blue))]' 
           : ''
       } ${
         isCompleted 
-          ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' 
+          ? 'bg-gray-50 text-gray-600 hover:bg-gray-100' 
           : 'bg-white hover:bg-blue-50 border border-gray-200'
       }`}
       onClick={handleClick}
     >
-      {/* Court and time info */}
-      <div className="flex justify-between items-center mb-1 text-sm">
-        <span className="font-medium">Court {match.courtNumber}</span>
-        <span className="text-gray-500">{formattedTime}</span>
-      </div>
-      
-      {/* Teams */}
-      <div className="text-left">
-        <div className="font-semibold" style={{ color: teamA?.teamColor || 'inherit' }}>
-          {teamA?.teamName || 'Team A'}
-        </div>
-        <div className="text-xs text-gray-500 my-0.5">vs</div>
-        <div className="font-semibold" style={{ color: teamB?.teamColor || 'inherit' }}>
-          {teamB?.teamName || 'Team B'}
-        </div>
-      </div>
-      
-      {/* Status indicator */}
+      {/* Status indicator - positioned at top right */}
       {isCompleted && (
-        <div className="absolute top-2 right-2 bg-gray-200 text-xs px-1.5 py-0.5 rounded-full text-gray-700">
+        <div className="absolute top-2 right-2 bg-gray-200 text-xs px-2 py-1 rounded text-gray-700 font-medium">
           Locked
         </div>
       )}
       
-      {/* Unlock button for completed matches */}
+      {/* Court info */}
+      <div className="text-left mb-2">
+        <div className="font-medium text-gray-700">Court {match.courtNumber}</div>
+        <div className="text-xs text-gray-500">{formattedTime}</div>
+      </div>
+      
+      {/* Teams - with more spacing */}
+      <div className="text-left mb-3 mt-2">
+        <div className="font-semibold text-md mb-1" style={{ color: teamA?.teamColor || 'inherit' }}>
+          {teamA?.teamName || match.teamA || 'Team A'}
+        </div>
+        <div className="text-xs text-gray-400 my-1">vs</div>
+        <div className="font-semibold text-md mt-1" style={{ color: teamB?.teamColor || 'inherit' }}>
+          {teamB?.teamName || match.teamB || 'Team B'}
+        </div>
+      </div>
+      
+      {/* Unlock button for completed matches - fixed at bottom with spacing */}
       {isCompleted && onUnlockClick && (
-        <div className="absolute -bottom-3 right-0 left-0 flex justify-center">
+        <div className="mt-2">
           <button
-            className="bg-amber-500 text-white text-xs px-2 py-1 rounded shadow hover:bg-amber-600 transition"
+            className="bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 py-1 rounded w-full transition"
             onClick={(e) => {
               e.stopPropagation();
               onUnlockClick(match.id);

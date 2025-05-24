@@ -640,20 +640,48 @@ const StatTrackerPage = () => {
             <h3 className="text-lg font-semibold mb-4">Select Match</h3>
             
             {/* Scrollable Match Cards */}
-            <div className="overflow-x-auto pb-4">
-              <div className="flex space-x-4 min-w-max">
+            <div className="overflow-x-auto pb-6">
+              <div className="flex space-x-5 min-w-max px-1 py-2">
                 {Object.entries(matches).length === 0 ? (
                   <div className="p-4 bg-gray-50 rounded-lg text-gray-500 text-center w-full">
                     No matches assigned to your team
                   </div>
                 ) : (
                   Object.entries(matches).map(([id, match]) => {
-                    // Find team info for each match
-                    const matchTeamA = teamA && teamA.id === match.teamA ? teamA : null;
-                    const matchTeamB = teamB && teamB.id === match.teamB ? teamB : null;
+                    // Get both teams' data with proper fallbacks
+                    let matchTeamA = null;
+                    let matchTeamB = null;
+                    
+                    // Try to find team data from local state first
+                    if (teamA && teamA.id === match.teamA) {
+                      matchTeamA = teamA;
+                    }
+                    
+                    if (teamB && teamB.id === match.teamB) {
+                      matchTeamB = teamB;
+                    }
+                    
+                    // If teams aren't in local state yet, try to fetch them
+                    if (!matchTeamA || !matchTeamB) {
+                      // Use getTeamById for each team to ensure we have data
+                      // This will be executed once when rendering the list
+                      getTeamById(match.teamA).then(team => {
+                        if (team && !matchTeamA) {
+                          // Force a re-render to update with the team data
+                          setMatches(prev => ({...prev}));
+                        }
+                      }).catch(err => console.error("Error fetching team A:", err));
+                      
+                      getTeamById(match.teamB).then(team => {
+                        if (team && !matchTeamB) {
+                          // Force a re-render to update with the team data
+                          setMatches(prev => ({...prev}));
+                        }
+                      }).catch(err => console.error("Error fetching team B:", err));
+                    }
                     
                     return (
-                      <div key={id} className="w-60 flex-shrink-0">
+                      <div key={id} className="flex-shrink-0">
                         <MatchCardButton
                           match={match}
                           teamA={matchTeamA}

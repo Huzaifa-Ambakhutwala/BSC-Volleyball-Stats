@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { X, Lock, Unlock, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { fetchAdminUsersList, verifyAdminCredentials, unlockMatch } from '@/lib/firebase';
 
 interface Admin {
-  id: number;
+  id: string | number;
   username: string;
 }
 
@@ -27,28 +28,32 @@ const AdminUnlockModal: React.FC<AdminUnlockModalProps> = ({
 
   // Load admin users on mount
   useEffect(() => {
-    const fetchAdmins = async () => {
+    const loadAdmins = async () => {
       try {
-        const response = await fetch('/api/admin/users');
-        if (!response.ok) {
-          throw new Error('Failed to fetch admin users');
-        }
+        // Use the firebase function to get admin users
+        const admins = await fetchAdminUsersList();
+        setAdminList(admins);
         
-        const data = await response.json();
-        setAdminList(data);
+        // Set default admin if available
+        if (admins.length > 0) {
+          setSelectedAdmin(admins[0].username);
+        }
       } catch (error) {
         console.error('Error fetching admin users:', error);
+        // Fallback to at least one admin if fetch fails
+        setAdminList([{ id: 'default', username: 'Mehdi' }]);
+        setSelectedAdmin('Mehdi');
+        
         toast({
-          title: 'Error',
-          description: 'Failed to load admin users. Please try again.',
-          variant: 'destructive',
+          title: 'Note',
+          description: 'Using default admin. Enter the admin password to unlock.',
         });
       } finally {
         setIsLoadingAdmins(false);
       }
     };
     
-    fetchAdmins();
+    loadAdmins();
   }, [toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -75,36 +80,15 @@ const AdminUnlockModal: React.FC<AdminUnlockModalProps> = ({
     setIsLoading(true);
     
     try {
-      // Verify admin credentials
-      const verifyResponse = await fetch('/api/admin/verify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: selectedAdmin,
-          password,
-        }),
-      });
+      // Verify admin credentials using our Firebase function
+      const adminUser = await verifyAdminCredentials(selectedAdmin, password);
       
-      if (!verifyResponse.ok) {
-        throw new Error('Invalid credentials');
+      if (!adminUser) {
+        throw new Error('Invalid admin credentials');
       }
       
-      // Unlock the match
-      const unlockResponse = await fetch(`/api/matches/${matchId}/unlock`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          adminUsername: selectedAdmin,
-        }),
-      });
-      
-      if (!unlockResponse.ok) {
-        throw new Error('Failed to unlock match');
-      }
+      // Unlock the match using our Firebase function
+      await unlockMatch(matchId, adminUser.username);
       
       toast({
         title: 'Success',

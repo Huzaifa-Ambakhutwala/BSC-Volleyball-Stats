@@ -55,33 +55,40 @@ export const fetchAdminUsersList = async () => {
 
 export const verifyAdminCredentials = async (username: string, password: string) => {
   try {
-    const adminsRef = ref(database, 'admins');
-    const snapshot = await get(adminsRef);
+    // Use the existing admin users system from the app
+    const adminUsersRef = ref(database, 'adminUsers');
+    const snapshot = await get(adminUsersRef);
     
     if (!snapshot.exists()) {
+      // Try fallback to direct check on default admin
+      if (username === 'Mehdi' && password === '0000') {
+        return {
+          id: 'default',
+          username: 'Mehdi'
+        };
+      }
       throw new Error('No admin users found');
     }
     
-    const admins = snapshot.val();
-    const adminEntry = Object.entries(admins).find(
-      ([_, admin]: [string, any]) => admin.username === username
-    );
+    const adminUsers = snapshot.val();
     
-    if (!adminEntry) {
-      throw new Error('Invalid admin credentials');
+    // Find the admin user with matching username
+    for (const adminId in adminUsers) {
+      const adminUser = adminUsers[adminId];
+      if (adminUser.username === username) {
+        // In a real app, you would use a secure password comparison
+        if (adminUser.password === password) {
+          return {
+            id: adminId,
+            username: adminUser.username
+          };
+        } else {
+          throw new Error('Invalid admin credentials');
+        }
+      }
     }
     
-    const admin = adminEntry[1];
-    
-    // In a real app, you would use a secure password comparison
-    if (admin.password !== password) {
-      throw new Error('Invalid admin credentials');
-    }
-    
-    return {
-      id: adminEntry[0],
-      username: admin.username
-    };
+    throw new Error('Admin user not found');
   } catch (error) {
     console.error('Error verifying admin credentials:', error);
     throw error;
@@ -100,10 +107,24 @@ export const unlockMatch = async (matchId: string, adminUsername: string) => {
     
     const match = snapshot.val();
     
+    // Create an audit log entry
+    const unlockLogsRef = ref(database, `unlockLogs/${matchId}`);
+    const newLogRef = push(unlockLogsRef);
+    await set(newLogRef, {
+      adminUsername,
+      timestamp: serverTimestamp(),
+      previousStatus: match.status || 'unknown'
+    });
+    
     // Update match status
     const updates: any = {
       status: 'in_progress',
     };
+    
+    // Set the current set to 1 if it was already completed
+    if (match.status === 'completed') {
+      updates.currentSet = 1;
+    }
     
     // Unlock all completed sets
     if (match.completedSets) {
@@ -126,6 +147,17 @@ export const unlockMatch = async (matchId: string, adminUsername: string) => {
     
     // Update the match
     await update(matchRef, updates);
+    
+    // Create a notification for administrators and other users
+    const notificationsRef = ref(database, 'notifications');
+    const newNotificationRef = push(notificationsRef);
+    await set(newNotificationRef, {
+      type: 'match_unlocked',
+      matchId,
+      adminUsername,
+      timestamp: serverTimestamp(),
+      message: `Match on Court ${match.courtNumber} was unlocked by admin ${adminUsername}`
+    });
     
     // Log the unlock action
     const unlockLogRef = push(ref(database, 'unlockLogs'));

@@ -38,6 +38,110 @@ const database = getDatabase(app);
 export { ref, get, set, update, push, remove, onValue, off };
 export { database };
 
+// Admin API functions for match unlocking
+export const fetchAdminUsersList = async () => {
+  try {
+    // Use the existing admin user system
+    const adminUsers = await getAdminUsers();
+    return adminUsers.map((admin, index) => ({
+      id: index,
+      username: admin.username
+    }));
+  } catch (error) {
+    console.error('Error fetching admin users:', error);
+    throw error;
+  }
+};
+
+export const verifyAdminCredentials = async (username: string, password: string) => {
+  try {
+    const adminsRef = ref(database, 'admins');
+    const snapshot = await get(adminsRef);
+    
+    if (!snapshot.exists()) {
+      throw new Error('No admin users found');
+    }
+    
+    const admins = snapshot.val();
+    const adminEntry = Object.entries(admins).find(
+      ([_, admin]: [string, any]) => admin.username === username
+    );
+    
+    if (!adminEntry) {
+      throw new Error('Invalid admin credentials');
+    }
+    
+    const admin = adminEntry[1];
+    
+    // In a real app, you would use a secure password comparison
+    if (admin.password !== password) {
+      throw new Error('Invalid admin credentials');
+    }
+    
+    return {
+      id: adminEntry[0],
+      username: admin.username
+    };
+  } catch (error) {
+    console.error('Error verifying admin credentials:', error);
+    throw error;
+  }
+};
+
+export const unlockMatch = async (matchId: string, adminUsername: string) => {
+  try {
+    // Get the match data
+    const matchRef = ref(database, `matches/${matchId}`);
+    const snapshot = await get(matchRef);
+    
+    if (!snapshot.exists()) {
+      throw new Error('Match not found');
+    }
+    
+    const match = snapshot.val();
+    
+    // Update match status
+    const updates: any = {
+      status: 'in_progress',
+    };
+    
+    // Unlock all completed sets
+    if (match.completedSets) {
+      const updatedCompletedSets = { ...match.completedSets };
+      
+      if (updatedCompletedSets.set1) {
+        updatedCompletedSets.set1 = false;
+      }
+      
+      if (updatedCompletedSets.set2) {
+        updatedCompletedSets.set2 = false;
+      }
+      
+      if (updatedCompletedSets.set3) {
+        updatedCompletedSets.set3 = false;
+      }
+      
+      updates.completedSets = updatedCompletedSets;
+    }
+    
+    // Update the match
+    await update(matchRef, updates);
+    
+    // Log the unlock action
+    const unlockLogRef = push(ref(database, 'unlockLogs'));
+    await set(unlockLogRef, {
+      matchId,
+      adminUsername,
+      timestamp: Date.now()
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error unlocking match:', error);
+    throw error;
+  }
+};
+
 // Players API
 export const addPlayer = async (name: string, jerseyNumber?: number, jerseyName?: string) => {
   const playersRef = ref(database, 'players');

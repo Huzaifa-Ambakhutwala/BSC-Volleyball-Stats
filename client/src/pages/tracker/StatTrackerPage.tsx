@@ -680,6 +680,25 @@ const StatTrackerPage = () => {
                   </div>
                 ) : (
                   Object.entries(matches).map(([id, match]) => {
+                    // Load team data for this match if not already loaded
+                    if (!teamA || teamA.id !== match.teamA) {
+                      getTeamById(match.teamA).then(teamData => {
+                        if (teamData) {
+                          console.log("Loaded Team A data:", teamData.teamName);
+                          setTeamA(teamData);
+                        }
+                      }).catch(err => console.error("Error loading Team A:", err));
+                    }
+                    
+                    if (!teamB || teamB.id !== match.teamB) {
+                      getTeamById(match.teamB).then(teamData => {
+                        if (teamData) {
+                          console.log("Loaded Team B data:", teamData.teamName);
+                          setTeamB(teamData);
+                        }
+                      }).catch(err => console.error("Error loading Team B:", err));
+                    }
+                    
                     // Get team data for the current match
                     const matchTeamA = teamA && teamA.id === match.teamA ? teamA : null;
                     const matchTeamB = teamB && teamB.id === match.teamB ? teamB : null;

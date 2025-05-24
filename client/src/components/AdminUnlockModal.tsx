@@ -168,19 +168,28 @@ const AdminUnlockModal: React.FC<AdminUnlockModalProps> = ({
                   <span className="text-gray-500">Loading admins...</span>
                 </div>
               ) : (
-                <select
-                  className="w-full px-3 py-2 border rounded-md border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={selectedAdmin}
-                  onChange={(e) => setSelectedAdmin(e.target.value)}
-                  disabled={isLoading}
-                >
-                  <option value="">Select an admin user</option>
-                  {adminList.map((admin) => (
-                    <option key={admin.id} value={admin.username}>
-                      {admin.username}
-                    </option>
-                  ))}
-                </select>
+                <div>
+                  <select
+                    className="w-full px-3 py-2 border rounded-md border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={selectedAdmin}
+                    onChange={(e) => setSelectedAdmin(e.target.value)}
+                    disabled={isLoading}
+                  >
+                    <option value="">Select an admin user</option>
+                    {adminList.map((admin) => (
+                      <option key={admin.id} value={admin.username}>
+                        {admin.username}
+                      </option>
+                    ))}
+                    <option value="Mehdi">Mehdi (Default Admin)</option>
+                  </select>
+                  
+                  {selectedAdmin === "Mehdi" && (
+                    <p className="mt-1 text-xs text-amber-600">
+                      Default password for Mehdi is 0000
+                    </p>
+                  )}
+                </div>
               )}
             </div>
             

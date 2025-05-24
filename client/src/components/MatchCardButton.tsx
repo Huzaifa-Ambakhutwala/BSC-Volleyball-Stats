@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 
 interface MatchCardButtonProps {
   match: Match;
+  matchId: string;
   teamA: Team | null;
   teamB: Team | null;
   isSelected: boolean;
@@ -13,6 +14,7 @@ interface MatchCardButtonProps {
 
 const MatchCardButton: React.FC<MatchCardButtonProps> = ({
   match,
+  matchId,
   teamA,
   teamB,
   isSelected,
@@ -21,30 +23,28 @@ const MatchCardButton: React.FC<MatchCardButtonProps> = ({
 }) => {
   const startTime = new Date(match.startTime);
   const formattedTime = format(startTime, 'h:mm a');
-  
+
   const isCompleted = match.status === 'completed';
-  
+
   const handleClick = (e: React.MouseEvent) => {
     if (isCompleted && onUnlockClick) {
       e.stopPropagation();
-      onUnlockClick(match.id);
+      onUnlockClick(matchId);
       return;
     }
-    
+
     onClick();
   };
-  
+
   return (
     <button
-      className={`relative flex flex-col p-4 rounded-xl shadow-md transition-all w-64 ${
-        isSelected 
-          ? 'ring-2 ring-offset-1 ring-[hsl(var(--vb-blue))]' 
+      className={`relative flex flex-col p-4 rounded-xl shadow-md transition-all w-64 ${isSelected
+          ? 'ring-2 ring-offset-1 ring-[hsl(var(--vb-blue))]'
           : ''
-      } ${
-        isCompleted 
-          ? 'bg-gray-50 text-gray-600 hover:bg-gray-100' 
+        } ${isCompleted
+          ? 'bg-gray-50 text-gray-600 hover:bg-gray-100'
           : 'bg-white hover:bg-blue-50 border border-gray-200'
-      }`}
+        }`}
       onClick={handleClick}
     >
       {/* Status indicator - positioned at top right */}
@@ -53,13 +53,13 @@ const MatchCardButton: React.FC<MatchCardButtonProps> = ({
           Locked
         </div>
       )}
-      
+
       {/* Court info */}
       <div className="text-left mb-2">
         <div className="font-medium text-gray-700">Court {match.courtNumber}</div>
         <div className="text-xs text-gray-500">{formattedTime}</div>
       </div>
-      
+
       {/* Teams - with more spacing */}
       <div className="text-left mb-3 mt-2">
         <div className="font-semibold text-md mb-1" style={{ color: teamA?.teamColor || 'inherit' }}>
@@ -70,7 +70,7 @@ const MatchCardButton: React.FC<MatchCardButtonProps> = ({
           {teamB?.teamName || match.teamB || 'Team B'}
         </div>
       </div>
-      
+
       {/* Unlock button for completed matches - fixed at bottom with spacing */}
       {isCompleted && onUnlockClick && (
         <div className="mt-2">
@@ -78,7 +78,7 @@ const MatchCardButton: React.FC<MatchCardButtonProps> = ({
             className="bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 py-1 rounded w-full transition"
             onClick={(e) => {
               e.stopPropagation();
-              onUnlockClick(match.id);
+              onUnlockClick(matchId);
             }}
           >
             Unlock

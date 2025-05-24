@@ -16,7 +16,8 @@ import {
   unlockMatch,
   verifyAdminCredentials,
   fetchAdminUsersList,
-  type StatLog
+  type StatLog,
+  getTeams
 } from '@/lib/firebase';
 import type { Match, Team, Player } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
@@ -56,6 +57,7 @@ const StatTrackerPage = () => {
   const { toast } = useToast();
   const [_, setLocation] = useLocation();
   const { trackerUser, setTrackerUser } = useContext(TrackerUserContext);
+  const [teamsMap, setTeamsMap] = useState<Record<string, Team>>({});
 
   // Add fallback to localStorage if context is not available
   useEffect(() => {
@@ -220,13 +222,13 @@ const StatTrackerPage = () => {
       }
       setStatLogs(logs);
     });
-    
+
     // For now we won't use the stats listener since it's not properly defined
-    const statsUnsubscribe = () => {};
+    const statsUnsubscribe = () => { };
 
     // Reset selected player when match changes
     setSelectedPlayerId(null);
-    
+
     // When a match is selected, also try to load its team data
     if (currentMatch) {
       const loadMatchTeams = async () => {
@@ -234,14 +236,14 @@ const StatTrackerPage = () => {
           // Load team data for the selected match
           const teamAData = await getTeamById(currentMatch.teamA);
           const teamBData = await getTeamById(currentMatch.teamB);
-          
+
           if (teamAData) setTeamA(teamAData);
           if (teamBData) setTeamB(teamBData);
         } catch (error) {
           console.error("Error loading teams for match:", error);
         }
       };
-      
+
       loadMatchTeams();
     }
 
@@ -259,7 +261,7 @@ const StatTrackerPage = () => {
       try {
         console.log(`Loading teams for match: ${currentMatch.id}`);
         console.log(`Team A ID: ${currentMatch.teamA}, Team B ID: ${currentMatch.teamB}`);
-        
+
         // Only update teams when they're different from current ones
         if (!teamA || teamA.id !== currentMatch.teamA) {
           const teamAData = await getTeamById(currentMatch.teamA);
@@ -268,7 +270,7 @@ const StatTrackerPage = () => {
             setTeamA(teamAData);
           }
         }
-        
+
         if (!teamB || teamB.id !== currentMatch.teamB) {
           const teamBData = await getTeamById(currentMatch.teamB);
           console.log("Loaded Team B:", teamBData?.teamName);
@@ -289,26 +291,44 @@ const StatTrackerPage = () => {
     loadTeams();
   }, [currentMatch, teamA?.id, teamB?.id, toast]);
 
+  // Load all teams for mapping team IDs to names
+  useEffect(() => {
+    const loadTeams = async () => {
+      try {
+        const allTeams = await getTeams();
+        setTeamsMap(allTeams);
+      } catch (error) {
+        toast({
+          title: 'Error',
+          description: 'Failed to load teams',
+          variant: 'destructive',
+        });
+      }
+    };
+    loadTeams();
+  }, [toast]);
+
   const handleMatchSelect = (matchId: string) => {
     setSelectedMatchId(matchId);
-    
+
     // Get the match data
     const match = matches[matchId];
     setCurrentMatch(match);
-    
+
     // Reset current set to match's current set (defaulting to 1)
     setCurrentSet(match.currentSet || 1);
-    
+
     // Just select the match for now
-  // We already have listeners set up in the useEffect hooks
-  // that will update when selectedMatchId changes
+    // We already have listeners set up in the useEffect hooks
+    // that will update when selectedMatchId changes
   };
-  
+
   const handleUnlockRequest = (matchId: string) => {
+    console.log('Unlock requested for match:', matchId);
     setMatchToUnlock(matchId);
     setShowUnlockModal(true);
   };
-  
+
   const handleUnlockComplete = () => {
     // If a match was successfully unlocked, select it
     if (matchToUnlock) {
@@ -683,7 +703,7 @@ const StatTrackerPage = () => {
           {/* Match Selection Cards */}
           <div className="p-6 border-b border-gray-200">
             <h3 className="text-lg font-semibold mb-4">Select Match</h3>
-            
+
             {/* Scrollable Match Cards */}
             <div className="overflow-x-auto pb-6">
               <div className="flex space-x-5 min-w-max px-1 py-2">
@@ -693,17 +713,13 @@ const StatTrackerPage = () => {
                   </div>
                 ) : (
                   Object.entries(matches).map(([id, match]) => {
-                    // For each match, get the team data for display
-                    // Don't trigger state updates during rendering - we'll load teams when selected
-                    
-                    // Use stored teamA and teamB when they match the current match's team IDs
-                    const matchTeamA = teamA && teamA.id === match.teamA ? teamA : null;
-                    const matchTeamB = teamB && teamB.id === match.teamB ? teamB : null;
-                    
+                    const matchTeamA = teamsMap[match.teamA] || null;
+                    const matchTeamB = teamsMap[match.teamB] || null;
                     return (
                       <div key={id} className="flex-shrink-0">
                         <MatchCardButton
                           match={match}
+                          matchId={id}
                           teamA={matchTeamA}
                           teamB={matchTeamB}
                           isSelected={id === selectedMatchId}
@@ -1349,7 +1365,7 @@ const StatTrackerPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      
+
       {/* Admin Unlock Modal */}
       {showUnlockModal && matchToUnlock && (
         <AdminUnlockModal

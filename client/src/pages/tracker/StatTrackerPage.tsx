@@ -257,14 +257,27 @@ const StatTrackerPage = () => {
 
     const loadTeams = async () => {
       try {
-        const [teamAData, teamBData] = await Promise.all([
-          getTeamById(currentMatch.teamA),
-          getTeamById(currentMatch.teamB)
-        ]);
-
-        setTeamA(teamAData);
-        setTeamB(teamBData);
+        console.log(`Loading teams for match: ${currentMatch.id}`);
+        console.log(`Team A ID: ${currentMatch.teamA}, Team B ID: ${currentMatch.teamB}`);
+        
+        // Only update teams when they're different from current ones
+        if (!teamA || teamA.id !== currentMatch.teamA) {
+          const teamAData = await getTeamById(currentMatch.teamA);
+          console.log("Loaded Team A:", teamAData?.teamName);
+          if (teamAData) {
+            setTeamA(teamAData);
+          }
+        }
+        
+        if (!teamB || teamB.id !== currentMatch.teamB) {
+          const teamBData = await getTeamById(currentMatch.teamB);
+          console.log("Loaded Team B:", teamBData?.teamName);
+          if (teamBData) {
+            setTeamB(teamBData);
+          }
+        }
       } catch (error) {
+        console.error("Error loading teams:", error);
         toast({
           title: "Error",
           description: "Failed to load teams",
@@ -274,7 +287,7 @@ const StatTrackerPage = () => {
     };
 
     loadTeams();
-  }, [currentMatch, toast]);
+  }, [currentMatch, teamA?.id, teamB?.id, toast]);
 
   const handleMatchSelect = (matchId: string) => {
     setSelectedMatchId(matchId);
@@ -680,26 +693,10 @@ const StatTrackerPage = () => {
                   </div>
                 ) : (
                   Object.entries(matches).map(([id, match]) => {
-                    // Load team data for this match if not already loaded
-                    if (!teamA || teamA.id !== match.teamA) {
-                      getTeamById(match.teamA).then(teamData => {
-                        if (teamData) {
-                          console.log("Loaded Team A data:", teamData.teamName);
-                          setTeamA(teamData);
-                        }
-                      }).catch(err => console.error("Error loading Team A:", err));
-                    }
+                    // For each match, get the team data for display
+                    // Don't trigger state updates during rendering - we'll load teams when selected
                     
-                    if (!teamB || teamB.id !== match.teamB) {
-                      getTeamById(match.teamB).then(teamData => {
-                        if (teamData) {
-                          console.log("Loaded Team B data:", teamData.teamName);
-                          setTeamB(teamData);
-                        }
-                      }).catch(err => console.error("Error loading Team B:", err));
-                    }
-                    
-                    // Get team data for the current match
+                    // Use stored teamA and teamB when they match the current match's team IDs
                     const matchTeamA = teamA && teamA.id === match.teamA ? teamA : null;
                     const matchTeamB = teamB && teamB.id === match.teamB ? teamB : null;
                     

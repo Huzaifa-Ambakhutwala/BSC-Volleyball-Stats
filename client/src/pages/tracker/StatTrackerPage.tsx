@@ -666,43 +666,9 @@ const StatTrackerPage = () => {
                   </div>
                 ) : (
                   Object.entries(matches).map(([id, match]) => {
-                    // Get both teams' data with proper fallbacks
-                    let matchTeamA = null;
-                    let matchTeamB = null;
-                    
-                    // Try to find team data from local state first
-                    if (teamA && teamA.id === match.teamA) {
-                      matchTeamA = teamA;
-                    }
-                    
-                    if (teamB && teamB.id === match.teamB) {
-                      matchTeamB = teamB;
-                    }
-                    
-                    // If teams aren't in local state yet, try to fetch them
-                    if (!matchTeamA) {
-                      // Load team A data directly and store for future rendering
-                      getTeamById(match.teamA)
-                        .then(teamData => {
-                          if (teamData) {
-                            // Update team A state variable
-                            setTeamA(teamData);
-                          }
-                        })
-                        .catch(err => console.error("Error fetching team A:", err));
-                    }
-                    
-                    if (!matchTeamB) {
-                      // Load team B data directly and store for future rendering
-                      getTeamById(match.teamB)
-                        .then(teamData => {
-                          if (teamData) {
-                            // Update team B state variable
-                            setTeamB(teamData);
-                          }
-                        })
-                        .catch(err => console.error("Error fetching team B:", err));
-                    }
+                    // Get team data for the current match
+                    const matchTeamA = teamA && teamA.id === match.teamA ? teamA : null;
+                    const matchTeamB = teamB && teamB.id === match.teamB ? teamB : null;
                     
                     return (
                       <div key={id} className="flex-shrink-0">

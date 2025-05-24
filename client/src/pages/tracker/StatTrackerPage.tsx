@@ -265,9 +265,9 @@ const StatTrackerPage = () => {
     // Reset current set to match's current set (defaulting to 1)
     setCurrentSet(match.currentSet || 1);
     
-    // Load stats for this match
-    listenToPlayerStatsForMatch(matchId);
-    listenToStatLogsForMatch(matchId);
+    // Just select the match for now
+  // We already have listeners set up in the useEffect hooks
+  // that will update when selectedMatchId changes
   };
   
   const handleUnlockRequest = (matchId: string) => {

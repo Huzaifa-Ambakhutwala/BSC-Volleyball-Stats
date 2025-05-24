@@ -63,11 +63,11 @@ const MatchCardButton: React.FC<MatchCardButtonProps> = ({
       {/* Teams - with more spacing */}
       <div className="text-left mb-3 mt-2">
         <div className="font-semibold text-md mb-1" style={{ color: teamA?.teamColor || 'inherit' }}>
-          {teamA?.teamName || match.teamA || 'Team A'}
+          {teamA?.teamName || 'Team A'}
         </div>
         <div className="text-xs text-gray-400 my-1">vs</div>
         <div className="font-semibold text-md mt-1" style={{ color: teamB?.teamColor || 'inherit' }}>
-          {teamB?.teamName || match.teamB || 'Team B'}
+          {teamB?.teamName || 'Team B'}
         </div>
       </div>
       

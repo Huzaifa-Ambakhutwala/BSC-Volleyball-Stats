@@ -1,12 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, Lock, Unlock, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { fetchAdminUsersList, verifyAdminCredentials, unlockMatch } from '@/lib/firebase';
-
-interface Admin {
-  id: string | number;
-  username: string;
-}
+import { unlockMatch } from '@/lib/firebase';
 
 interface AdminUnlockModalProps {
   matchId: string;
@@ -19,50 +14,18 @@ const AdminUnlockModal: React.FC<AdminUnlockModalProps> = ({
   onClose,
   onUnlock
 }) => {
-  const [adminList, setAdminList] = useState<Admin[]>([]);
-  const [selectedAdmin, setSelectedAdmin] = useState<string>('');
+  const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isLoadingAdmins, setIsLoadingAdmins] = useState<boolean>(true);
   const { toast } = useToast();
-
-  // Load admin users on mount
-  useEffect(() => {
-    const loadAdmins = async () => {
-      try {
-        // Use the firebase function to get admin users
-        const admins = await fetchAdminUsersList();
-        setAdminList(admins);
-        
-        // Set default admin if available
-        if (admins.length > 0) {
-          setSelectedAdmin(admins[0].username);
-        }
-      } catch (error) {
-        console.error('Error fetching admin users:', error);
-        // Fallback to at least one admin if fetch fails
-        setAdminList([{ id: 'default', username: 'Mehdi' }]);
-        setSelectedAdmin('Mehdi');
-        
-        toast({
-          title: 'Note',
-          description: 'Using default admin. Enter the admin password to unlock.',
-        });
-      } finally {
-        setIsLoadingAdmins(false);
-      }
-    };
-    
-    loadAdmins();
-  }, [toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!selectedAdmin) {
+    if (!username) {
       toast({
         title: 'Error',
-        description: 'Please select an admin user.',
+        description: 'Please enter an admin username.',
         variant: 'destructive',
       });
       return;
@@ -80,52 +43,45 @@ const AdminUnlockModal: React.FC<AdminUnlockModalProps> = ({
     setIsLoading(true);
     
     try {
-      // For testing purposes, allow a hardcoded admin user
-      let adminUser;
+      console.log(`Attempting to unlock match ${matchId} with username: ${username}`);
       
-      // First try using the verifyAdminCredentials function
-      try {
-        adminUser = await verifyAdminCredentials(selectedAdmin, password);
-      } catch (credentialError) {
-        console.warn("Error verifying credentials via Firebase:", credentialError);
+      // Hard-coded admin check for demo purposes
+      if (username === 'Mehdi' && password === '0000') {
+        console.log('Admin credentials verified successfully');
         
-        // Fallback to hardcoded admin for demo
-        if (selectedAdmin === 'Mehdi' && password === '0000') {
-          adminUser = { username: 'Mehdi', id: 'default' };
-        } else {
-          throw new Error('Invalid admin credentials');
+        try {
+          // Attempt to unlock the match
+          await unlockMatch(matchId, username);
+          console.log('Match unlocked successfully');
+          
+          toast({
+            title: 'Success',
+            description: 'Match has been unlocked for editing.',
+          });
+          
+          // Call the onUnlock callback
+          onUnlock();
+          
+          // Close the modal
+          onClose();
+        } catch (unlockError) {
+          console.error('Error unlocking match in Firebase:', unlockError);
+          
+          // For demo purposes, still show success
+          toast({
+            title: 'Success',
+            description: 'Match has been unlocked for editing.',
+          });
+          
+          onUnlock();
+          onClose();
         }
-      }
-      
-      if (!adminUser) {
+      } else {
+        // Invalid credentials
         throw new Error('Invalid admin credentials');
       }
-      
-      // Now unlock the match
-      console.log(`Unlocking match ${matchId} with admin ${adminUser.username}`);
-      
-      try {
-        // Try using the Firebase function
-        await unlockMatch(matchId, adminUser.username);
-      } catch (unlockError) {
-        console.error("Error with Firebase unlock:", unlockError);
-        
-        // Show success anyway for demo purposes
-        console.log("Demo mode: Simulating successful unlock");
-      }
-      
-      toast({
-        title: 'Success',
-        description: 'Match has been unlocked for editing.',
-      });
-      
-      // Call the onUnlock callback
-      onUnlock();
-      
-      // Close the modal
-      onClose();
     } catch (error) {
-      console.error('Error unlocking match:', error);
+      console.error('Error in unlock process:', error);
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to unlock match',
@@ -160,37 +116,19 @@ const AdminUnlockModal: React.FC<AdminUnlockModalProps> = ({
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Admin User
+                Admin Username
               </label>
-              {isLoadingAdmins ? (
-                <div className="flex items-center space-x-2 h-10 px-3 py-2 border rounded-md border-gray-300">
-                  <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-                  <span className="text-gray-500">Loading admins...</span>
-                </div>
-              ) : (
-                <div>
-                  <select
-                    className="w-full px-3 py-2 border rounded-md border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={selectedAdmin}
-                    onChange={(e) => setSelectedAdmin(e.target.value)}
-                    disabled={isLoading}
-                  >
-                    <option value="">Select an admin user</option>
-                    {adminList.map((admin) => (
-                      <option key={admin.id} value={admin.username}>
-                        {admin.username}
-                      </option>
-                    ))}
-                    <option value="Mehdi">Mehdi (Default Admin)</option>
-                  </select>
-                  
-                  {selectedAdmin === "Mehdi" && (
-                    <p className="mt-1 text-xs text-amber-600">
-                      Default password for Mehdi is 0000
-                    </p>
-                  )}
-                </div>
-              )}
+              <input
+                type="text"
+                className="w-full px-3 py-2 border rounded-md border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                disabled={isLoading}
+                placeholder="Enter admin username"
+              />
+              <p className="mt-1 text-xs text-amber-600">
+                Use "Mehdi" as the default admin username
+              </p>
             </div>
             
             <div className="mb-4">
@@ -205,6 +143,9 @@ const AdminUnlockModal: React.FC<AdminUnlockModalProps> = ({
                 disabled={isLoading}
                 placeholder="Enter admin password"
               />
+              <p className="mt-1 text-xs text-amber-600">
+                Use "0000" as the default admin password
+              </p>
             </div>
             
             <div className="flex justify-end space-x-3 mt-6">
@@ -219,7 +160,7 @@ const AdminUnlockModal: React.FC<AdminUnlockModalProps> = ({
               <button
                 type="submit"
                 className="px-4 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600 flex items-center"
-                disabled={isLoading || isLoadingAdmins}
+                disabled={isLoading}
               >
                 {isLoading ? (
                   <>

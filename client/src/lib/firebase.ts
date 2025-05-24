@@ -1410,4 +1410,52 @@ export const deleteAdminUser = async (username: string): Promise<boolean> => {
   }
 };
 
+export const unlockMatch = async (matchId: string, adminUsername: string): Promise<void> => {
+  console.log(`Unlocking match ${matchId} by admin ${adminUsername}`);
+  
+  try {
+    const matchRef = ref(database, `matches/${matchId}`);
+    const matchSnapshot = await get(matchRef);
+    
+    if (!matchSnapshot.exists()) {
+      console.error(`Match with ID ${matchId} not found`);
+      throw new Error(`Match with ID ${matchId} not found`);
+    }
+    
+    const match = matchSnapshot.val() as Match;
+    
+    // Reset completion status
+    const updates: Partial<Match> = {
+      status: 'in_progress',
+      completedDate: null
+    };
+    
+    // Reset completion status for individual sets if they exist
+    if (match.completedSets) {
+      const completedSets = { ...match.completedSets };
+      
+      // Reset all set completion statuses
+      if (completedSets.set1) completedSets.set1 = false;
+      if (completedSets.set2) completedSets.set2 = false;
+      if (completedSets.set3) completedSets.set3 = false;
+      
+      updates.completedSets = completedSets;
+    }
+    
+    // Log the unlock action
+    console.log(`Admin ${adminUsername} is unlocking match ${matchId} with updates:`, updates);
+    
+    // Update the match in Firebase
+    await update(matchRef, updates);
+    
+    console.log(`Successfully unlocked match ${matchId}`);
+    
+    // Return without error to indicate success
+    return;
+  } catch (error) {
+    console.error(`Error unlocking match ${matchId}:`, error);
+    throw error;
+  }
+};
+
 

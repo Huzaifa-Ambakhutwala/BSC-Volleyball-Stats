@@ -13,6 +13,9 @@ import {
   advanceToNextSet,
   isSetLocked,
   finalizeMatch,
+  unlockMatch,
+  verifyAdminCredentials,
+  fetchAdminUsersList,
   type StatLog
 } from '@/lib/firebase';
 import type { Match, Team, Player } from '@shared/schema';
@@ -33,6 +36,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import MatchCardButton from '@/components/MatchCardButton';
+import AdminUnlockModal from '@/components/AdminUnlockModal';
 
 const StatTrackerPage = () => {
   const [matches, setMatches] = useState<Record<string, Match>>({});
@@ -70,6 +75,8 @@ const StatTrackerPage = () => {
   }, [trackerUser, setTrackerUser, setLocation]);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showFinalizeMatchDialog, setShowFinalizeMatchDialog] = useState(false);
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const [matchToUnlock, setMatchToUnlock] = useState<string | null>(null);
 
   // Logout handler
   const handleLogout = () => {
@@ -248,8 +255,22 @@ const StatTrackerPage = () => {
     loadTeams();
   }, [currentMatch, toast]);
 
-  const handleMatchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedMatchId(e.target.value);
+  const handleMatchSelect = (matchId: string) => {
+    setSelectedMatchId(matchId);
+  };
+  
+  const handleUnlockRequest = (matchId: string) => {
+    setMatchToUnlock(matchId);
+    setShowUnlockModal(true);
+  };
+  
+  const handleUnlockComplete = () => {
+    // If a match was successfully unlocked, select it
+    if (matchToUnlock) {
+      setSelectedMatchId(matchToUnlock);
+      setMatchToUnlock(null);
+    }
+    setShowUnlockModal(false);
   };
 
   const handleScoreUpdate = async (team: 'A' | 'B', increment: 1 | -1) => {
@@ -614,48 +635,38 @@ const StatTrackerPage = () => {
             </div>
           </div>
 
-          {/* Match Selection */}
+          {/* Match Selection Cards */}
           <div className="p-6 border-b border-gray-200">
             <h3 className="text-lg font-semibold mb-4">Select Match</h3>
-            <div className="max-w-md">
-              <select
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-[hsl(var(--vb-blue))] focus:border-[hsl(var(--vb-blue))]"
-                value={selectedMatchId}
-                onChange={handleMatchChange}
-              >
-                <option value="">Select a match</option>
-                {Object.entries(matches).map(([id, match]) => {
-                  const startTime = new Date(match.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-                  // Get team names instead of IDs
-                  let teamAName = "Team A";
-                  let teamBName = "Team B";
-
-                  try {
-                    // Try to find the team names in the cache
-                    const teamAObj = Object.values(matches).find(m => m.teamA === match.teamA);
-                    const teamBObj = Object.values(matches).find(m => m.teamB === match.teamB);
-
-                    if (teamA && teamA.id === match.teamA) {
-                      teamAName = teamA.teamName;
-                    }
-
-                    if (teamB && teamB.id === match.teamB) {
-                      teamBName = teamB.teamName;
-                    }
-                  } catch (error) {
-                    // Fallback to IDs if names can't be found
-                    teamAName = `Team ${match.teamA}`;
-                    teamBName = `Team ${match.teamB}`;
-                  }
-
-                  return (
-                    <option key={id} value={id}>
-                      Court {match.courtNumber}: {teamAName} vs {teamBName} ({startTime})
-                    </option>
-                  );
-                })}
-              </select>
+            
+            {/* Scrollable Match Cards */}
+            <div className="overflow-x-auto pb-4">
+              <div className="flex space-x-4 min-w-max">
+                {Object.entries(matches).length === 0 ? (
+                  <div className="p-4 bg-gray-50 rounded-lg text-gray-500 text-center w-full">
+                    No matches assigned to your team
+                  </div>
+                ) : (
+                  Object.entries(matches).map(([id, match]) => {
+                    // Find team info for each match
+                    const matchTeamA = teamA && teamA.id === match.teamA ? teamA : null;
+                    const matchTeamB = teamB && teamB.id === match.teamB ? teamB : null;
+                    
+                    return (
+                      <div key={id} className="w-60 flex-shrink-0">
+                        <MatchCardButton
+                          match={match}
+                          teamA={matchTeamA}
+                          teamB={matchTeamB}
+                          isSelected={id === selectedMatchId}
+                          onClick={() => handleMatchSelect(id)}
+                          onUnlockClick={handleUnlockRequest}
+                        />
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
 
@@ -1290,6 +1301,15 @@ const StatTrackerPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {/* Admin Unlock Modal */}
+      {showUnlockModal && matchToUnlock && (
+        <AdminUnlockModal
+          matchId={matchToUnlock}
+          onClose={() => setShowUnlockModal(false)}
+          onUnlock={handleUnlockComplete}
+        />
+      )}
     </section>
   );
 };

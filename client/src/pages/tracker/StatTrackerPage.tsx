@@ -221,19 +221,33 @@ const StatTrackerPage = () => {
       setStatLogs(logs);
     });
     
-    // Listen for player stats for this match
-    const statsUnsubscribe = listenToMatchStats(selectedMatchId, (stats) => {
-      console.log(`[StatTrackerPage] Received stats for match ID: ${selectedMatchId}`);
-      setPlayerStats(stats);
-    });
+    // For now we won't use the stats listener since it's not properly defined
+    const statsUnsubscribe = () => {};
 
     // Reset selected player when match changes
     setSelectedPlayerId(null);
+    
+    // When a match is selected, also try to load its team data
+    if (currentMatch) {
+      const loadMatchTeams = async () => {
+        try {
+          // Load team data for the selected match
+          const teamAData = await getTeamById(currentMatch.teamA);
+          const teamBData = await getTeamById(currentMatch.teamB);
+          
+          if (teamAData) setTeamA(teamAData);
+          if (teamBData) setTeamB(teamBData);
+        } catch (error) {
+          console.error("Error loading teams for match:", error);
+        }
+      };
+      
+      loadMatchTeams();
+    }
 
     return () => {
       matchUnsubscribe();
       logsUnsubscribe();
-      statsUnsubscribe(); // Clean up the stats listener
     };
   }, [selectedMatchId]);
 

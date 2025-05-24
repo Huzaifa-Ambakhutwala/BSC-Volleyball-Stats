@@ -257,6 +257,17 @@ const StatTrackerPage = () => {
 
   const handleMatchSelect = (matchId: string) => {
     setSelectedMatchId(matchId);
+    
+    // Get the match data
+    const match = matches[matchId];
+    setCurrentMatch(match);
+    
+    // Reset current set to match's current set (defaulting to 1)
+    setCurrentSet(match.currentSet || 1);
+    
+    // Load stats for this match
+    listenToPlayerStatsForMatch(matchId);
+    listenToStatLogsForMatch(matchId);
   };
   
   const handleUnlockRequest = (matchId: string) => {

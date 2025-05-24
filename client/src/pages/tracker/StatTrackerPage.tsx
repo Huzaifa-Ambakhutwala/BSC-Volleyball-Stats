@@ -220,6 +220,12 @@ const StatTrackerPage = () => {
       }
       setStatLogs(logs);
     });
+    
+    // Listen for player stats for this match
+    const statsUnsubscribe = listenToMatchStats(selectedMatchId, (stats) => {
+      console.log(`[StatTrackerPage] Received stats for match ID: ${selectedMatchId}`);
+      setPlayerStats(stats);
+    });
 
     // Reset selected player when match changes
     setSelectedPlayerId(null);
@@ -227,6 +233,7 @@ const StatTrackerPage = () => {
     return () => {
       matchUnsubscribe();
       logsUnsubscribe();
+      statsUnsubscribe(); // Clean up the stats listener
     };
   }, [selectedMatchId]);
 
@@ -673,22 +680,28 @@ const StatTrackerPage = () => {
                     }
                     
                     // If teams aren't in local state yet, try to fetch them
-                    if (!matchTeamA || !matchTeamB) {
-                      // Use getTeamById for each team to ensure we have data
-                      // This will be executed once when rendering the list
-                      getTeamById(match.teamA).then(team => {
-                        if (team && !matchTeamA) {
-                          // Force a re-render to update with the team data
-                          setMatches(prev => ({...prev}));
-                        }
-                      }).catch(err => console.error("Error fetching team A:", err));
-                      
-                      getTeamById(match.teamB).then(team => {
-                        if (team && !matchTeamB) {
-                          // Force a re-render to update with the team data
-                          setMatches(prev => ({...prev}));
-                        }
-                      }).catch(err => console.error("Error fetching team B:", err));
+                    if (!matchTeamA) {
+                      // Load team A data directly and store for future rendering
+                      getTeamById(match.teamA)
+                        .then(teamData => {
+                          if (teamData) {
+                            // Update team A state variable
+                            setTeamA(teamData);
+                          }
+                        })
+                        .catch(err => console.error("Error fetching team A:", err));
+                    }
+                    
+                    if (!matchTeamB) {
+                      // Load team B data directly and store for future rendering
+                      getTeamById(match.teamB)
+                        .then(teamData => {
+                          if (teamData) {
+                            // Update team B state variable
+                            setTeamB(teamData);
+                          }
+                        })
+                        .catch(err => console.error("Error fetching team B:", err));
                     }
                     
                     return (

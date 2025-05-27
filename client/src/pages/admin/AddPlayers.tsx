@@ -410,12 +410,18 @@ const AddPlayers = () => {
                 className="bg-gray-100 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-200 transition flex items-center"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploadingCSV}
-                title="Upload CSV"
+                title="Upload player data file (CSV/TXT/XLSX)"
               >
                 {isUploadingCSV ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Uploading...
+                  </>
                 ) : (
-                  <Upload className="h-4 w-4" />
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload File
+                  </>
                 )}
               </button>
             </div>

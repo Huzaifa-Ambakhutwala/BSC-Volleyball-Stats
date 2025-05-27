@@ -401,7 +401,7 @@ const AddPlayers = () => {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".csv,.txt"
+                accept=".csv,.txt,.xlsx"
                 className="hidden"
                 onChange={handleCSVUpload}
                 disabled={isUploadingCSV}

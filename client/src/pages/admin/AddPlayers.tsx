@@ -288,38 +288,50 @@ const AddPlayers = () => {
         
         let successCount = 0;
         let errorCount = 0;
+        const errorDetails: string[] = [];
         
         for (const row of rows) {
           try {
-            // Format: jersey number, jersey name, full name
-            const [jerseyNumber, jerseyName, playerName] = row.split(',').map(item => item.trim());
+            // Handle both comma and tab separated values
+            const parts = row.includes('\t') ? row.split('\t') : row.split(',');
+            const [jerseyNumber, jerseyName, playerName] = parts.map(item => item.trim());
             
             if (!jerseyNumber || !jerseyName || !playerName) {
               console.error('Missing data in row:', row);
+              errorDetails.push(`Missing data: ${row}`);
               errorCount++;
               continue;
             }
             
-            const jerseyNum = parseInt(jerseyNumber);
+            // Handle decimal jersey numbers by parsing as float then converting to string
+            const jerseyNum = parseFloat(jerseyNumber);
             if (isNaN(jerseyNum)) {
               console.error('Invalid jersey number:', jerseyNumber);
+              errorDetails.push(`Invalid jersey number "${jerseyNumber}": ${row}`);
               errorCount++;
               continue;
             }
             
+            // Store jersey number as entered (could be decimal like 0.5)
             await addPlayer(playerName, jerseyNum, jerseyName);
             successCount++;
           } catch (rowError) {
             console.error('Error processing row:', row, rowError);
+            errorDetails.push(`Processing error: ${row}`);
             errorCount++;
           }
         }
         
         toast({
-          title: "CSV Import Complete",
+          title: "File Import Complete",
           description: `Successfully added ${successCount} players. ${errorCount > 0 ? `Failed to add ${errorCount} players.` : ''}`,
           variant: errorCount > 0 ? "destructive" : "default",
         });
+        
+        // Log error details for debugging
+        if (errorDetails.length > 0) {
+          console.log('Import errors:', errorDetails);
+        }
         
         // Reset file input
         if (fileInputRef.current) {
@@ -328,7 +340,7 @@ const AddPlayers = () => {
       } catch (error) {
         toast({
           title: "Error",
-          description: "Failed to process CSV file",
+          description: "Failed to process file. Please check the format.",
           variant: "destructive",
         });
       } finally {

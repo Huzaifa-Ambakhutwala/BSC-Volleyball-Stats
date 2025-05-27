@@ -273,91 +273,196 @@ const AddPlayers = () => {
     }
   };
   
-  // CSV Upload handler
+  // File Upload handler (supports CSV, TXT, and XLSX)
   const handleCSVUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     
     setIsUploadingCSV(true);
     
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        const text = e.target?.result as string;
-        const rows = text.split('\n').filter(row => row.trim());
-        
-        let successCount = 0;
-        let errorCount = 0;
-        const errorDetails: string[] = [];
-        
-        for (const row of rows) {
-          try {
-            // Handle both comma and tab separated values
-            const parts = row.includes('\t') ? row.split('\t') : row.split(',');
-            const [jerseyNumber, jerseyName, playerName] = parts.map(item => item.trim());
-            
-            if (!jerseyNumber || !jerseyName || !playerName) {
-              console.error('Missing data in row:', row);
-              errorDetails.push(`Missing data: ${row}`);
+    // Check if it's an Excel file
+    if (file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls')) {
+      // Handle Excel files
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const XLSX = await import('xlsx');
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+          
+          let successCount = 0;
+          let errorCount = 0;
+          const errorDetails: string[] = [];
+          
+          console.log('Excel data parsed:', jsonData);
+          
+          for (let i = 0; i < jsonData.length; i++) {
+            const row = jsonData[i];
+            try {
+              // Skip empty rows
+              if (!row || row.length < 3 || !row[0]) {
+                continue;
+              }
+              
+              const [jerseyNumber, jerseyName, playerName] = row;
+              
+              if (!jerseyNumber || !jerseyName || !playerName) {
+                console.error('Missing data in row:', row);
+                errorDetails.push(`Row ${i + 1}: Missing data - ${JSON.stringify(row)}`);
+                errorCount++;
+                continue;
+              }
+              
+              // Handle jersey numbers (could be numeric or string)
+              let jerseyNum = typeof jerseyNumber === 'number' ? jerseyNumber : parseFloat(String(jerseyNumber));
+              if (isNaN(jerseyNum)) {
+                console.error('Invalid jersey number:', jerseyNumber);
+                errorDetails.push(`Row ${i + 1}: Invalid jersey number "${jerseyNumber}"`);
+                errorCount++;
+                continue;
+              }
+              
+              // Clean up the data
+              const cleanJerseyName = String(jerseyName).trim();
+              const cleanPlayerName = String(playerName).trim();
+              
+              if (!cleanJerseyName || !cleanPlayerName) {
+                console.error('Empty jersey name or player name:', { jerseyName: cleanJerseyName, playerName: cleanPlayerName });
+                errorDetails.push(`Row ${i + 1}: Empty jersey name or player name`);
+                errorCount++;
+                continue;
+              }
+              
+              console.log(`Adding player: ${cleanPlayerName}, Jersey: ${jerseyNum}, Jersey Name: ${cleanJerseyName}`);
+              await addPlayer(cleanPlayerName, jerseyNum, cleanJerseyName);
+              successCount++;
+            } catch (rowError) {
+              console.error('Error processing row:', row, rowError);
+              errorDetails.push(`Row ${i + 1}: Processing error - ${rowError}`);
               errorCount++;
-              continue;
             }
-            
-            // Handle decimal jersey numbers by parsing as float then converting to string
-            const jerseyNum = parseFloat(jerseyNumber);
-            if (isNaN(jerseyNum)) {
-              console.error('Invalid jersey number:', jerseyNumber);
-              errorDetails.push(`Invalid jersey number "${jerseyNumber}": ${row}`);
-              errorCount++;
-              continue;
-            }
-            
-            // Store jersey number as entered (could be decimal like 0.5)
-            await addPlayer(playerName, jerseyNum, jerseyName);
-            successCount++;
-          } catch (rowError) {
-            console.error('Error processing row:', row, rowError);
-            errorDetails.push(`Processing error: ${row}`);
-            errorCount++;
           }
+          
+          toast({
+            title: "File Import Complete",
+            description: `Successfully added ${successCount} players. ${errorCount > 0 ? `Failed to add ${errorCount} players.` : ''}`,
+            variant: errorCount > 0 ? "destructive" : "default",
+          });
+          
+          // Log error details for debugging
+          if (errorDetails.length > 0) {
+            console.log('Import errors:', errorDetails);
+          }
+          
+          // Reset file input
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+        } catch (error) {
+          console.error('Excel parsing error:', error);
+          toast({
+            title: "Error",
+            description: "Failed to process Excel file. Please check the format.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsUploadingCSV(false);
         }
-        
-        toast({
-          title: "File Import Complete",
-          description: `Successfully added ${successCount} players. ${errorCount > 0 ? `Failed to add ${errorCount} players.` : ''}`,
-          variant: errorCount > 0 ? "destructive" : "default",
-        });
-        
-        // Log error details for debugging
-        if (errorDetails.length > 0) {
-          console.log('Import errors:', errorDetails);
-        }
-        
-        // Reset file input
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
-      } catch (error) {
+      };
+      
+      reader.onerror = () => {
         toast({
           title: "Error",
-          description: "Failed to process file. Please check the format.",
+          description: "Failed to read Excel file",
           variant: "destructive",
         });
-      } finally {
         setIsUploadingCSV(false);
-      }
-    };
-    
-    reader.onerror = () => {
-      toast({
-        title: "Error",
-        description: "Failed to read file",
-        variant: "destructive",
-      });
-      setIsUploadingCSV(false);
-    };
-    
-    reader.readAsText(file);
+      };
+      
+      reader.readAsArrayBuffer(file);
+    } else {
+      // Handle CSV/TXT files
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const text = e.target?.result as string;
+          const rows = text.split('\n').filter(row => row.trim());
+          
+          let successCount = 0;
+          let errorCount = 0;
+          const errorDetails: string[] = [];
+          
+          for (const row of rows) {
+            try {
+              // Handle both comma and tab separated values
+              const parts = row.includes('\t') ? row.split('\t') : row.split(',');
+              const [jerseyNumber, jerseyName, playerName] = parts.map(item => item.trim());
+              
+              if (!jerseyNumber || !jerseyName || !playerName) {
+                console.error('Missing data in row:', row);
+                errorDetails.push(`Missing data: ${row}`);
+                errorCount++;
+                continue;
+              }
+              
+              // Handle decimal jersey numbers by parsing as float
+              const jerseyNum = parseFloat(jerseyNumber);
+              if (isNaN(jerseyNum)) {
+                console.error('Invalid jersey number:', jerseyNumber);
+                errorDetails.push(`Invalid jersey number "${jerseyNumber}": ${row}`);
+                errorCount++;
+                continue;
+              }
+              
+              await addPlayer(playerName, jerseyNum, jerseyName);
+              successCount++;
+            } catch (rowError) {
+              console.error('Error processing row:', row, rowError);
+              errorDetails.push(`Processing error: ${row}`);
+              errorCount++;
+            }
+          }
+          
+          toast({
+            title: "File Import Complete",
+            description: `Successfully added ${successCount} players. ${errorCount > 0 ? `Failed to add ${errorCount} players.` : ''}`,
+            variant: errorCount > 0 ? "destructive" : "default",
+          });
+          
+          // Log error details for debugging
+          if (errorDetails.length > 0) {
+            console.log('Import errors:', errorDetails);
+          }
+          
+          // Reset file input
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+        } catch (error) {
+          toast({
+            title: "Error",
+            description: "Failed to process file. Please check the format.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsUploadingCSV(false);
+        }
+      };
+      
+      reader.onerror = () => {
+        toast({
+          title: "Error",
+          description: "Failed to read file",
+          variant: "destructive",
+        });
+        setIsUploadingCSV(false);
+      };
+      
+      reader.readAsText(file);
+    }
   };
 
   return (

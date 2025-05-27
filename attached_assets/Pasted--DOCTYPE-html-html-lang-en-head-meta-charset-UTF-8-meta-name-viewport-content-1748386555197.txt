@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Volleyball Stat Tracker User Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Visualization & Content Choices:
+        - Report Info: Entire User Guide. Goal: Provide an easy-to-navigate, interactive version of the static document.
+        - Section Navigation: Goal: Allow users to quickly jump to relevant parts of the guide. Viz/Presentation: Sidebar navigation menu. Interaction: Click to show content. Justification: Standard and intuitive for help documentation. Library/Method: HTML/Tailwind/JS.
+        - Hierarchical Content: Goal: Present detailed steps and sub-topics clearly within main sections. Viz/Presentation: Headings, lists, highlighted tip/important boxes. Interaction: None specifically, focus on readability. Justification: Maintains clarity of the original document. Library/Method: HTML/Tailwind.
+        - Stat Tracking Actions: Goal: Visually explain the color-coded stat buttons. Viz/Presentation: Styled divs mimicking buttons with their respective colors (green, blue/teal, red) and labels. Interaction: Visual representation, no specific click action needed beyond what's described in the text. Justification: Enhances understanding compared to plain text description. Library/Method: HTML/Tailwind.
+        - FAQ: Goal: Provide quick answers. Viz/Presentation: Question/Answer format. Interaction: Potentially clickable questions to reveal answers (though static Q&A is also fine for simplicity). Justification: Common and effective for FAQs. Library/Method: HTML/Tailwind.
+        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .sidebar {
+            transition: transform 0.3s ease-in-out;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .nav-link.active {
+            background-color: #0D9488; /* Teal-600 */
+            color: white;
+        }
+        .tip-box {
+            background-color: #F0FDF4; /* Green-50 */
+            border-left: 4px solid #22C55E; /* Green-500 */
+            padding: 12px;
+            margin-top: 8px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+        }
+        .important-box {
+            background-color: #FFFBEB; /* Yellow-50 */
+            border-left: 4px solid #F59E0B; /* Yellow-500 */
+            padding: 12px;
+            margin-top: 8px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+        }
+        .stat-button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 0.75rem; /* gap-3 */
+        }
+        .stat-button {
+            padding: 0.75rem 1rem; /* py-3 px-4 */
+            border-radius: 0.375rem; /* rounded-md */
+            color: white;
+            font-weight: 600; /* font-semibold */
+            text-align: center;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1); /* shadow-md */
+        }
+        .stat-button-green { background-color: #22C55E; } /* Green-500 */
+        .stat-button-blue { background-color: #06B6D4; } /* Cyan-500 / Tealish */
+        .stat-button-red { background-color: #EF4444; } /* Red-500 */
+
+        /* Mobile menu styles */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                z-index: 40; /* ensure it's above content but below menu button */
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+    <div class="flex h-screen overflow-hidden">
+        <button id="mobileMenuButton" class="md:hidden fixed top-4 left-4 z-50 p-2 bg-slate-700 text-white rounded-md focus:outline-none">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+        </button>
+
+        <aside id="sidebar" class="sidebar fixed inset-y-0 left-0 z-30 w-64 bg-slate-800 text-white p-6 space-y-4 overflow-y-auto md:relative md:translate-x-0">
+            <h1 class="text-2xl font-semibold mb-6 text-teal-400">🏐 Stat Tracker Guide</h1>
+            <nav id="navigation" class="space-y-2">
+                <a href="#overview" class="nav-link block py-2 px-3 rounded-md hover:bg-slate-700">1. Overview</a>
+                <div>
+                    <a href="#admin-panel" class="nav-link block py-2 px-3 rounded-md hover:bg-slate-700">2. Admin Panel</a>
+                    <div class="ml-4 mt-1 space-y-1 border-l border-slate-600 pl-3">
+                        <a href="#admin-login" class="nav-link text-sm block py-1 px-2 rounded-md hover:bg-slate-700">2.1 Logging In</a>
+                        <a href="#admin-players" class="nav-link text-sm block py-1 px-2 rounded-md hover:bg-slate-700">2.2 Adding Players</a>
+                        <a href="#admin-teams" class="nav-link text-sm block py-1 px-2 rounded-md hover:bg-slate-700">2.3 Managing Teams</a>
+                        <a href="#admin-schedules" class="nav-link text-sm block py-1 px-2 rounded-md hover:bg-slate-700">2.4 Managing Schedules</a>
+                        <a href="#admin-passwords" class="nav-link text-sm block py-1 px-2 rounded-md hover:bg-slate-700">2.5 Managing Passwords</a>
+                        <a href="#admin-stats" class="nav-link text-sm block py-1 px-2 rounded-md hover:bg-slate-700">2.6 Player Stats Overview</a>
+                        <a href="#admin-other" class="nav-link text-sm block py-1 px-2 rounded-md hover:bg-slate-700">2.7 Other Admin Features</a>
+                    </div>
+                </div>
+                <div>
+                    <a href="#stat-tracking" class="nav-link block py-2 px-3 rounded-md hover:bg-slate-700">3. Stat Tracking</a>
+                     <div class="ml-4 mt-1 space-y-1 border-l border-slate-600 pl-3">
+                        <a href="#tracker-login" class="nav-link text-sm block py-1 px-2 rounded-md hover:bg-slate-700">3.1 Logging In (Tracker)</a>
+                        <a href="#tracker-match-selection" class="nav-link text-sm block py-1 px-2 rounded-md hover:bg-slate-700">3.2 Match Selection</a>
+                        <a href="#tracker-flow" class="nav-link text-sm block py-1 px-2 rounded-md hover:bg-slate-700">3.3 Stat Tracking Flow</a>
+                        <a href="#tracker-unlock" class="nav-link text-sm block py-1 px-2 rounded-md hover:bg-slate-700">3.4 Unlocking Matches</a>
+                        <a href="#tracker-submit" class="nav-link text-sm block py-1 px-2 rounded-md hover:bg-slate-700">3.5 Submitting Matches</a>
+                    </div>
+                </div>
+                <a href="#scoreboard" class="nav-link block py-2 px-3 rounded-md hover:bg-slate-700">4. Scoreboard</a>
+                <a href="#history" class="nav-link block py-2 px-3 rounded-md hover:bg-slate-700">5. History</a>
+                <a href="#leaderboard" class="nav-link block py-2 px-3 rounded-md hover:bg-slate-700">6. Leaderboard</a>
+                <a href="#faq" class="nav-link block py-2 px-3 rounded-md hover:bg-slate-700">7. FAQ & Troubleshooting</a>
+                <a href="#glossary" class="nav-link block py-2 px-3 rounded-md hover:bg-slate-700">8. Glossary</a>
+                <a href="#final-tips" class="nav-link block py-2 px-3 rounded-md hover:bg-slate-700">9. Final Tips</a>
+            </nav>
+        </aside>
+
+        <main class="flex-1 p-6 md:p-10 overflow-y-auto">
+            <div class="max-w-4xl mx-auto">
+                <section id="overview" class="content-section space-y-4">
+                    <h2 class="text-3xl font-bold text-slate-700 border-b pb-2 mb-4">1. Overview</h2>
+                    <p class="text-lg leading-relaxed">This interactive guide helps you understand the Burhani Sports Club Volleyball Stat Tracker. The platform is designed to manage volleyball tournaments, track live stats, and provide real-time and historical insights for teams, players, and administrators.</p>
+                    <p class="leading-relaxed">Key features include a robust admin panel, an intuitive stat tracking interface, a live scoreboard, comprehensive match history, and dynamic leaderboards. Use the navigation on the left to explore specific functionalities.</p>
+                </section>
+
+                <section id="admin-panel" class="content-section space-y-4">
+                    <h2 class="text-3xl font-bold text-slate-700 border-b pb-2 mb-4">2. Admin Panel</h2>
+                    <p class="text-lg leading-relaxed">The Admin Panel is the control center for managing all aspects of your volleyball tournament. From here, administrators can manage player registrations, team compositions, match schedules, user passwords, and oversee player statistics. This section will guide you through each administrative function to ensure smooth tournament operations.</p>
+                </section>
+                <section id="admin-login" class="content-section space-y-4">
+                    <h3 class="text-2xl font-semibold text-slate-600">2.1 Logging In (Admin)</h3>
+                    <ol class="list-decimal list-inside space-y-2 pl-4">
+                        <li>Navigate to <code>/admin</code> or click the "Admin" link on the website.</li>
+                        <li>Enter your admin username and password.</li>
+                        <li>If you forget your credentials, contact the tournament director.</li>
+                    </ol>
+                </section>
+                <section id="admin-players" class="content-section space-y-4">
+                    <h3 class="text-2xl font-semibold text-slate-600">2.2 Adding Players</h3>
+                    <p>Effortlessly add and manage all your players:</p>
+                    <ol class="list-decimal list-inside space-y-2 pl-4">
+                        <li>Go to the "Players" tab in the Admin Panel.</li>
+                        <li>Click "Add Player".</li>
+                        <li>Enter the player's name, jersey number, and (optionally) jersey name.</li>
+                        <li>Click "Save".</li>
+                    </ol>
+                    <div class="tip-box">
+                        <p class="font-semibold">💡 Tips:</p>
+                        <ul class="list-disc list-inside pl-4">
+                            <li>Use the ✏️ pencil icon to edit player details.</li>
+                            <li>Use the 🗑️ trash icon to delete players.</li>
+                            <li>Utilize the search bar to quickly find specific players.</li>
+                        </ul>
+                    </div>
+                </section>
+                <section id="admin-teams" class="content-section space-y-4">
+                    <h3 class="text-2xl font-semibold text-slate-600">2.3 Creating and Managing Teams</h3>
+                    <p>Organize your players into teams for the tournament:</p>
+                    <ol class="list-decimal list-inside space-y-2 pl-4">
+                        <li>Go to the "Teams" tab.</li>
+                        <li>Click "Create Team".</li>
+                        <li>Enter a team name, select a distinct color, and assign players from the available list.</li>
+                        <li>Click "Save".</li>
+                    </ol>
+                    <div class="tip-box">
+                        <p class="font-semibold">💡 Tips:</p>
+                        <ul class="list-disc list-inside pl-4">
+                            <li>The ✏️ pencil icon allows you to edit existing teams.</li>
+                            <li>The 🗑️ trash icon is for deleting a team.</li>
+                            <li>Team colors provide a quick visual distinction.</li>
+                            <li>Players can be assigned to multiple teams if needed.</li>
+                        </ul>
+                    </div>
+                </section>
+                <section id="admin-schedules" class="content-section space-y-4">
+                    <h3 class="text-2xl font-semibold text-slate-600">2.4 Creating and Managing Schedules</h3>
+                    <p>Set up your match schedule with ease:</p>
+                    <ol class="list-decimal list-inside space-y-2 pl-4">
+                        <li>Go to the "Schedule" tab.</li>
+                        <li>Click "Create Match" or "Add to Schedule".</li>
+                        <li>Select the participating teams, court, date/time, and assign a tracker team responsible for live stat entry.</li>
+                        <li>Click "Save".</li>
+                    </ol>
+                    <div class="tip-box">
+                        <p class="font-semibold">💡 Tips:</p>
+                        <ul class="list-disc list-inside pl-4">
+                            <li>You can edit or delete matches later.</li>
+                            <li>The assigned tracker team can be changed if necessary.</li>
+                        </ul>
+                    </div>
+                </section>
+                <section id="admin-passwords" class="content-section space-y-4">
+                    <h3 class="text-2xl font-semibold text-slate-600">2.5 Managing Passwords (Teams & Admins)</h3>
+                    <p>Secure your accounts and manage access:</p>
+                    <ol class="list-decimal list-inside space-y-2 pl-4">
+                        <li>Go to the "Passwords" tab.</li>
+                        <li><strong>Team Passwords:</strong> Set or update passwords for each individual team.</li>
+                        <li><strong>Admin Passwords:</strong> Add, edit, or remove administrator users.</li>
+                    </ol>
+                    <div class="important-box">
+                        <p class="font-semibold">⚠️ Important:</p>
+                        <ul class="list-disc list-inside pl-4">
+                            <li>Always use strong, unique passwords.</li>
+                            <li>You cannot delete your own admin account or the last remaining admin account for security reasons.</li>
+                        </ul>
+                    </div>
+                </section>
+                <section id="admin-stats" class="content-section space-y-4">
+                    <h3 class="text-2xl font-semibold text-slate-600">2.6 Player Stats Overview</h3>
+                    <p>Access comprehensive player statistics:</p>
+                    <ol class="list-decimal list-inside space-y-2 pl-4">
+                        <li>Go to the "Player Stats" or "Leaderboard" tab in the Admin Panel.</li>
+                        <li>View aggregate statistics or apply filters to see stats by specific player or team.</li>
+                    </ol>
+                </section>
+                <section id="admin-other" class="content-section space-y-4">
+                    <h3 class="text-2xl font-semibold text-slate-600">2.7 Other Admin Features & Tips</h3>
+                    <ul class="list-disc list-inside space-y-2 pl-4">
+                        <li><strong>Audit Logs:</strong> Keep track of all sensitive actions, such as match unlocks, with detailed timestamps.</li>
+                        <li><strong>Notifications:</strong> Receive alerts for important events, like match unlocks.</li>
+                        <li><strong>Debug Tools:</strong> Use the debug tab to resolve any issues with team or match assignments.</li>
+                    </ul>
+                </section>
+
+                <section id="stat-tracking" class="content-section space-y-4">
+                    <h2 class="text-3xl font-bold text-slate-700 border-b pb-2 mb-4">3. Stat Tracking</h2>
+                    <p class="text-lg leading-relaxed">The Stat Tracking interface is where the live action of a volleyball match is recorded. Designated stat trackers log every point, error, and significant play. This section details how to log in as a stat tracker, select a match, and accurately use the stat entry system, including understanding the different action types and finalizing sets and matches.</p>
+                </section>
+                <section id="tracker-login" class="content-section space-y-4">
+                    <h3 class="text-2xl font-semibold text-slate-600">3.1 Logging In as Stat Tracker</h3>
+                     <ol class="list-decimal list-inside space-y-2 pl-4">
+                        <li>Navigate to <code>/tracker</code>.</li>
+                        <li>Enter your team ID and password.</li>
+                        <li>You will then see a list of matches assigned to your team for tracking.</li>
+                    </ol>
+                </section>
+                <section id="tracker-match-selection" class="content-section space-y-4">
+                    <h3 class="text-2xl font-semibold text-slate-600">3.2 Match Selection</h3>
+                    <p>Once logged in, match cards provide essential information at a glance:</p>
+                    <ul class="list-disc list-inside space-y-2 pl-4">
+                        <li>Court number</li>
+                        <li>Start time</li>
+                        <li>Team names and their assigned colors</li>
+                        <li>Lock status (indicating if the match is editable)</li>
+                    </ul>
+                    <p>Click on a match card to begin tracking its statistics.</p>
+                </section>
+                <section id="tracker-flow" class="content-section space-y-4">
+                    <h3 class="text-2xl font-semibold text-slate-600">3.3 Stat Tracking Flow</h3>
+                    <h4 class="text-xl font-medium text-slate-600 mt-3">Sets</h4>
+                    <ul class="list-disc list-inside space-y-1 pl-4">
+                        <li>Each match consists of up to 3 sets.</li>
+                        <li>You can only enter stats for the current active set.</li>
+                        <li>Once a set is finalized, it becomes locked, and you automatically move to the next set.</li>
+                        <li>After the third set, the entire match can be submitted and finalized.</li>
+                    </ul>
+
+                    <h4 class="text-xl font-medium text-slate-600 mt-4">Actions (Stat Entry Types)</h4>
+                    <p>Stat actions are intuitively grouped into three color-coded categories for easier understanding and faster tracking:</p>
+                    
+                    <div class="mt-4 p-4 border rounded-lg bg-slate-100">
+                        <h5 class="text-lg font-semibold text-green-600 mb-2">✅ Earned Actions (Green Buttons)</h5>
+                        <p class="text-sm text-slate-600 mb-3">These represent positive plays that contribute points or successful attacks.</p>
+                        <div class="stat-button-grid mb-4">
+                            <div class="stat-button stat-button-green">Ace</div>
+                            <div class="stat-button stat-button-green">Kill</div>
+                            <div class="stat-button stat-button-green">Tip</div>
+                            <div class="stat-button stat-button-green">Dump</div>
+                            <div class="stat-button stat-button-green">Point</div>
+                        </div>
+                        <ul class="list-disc list-inside space-y-1 pl-4 text-sm">
+                            <li><strong>Ace:</strong> A serve that lands untouched or cannot be returned by the opponent.</li>
+                            <li><strong>Kill:</strong> A successful attack that lands and directly results in a point.</li>
+                            <li><strong>Tip:</strong> A light, strategic touch over the net that earns a point.</li>
+                            <li><strong>Dump:</strong> A strategic second-touch by the setter that results in a point.</li>
+                            <li><strong>Point:</strong> A general point credited when needed (e.g., for an unknown opponent error).</li>
+                        </ul>
+                    </div>
+
+                    <div class="mt-4 p-4 border rounded-lg bg-slate-100">
+                        <h5 class="text-lg font-semibold text-blue-600 mb-2">🟦 Block Actions (Blue/Teal Buttons)</h5>
+                        <p class="text-sm text-slate-600 mb-3">These are defensive plays executed at the net.</p>
+                        <div class="stat-button-grid mb-4">
+                            <div class="stat-button stat-button-blue">Point Block</div>
+                            <div class="stat-button stat-button-blue">Neutral Block</div>
+                            <div class="stat-button stat-button-blue">Block (Point)</div>
+                        </div>
+                        <ul class="list-disc list-inside space-y-1 pl-4 text-sm">
+                            <li><strong>Point Block:</strong> A block that directly results in a point for your team.</li>
+                            <li><strong>Neutral Block:</strong> A block that deflects the ball but does not directly score a point.</li>
+                            <li><strong>Block (Point):</strong> An alternate label for a point-scoring block.</li>
+                        </ul>
+                    </div>
+
+                    <div class="mt-4 p-4 border rounded-lg bg-slate-100">
+                        <h5 class="text-lg font-semibold text-red-600 mb-2">❌ Fault Actions (Red Buttons)</h5>
+                        <p class="text-sm text-slate-600 mb-3">These indicate errors or violations that result in a point for the opposing team.</p>
+                        <div class="stat-button-grid mb-4">
+                            <div class="stat-button stat-button-red">Serve Error</div>
+                            <div class="stat-button stat-button-red">Spike Error</div>
+                            <div class="stat-button stat-button-red">Net Touch</div>
+                            <div class="stat-button stat-button-red">Foot Fault</div>
+                            <div class="stat-button stat-button-red">Reach</div>
+                            <div class="stat-button stat-button-red">Carry</div>
+                            <div class="stat-button stat-button-red">Out of Bounds</div>
+                            <div class="stat-button stat-button-red">Generic Fault</div>
+                        </div>
+                        <ul class="list-disc list-inside space-y-1 pl-4 text-sm">
+                            <li><strong>Serve Error:</strong> A missed or illegal serve.</li>
+                            <li><strong>Spike Error:</strong> A failed attack (e.g., ball goes out of bounds or into the net).</li>
+                            <li><strong>Net Touch:</strong> A player illegally touches the net during play.</li>
+                            <li><strong>Foot Fault:</strong> A player steps over the line during a serve or other play.</li>
+                            <li><strong>Reach:</strong> An illegal reach over or under the net.</li>
+                            <li><strong>Carry:</strong> Prolonged contact with the ball (e.g., a lift or scoop).</li>
+                            <li><strong>Out of Bounds:</strong> The ball lands out of bounds on your team’s hit.</li>
+                            <li><strong>Generic Fault:</strong> For other violations not specifically listed above.</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="tip-box mt-4">
+                        <p class="font-semibold">💡 How to Use:</p>
+                        <ol class="list-decimal list-inside space-y-1 pl-4">
+                            <li>Click the player on your team who performed the action.</li>
+                            <li>Choose the appropriate action button from the color-coded grid.</li>
+                            <li>The action will be recorded and added to the "Recent Actions" log.</li>
+                        </ol>
+                    </div>
+
+                    <h4 class="text-xl font-medium text-slate-600 mt-4">Set Finalization</h4>
+                     <ul class="list-disc list-inside space-y-1 pl-4">
+                        <li>Click "Finalize Set" to complete the current set and move to the next.</li>
+                        <li>After the 3rd set, click "Submit Match". The match will then become read-only.</li>
+                    </ul>
+                </section>
+                <section id="tracker-unlock" class="content-section space-y-4">
+                    <h3 class="text-2xl font-semibold text-slate-600">3.4 Unlocking Matches (Admin Flow)</h3>
+                    <p>If a match is locked and requires changes, an admin can unlock it:</p>
+                    <ol class="list-decimal list-inside space-y-2 pl-4">
+                        <li>Click "Unlock" on the locked match (usually in the admin interface or match overview).</li>
+                        <li>Choose an admin from the list and enter their password.</li>
+                        <li>The sets will become editable again.</li>
+                        <li>This action will be logged in the audit trail for security and transparency.</li>
+                    </ol>
+                </section>
+                 <section id="tracker-submit" class="content-section space-y-4">
+                    <h3 class="text-2xl font-semibold text-slate-600">3.5 Submitting and Finalizing Matches</h3>
+                    <ul class="list-disc list-inside space-y-2 pl-4">
+                        <li>Finalizing a match locks it, preventing further edits by stat trackers.</li>
+                        <li>A confirmation dialog will typically appear before finalization to prevent accidental submissions.</li>
+                        <li>Once finalized, stats can no longer be edited unless an admin explicitly unlocks the match. This ensures data integrity for completed matches.</li>
+                    </ul>
+                </section>
+
+                <section id="scoreboard" class="content-section space-y-4">
+                    <h2 class="text-3xl font-bold text-slate-700 border-b pb-2 mb-4">4. Scoreboard</h2>
+                    <p class="text-lg leading-relaxed">The Scoreboard section provides a live overview of all ongoing matches. This is the place to check real-time scores, see which set is currently being played on each court, and follow the tournament's progress as it happens. This feature is accessible to all users and updates dynamically.</p>
+                    <h3 class="text-2xl font-semibold text-slate-600 mt-4">4.1 Viewing Live Scores</h3>
+                    <ol class="list-decimal list-inside space-y-2 pl-4">
+                        <li>Go to the "Scoreboard" tab or section on the website.</li>
+                        <li>See all active courts, their live scores, and current set numbers displayed.</li>
+                    </ol>
+                    <h3 class="text-2xl font-semibold text-slate-600 mt-4">4.2 Navigation (Scoreboard)</h3>
+                     <ul class="list-disc list-inside space-y-2 pl-4">
+                        <li>Easily switch between different courts (if applicable) to view their live updates.</li>
+                        <li>Scores and set information update in real-time, ensuring you always have the latest information.</li>
+                    </ul>
+                </section>
+
+                <section id="history" class="content-section space-y-4">
+                    <h2 class="text-3xl font-bold text-slate-700 border-b pb-2 mb-4">5. History</h2>
+                    <p class="text-lg leading-relaxed">The History section is an archive of all completed matches. Users can browse past games, review detailed set scores, analyze player statistics for specific matches, and examine the sequence of actions recorded. This is invaluable for post-match analysis, record-keeping, and understanding player or team performance over time.</p>
+                    <h3 class="text-2xl font-semibold text-slate-600 mt-4">5.1 Viewing Past Matches</h3>
+                    <ol class="list-decimal list-inside space-y-2 pl-4">
+                        <li>Go to the "History" tab or section.</li>
+                        <li>You will see a list of all completed matches, typically sorted by date and time.</li>
+                    </ol>
+                     <h3 class="text-2xl font-semibold text-slate-600 mt-4">5.2 Match Details (History)</h3>
+                    <p>Click on any match in the history list to view its comprehensive details, including:</p>
+                    <ul class="list-disc list-inside space-y-2 pl-4">
+                        <li>Set scores for the match.</li>
+                        <li>Individual player statistics for that specific match.</li>
+                        <li>Detailed stat logs, showing the sequence of actions recorded.</li>
+                    </ul>
+                </section>
+
+                <section id="leaderboard" class="content-section space-y-4">
+                    <h2 class="text-3xl font-bold text-slate-700 border-b pb-2 mb-4">6. Leaderboard</h2>
+                    <p class="text-lg leading-relaxed">The Leaderboard section showcases top-performing players and teams based on accumulated statistics throughout the tournament. It allows users to sort and filter rankings by various metrics, offering a competitive overview and highlighting standout performances. This is a great way to track progress and recognize achievements.</p>
+                    <h3 class="text-2xl font-semibold text-slate-600 mt-4">6.1 Player Rankings</h3>
+                     <ol class="list-decimal list-inside space-y-2 pl-4">
+                        <li>Go to the "Leaderboard" tab or section.</li>
+                        <li>Sort players by various metrics such as total points, aces, blocks, kills, etc.</li>
+                        <li>Click on a player's name for a full breakdown of their individual statistics across the tournament.</li>
+                    </ol>
+                    <h3 class="text-2xl font-semibold text-slate-600 mt-4">6.2 Team Rankings</h3>
+                    <p>The leaderboard also allows you to sort teams based on criteria like:</p>
+                    <ul class="list-disc list-inside space-y-2 pl-4">
+                        <li>Number of wins.</li>
+                        <li>Total points scored.</li>
+                        <li>Overall team performance metrics (if applicable).</li>
+                    </ul>
+                </section>
+
+                <section id="faq" class="content-section space-y-6">
+                    <h2 class="text-3xl font-bold text-slate-700 border-b pb-2 mb-4">7. FAQ & Troubleshooting</h2>
+                    <p class="text-lg leading-relaxed">This section provides answers to frequently asked questions and solutions for common troubleshooting scenarios. If you encounter an issue or have a question about using the Stat Tracker, check here first for a quick resolution.</p>
+                    <div>
+                        <h4 class="font-semibold text-slate-700">Forgot password?</h4>
+                        <p class="text-slate-600 ml-4">Contact an admin or the tournament director for assistance with password resets.</p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-slate-700">Match not showing for stat tracking?</h4>
+                        <p class="text-slate-600 ml-4">Ensure your team has been correctly assigned as the "tracker team" for that specific match by an administrator in the schedule settings.</p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-slate-700">Stats not updating on the scoreboard or history?</h4>
+                        <p class="text-slate-600 ml-4">Try refreshing the page. If the issue persists, check your internet connection. Real-time updates depend on a stable connection.</p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-slate-700">Match locked and need to make corrections?</h4>
+                        <p class="text-slate-600 ml-4">An administrator will need to unlock the match. Refer to section <a href="#tracker-unlock" class="text-teal-600 hover:underline nav-internal">3.4 Unlocking Matches (Admin Flow)</a> for details.</p>
+                    </div>
+                </section>
+
+                <section id="glossary" class="content-section space-y-4">
+                    <h2 class="text-3xl font-bold text-slate-700 border-b pb-2 mb-4">8. Glossary</h2>
+                    <p class="text-lg leading-relaxed">Understanding the terminology used within the Volleyball Stat Tracker is key to its effective use. This glossary defines common terms you'll encounter while navigating the platform and recording statistics.</p>
+                    <div class="space-y-3 mt-4">
+                        <p><strong class="text-slate-700">Set:</strong> One segment of a volleyball match. Matches are typically played as best of 3 or best of 5 sets.</p>
+                        <p><strong class="text-slate-700">Stat Tracker:</strong> The designated team member or user responsible for entering live statistics during a match using the tracker interface.</p>
+                        <p><strong class="text-slate-700">Admin:</strong> A user with full access and privileges for managing the site, including player/team setup, scheduling, password management, and system oversight.</p>
+                        <p><strong class="text-slate-700">Action:</strong> A specific stat entry recorded during a match, such as a kill, ace, serve error, block, etc. These are categorized for clarity (Earned, Block, Fault).</p>
+                        <p><strong class="text-slate-700">Kill:</strong> A successful attack by a player that results directly in a point.</p>
+                        <p><strong class="text-slate-700">Ace:</strong> A serve that results directly in a point, either by landing in the opponent's court untouched or being mishandled by the receiving team.</p>
+                        <p><strong class="text-slate-700">Block (Point):</strong> A defensive play at the net where a player successfully blocks an opponent's attack, resulting directly in a point.</p>
+                        <p><strong class="text-slate-700">Error/Fault:</strong> An action by a player or team that results in the opposing team being awarded a point (e.g., serve error, spike error, net touch).</p>
+                    </div>
+                </section>
+
+                <section id="final-tips" class="content-section space-y-4">
+                     <h2 class="text-3xl font-bold text-slate-700 border-b pb-2 mb-4">9. Final Tips</h2>
+                     <p class="text-lg leading-relaxed">To ensure the best experience and data accuracy with the Volleyball Stat Tracker, keep these final recommendations in mind. Adhering to these practices will help maintain a smooth and reliable tournament.</p>
+                    <ul class="list-disc list-inside space-y-3 pl-4 text-slate-700 mt-4">
+                        <li>Always <strong>double-check entered stats</strong> for accuracy before finalizing a set or match. Correcting errors after finalization requires admin intervention.</li>
+                        <li>Utilize the <strong>history and audit logs</strong> features for transparency and to review past actions or decisions if questions arise.</li>
+                        <li>Stat trackers should maintain <strong>open communication with administrators</strong> throughout the tournament for any necessary corrections, clarifications, or technical issues.</li>
+                        <li>Ensure all users, especially admins and stat trackers, use <strong>strong, unique passwords</strong> and keep them confidential.</li>
+                        <li>Familiarize yourself with all sections of this guide to make the most of the platform's capabilities.</li>
+                    </ul>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const internalNavLinks = document.querySelectorAll('.nav-internal');
+            const contentSections = document.querySelectorAll('.content-section');
+            const sidebar = document.getElementById('sidebar');
+            const mobileMenuButton = document.getElementById('mobileMenuButton');
+            const mainContentArea = document.querySelector('main');
+
+            function updateContent(hash) {
+                contentSections.forEach(section => {
+                    section.classList.remove('active');
+                });
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                });
+
+                const activeSection = document.querySelector(hash);
+                const activeLink = document.querySelector(`.nav-link[href="${hash}"]`);
+                
+                if (activeSection) {
+                    activeSection.classList.add('active');
+                    // Scroll to top of content area
+                    mainContentArea.scrollTop = 0;
+                } else if (hash === '' || hash === '#') {
+                    // Default to overview if hash is empty or just #
+                    document.querySelector('#overview').classList.add('active');
+                    document.querySelector('.nav-link[href="#overview"]').classList.add('active');
+                }
+
+
+                if (activeLink) {
+                    activeLink.classList.add('active');
+                    // If it's a sub-item, also activate its parent
+                    const parentDiv = activeLink.closest('div.ml-4');
+                    if (parentDiv) {
+                        const parentLink = parentDiv.previousElementSibling;
+                        if (parentLink && parentLink.classList.contains('nav-link')) {
+                             parentLink.classList.add('active');
+                        }
+                    }
+                }
+                 // Close mobile menu on navigation
+                if (window.innerWidth < 768 && sidebar.classList.contains('open')) {
+                    sidebar.classList.remove('open');
+                }
+            }
+
+            function handleNavigation(event) {
+                event.preventDefault();
+                const hash = event.currentTarget.hash;
+                window.location.hash = hash; // Update URL hash
+            }
+            
+            navLinks.forEach(link => {
+                link.addEventListener('click', handleNavigation);
+            });
+
+            internalNavLinks.forEach(link => {
+                 link.addEventListener('click', handleNavigation);
+            });
+
+            mobileMenuButton.addEventListener('click', () => {
+                sidebar.classList.toggle('open');
+            });
+            
+            // Close sidebar if clicking outside on mobile
+            document.addEventListener('click', (event) => {
+                if (window.innerWidth < 768 && sidebar.classList.contains('open')) {
+                    if (!sidebar.contains(event.target) && !mobileMenuButton.contains(event.target)) {
+                        sidebar.classList.remove('open');
+                    }
+                }
+            });
+
+
+            // Handle hash changes (e.g. browser back/forward buttons, direct link)
+            window.addEventListener('hashchange', () => {
+                updateContent(window.location.hash || '#overview');
+            });
+
+            // Initial content load
+            updateContent(window.location.hash || '#overview');
+        });
+    </script>
+</body>
+</html>

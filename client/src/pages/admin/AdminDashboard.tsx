@@ -6,8 +6,9 @@ import CreateTeams from './CreateTeams';
 import CreateSchedule from './CreateSchedule';
 import ManagePasswords from './ManagePasswords';
 import AllPlayerStats from './AllPlayerStats';
+import UserGuide from './UserGuide';
 
-type AdminTab = 'players' | 'teams' | 'schedule' | 'passwords' | 'stats';
+type AdminTab = 'players' | 'teams' | 'schedule' | 'passwords' | 'stats' | 'guide';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('players');
@@ -86,17 +87,32 @@ const AdminDashboard = () => {
                 >
                   Player Stats
                 </button>
+                <button 
+                  className={`px-6 py-3 border-b-2 font-medium ${
+                    activeTab === 'guide' 
+                      ? 'border-[hsl(var(--vb-blue))] text-[hsl(var(--vb-blue))]' 
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  } transition whitespace-nowrap`}
+                  onClick={() => setActiveTab('guide')}
+                >
+                  User Guide
+                </button>
               </nav>
             </div>
           </div>
 
           {/* Tab Content */}
-          <div className="p-6">
+          <div className={activeTab === 'guide' ? 'p-0' : 'p-6'}>
             {activeTab === 'players' && <AddPlayers />}
             {activeTab === 'teams' && <CreateTeams />}
             {activeTab === 'schedule' && <CreateSchedule />}
             {activeTab === 'passwords' && <ManagePasswords />}
             {activeTab === 'stats' && <AllPlayerStats />}
+            {activeTab === 'guide' && (
+              <div className="h-screen">
+                <UserGuide />
+              </div>
+            )}
           </div>
         </div>
       </div>

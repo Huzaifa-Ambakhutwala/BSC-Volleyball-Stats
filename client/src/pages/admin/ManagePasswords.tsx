@@ -28,6 +28,7 @@ const ManagePasswords = () => {
   const [editingAdminIndex, setEditingAdminIndex] = useState<number | null>(null);
   const [newPassword, setNewPassword] = useState<string>('');
   const [newAdminUsername, setNewAdminUsername] = useState<string>('');
+  const [newAdminAccessLevel, setNewAdminAccessLevel] = useState<'full' | 'limited'>('limited');
   const [newAdminPassword, setNewAdminPassword] = useState<string>('');
   const [showAddAdminForm, setShowAddAdminForm] = useState<boolean>(false);
   const [showAddTeamForm, setShowAddTeamForm] = useState<boolean>(false);

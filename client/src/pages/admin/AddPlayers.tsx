@@ -474,6 +474,7 @@ const AddPlayers = () => {
         <h3 className="text-lg font-semibold mb-4">Players Management</h3>
         
         {/* Single Player Add Form */}
+        {canEdit && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
           <div className="md:col-span-1">
             <input
@@ -546,6 +547,7 @@ const AddPlayers = () => {
             </div>
           </div>
         </div>
+        )}
         
         {/* Players List */}
         <div className="border rounded-md overflow-hidden">

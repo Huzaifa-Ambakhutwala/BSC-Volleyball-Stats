@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { getPlayers, createTeam, getTeams, updateTeam, deleteTeam, listenToPlayers, listenToTeams } from '@/lib/firebase';
 import type { Player, Team } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
+import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 import { Pencil, Trash2, Save, X, Loader2, PlusCircle, Users, Palette } from 'lucide-react';
 
 const CreateTeams = () => {
@@ -18,6 +19,7 @@ const CreateTeams = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
   const [editTeamName, setEditTeamName] = useState('');
+  const { canEdit, canDelete } = useAdminPermissions();
   const [editTeamColor, setEditTeamColor] = useState('#3B82F6'); // Default to blue
   const [editSelectedPlayers, setEditSelectedPlayers] = useState<string[]>([]);
   const { toast } = useToast();
@@ -403,25 +405,29 @@ const CreateTeams = () => {
                         {getPlayerNames(team.players || [])}
                       </div>
                       <div className="w-1/6 flex justify-center space-x-2">
-                        <button 
-                          className="text-blue-600 p-2 hover:bg-blue-50 rounded-md min-w-[44px] min-h-[44px] flex items-center justify-center" 
-                          onClick={() => handleEditClick({...team, id: teamId})}
-                          title="Edit Team"
-                        >
-                          <Pencil className="h-5 w-5" />
-                        </button>
-                        <button 
-                          className="text-red-600 p-2 hover:bg-red-50 rounded-md min-w-[44px] min-h-[44px] flex items-center justify-center" 
-                          onClick={() => handleDeleteClick(teamId)}
-                          title="Delete Team"
-                          disabled={isDeleting}
-                        >
-                          {isDeleting ? (
-                            <Loader2 className="h-5 w-5 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-5 w-5" />
-                          )}
-                        </button>
+                        {canEdit && (
+                          <button 
+                            className="text-blue-600 p-2 hover:bg-blue-50 rounded-md min-w-[44px] min-h-[44px] flex items-center justify-center" 
+                            onClick={() => handleEditClick({...team, id: teamId})}
+                            title="Edit Team"
+                          >
+                            <Pencil className="h-5 w-5" />
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button 
+                            className="text-red-600 p-2 hover:bg-red-50 rounded-md min-w-[44px] min-h-[44px] flex items-center justify-center" 
+                            onClick={() => handleDeleteClick(teamId)}
+                            title="Delete Team"
+                            disabled={isDeleting}
+                          >
+                            {isDeleting ? (
+                              <Loader2 className="h-5 w-5 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-5 w-5" />
+                            )}
+                          </button>
+                        )}
                       </div>
                     </div>
                   )}

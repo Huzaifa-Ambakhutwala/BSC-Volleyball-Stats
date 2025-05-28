@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { addPlayer, getPlayers, updatePlayer, deletePlayer, listenToPlayers } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 import { Pencil, Trash2, Save, X, Loader2, PlusCircle, Upload, FileType } from 'lucide-react';
 import type { Player } from '@shared/schema';
 
@@ -17,6 +18,7 @@ const AddPlayers = () => {
   const [isUploadingCSV, setIsUploadingCSV] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { canEdit, canDelete } = useAdminPermissions();
 
   // Load existing players
   // Load players - use a listener to keep data in sync
@@ -619,21 +621,25 @@ const AddPlayers = () => {
                       <div className="col-span-1">{player.jerseyName || '-'}</div>
                       <div className="col-span-5">{player.name}</div>
                       <div className="col-span-1 flex justify-center space-x-1">
-                        <button 
-                          className="text-blue-500 p-1 hover:bg-blue-50 rounded" 
-                          onClick={() => handleEditClick({ ...player, id: playerId })}
-                          title="Edit"
-                        >
-                          <Pencil className="h-5 w-5" />
-                        </button>
-                        <button 
-                          className="text-red-500 p-1 hover:bg-red-50 rounded" 
-                          onClick={() => handleDeleteClick(playerId)}
-                          title="Delete"
-                          disabled={isDeleting}
-                        >
-                          <Trash2 className="h-5 w-5" />
-                        </button>
+                        {canEdit && (
+                          <button 
+                            className="text-blue-500 p-1 hover:bg-blue-50 rounded" 
+                            onClick={() => handleEditClick({ ...player, id: playerId })}
+                            title="Edit"
+                          >
+                            <Pencil className="h-5 w-5" />
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button 
+                            className="text-red-500 p-1 hover:bg-red-50 rounded" 
+                            onClick={() => handleDeleteClick(playerId)}
+                            title="Delete"
+                            disabled={isDeleting}
+                          >
+                            <Trash2 className="h-5 w-5" />
+                          </button>
+                        )}
                       </div>
                     </>
                   )}

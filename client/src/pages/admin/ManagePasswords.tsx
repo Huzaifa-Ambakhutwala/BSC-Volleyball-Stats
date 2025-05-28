@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  getTeams, 
-  listenToTeams, 
-  getTeamPassword, 
-  setTeamPassword, 
-  getAdminUsers, 
-  addAdminUser, 
-  updateAdminUser, 
+import {
+  getTeams,
+  listenToTeams,
+  getTeamPassword,
+  setTeamPassword,
+  getAdminUsers,
+  addAdminUser,
+  updateAdminUser,
   deleteAdminUser,
   AdminUser
 } from '@/lib/firebase';
@@ -48,7 +48,7 @@ const ManagePasswords = () => {
   // Load teams and admin users
   useEffect(() => {
     setLoading(true);
-    
+
     // Load admin users
     const loadAdminUsers = async () => {
       try {
@@ -58,12 +58,12 @@ const ManagePasswords = () => {
         console.error('Error loading admin users:', error);
       }
     };
-    
+
     loadAdminUsers();
-    
+
     const unsubscribe = listenToTeams((teamsData) => {
       setTeams(teamsData);
-      
+
       // Load passwords for all teams
       Object.keys(teamsData).forEach(async (teamId) => {
         const password = await getTeamPassword(teamId);
@@ -74,10 +74,10 @@ const ManagePasswords = () => {
           }));
         }
       });
-      
+
       setLoading(false);
     });
-    
+
     return () => {
       unsubscribe();
     };
@@ -99,13 +99,13 @@ const ManagePasswords = () => {
     }
 
     const success = await setTeamPassword(teamId, newPassword);
-    
+
     if (success) {
       setTeamPasswords(prev => ({
         ...prev,
         [teamId]: newPassword
       }));
-      
+
       toast({
         title: "Success",
         description: `Password updated for ${teams[teamId].teamName}`,
@@ -117,7 +117,7 @@ const ManagePasswords = () => {
         variant: "destructive",
       });
     }
-    
+
     setEditingTeamId(null);
     setNewPassword('');
   };
@@ -126,21 +126,21 @@ const ManagePasswords = () => {
     setEditingTeamId(null);
     setNewPassword('');
   };
-  
+
   const togglePasswordVisibility = (teamId: string) => {
     setShowPasswordMap(prev => ({
       ...prev,
       [teamId]: !prev[teamId]
     }));
   };
-  
+
   const toggleAdminPasswordVisibility = (index: number) => {
     setShowAdminPasswordMap(prev => ({
       ...prev,
       [index]: !prev[index]
     }));
   };
-  
+
   const handleAddAdmin = async () => {
     if (!newAdminUsername || !newAdminPassword) {
       toast({
@@ -150,18 +150,18 @@ const ManagePasswords = () => {
       });
       return;
     }
-    
+
     const success = await addAdminUser(newAdminUsername, newAdminPassword);
-    
+
     if (success) {
       // Refresh admin users
       const admins = await getAdminUsers();
       setAdminUsers(admins);
-      
+
       setNewAdminUsername('');
       setNewAdminPassword('');
       setShowAddAdminForm(false);
-      
+
       toast({
         title: "Success",
         description: `Admin ${newAdminUsername} added successfully`,
@@ -174,12 +174,12 @@ const ManagePasswords = () => {
       });
     }
   };
-  
+
   const handleEditAdmin = (index: number) => {
     setEditingAdminIndex(index);
     setNewPassword(adminUsers[index].password);
   };
-  
+
   const handleSaveAdminPassword = async (username: string) => {
     if (!newPassword) {
       toast({
@@ -189,14 +189,14 @@ const ManagePasswords = () => {
       });
       return;
     }
-    
+
     const success = await updateAdminUser(username, newPassword);
-    
+
     if (success) {
       // Refresh admin users
       const admins = await getAdminUsers();
       setAdminUsers(admins);
-      
+
       toast({
         title: "Success",
         description: `Password updated for ${username}`,
@@ -208,11 +208,11 @@ const ManagePasswords = () => {
         variant: "destructive",
       });
     }
-    
+
     setEditingAdminIndex(null);
     setNewPassword('');
   };
-  
+
   const handleDeleteAdmin = async (username: string) => {
     // Cannot delete the currently logged in admin
     if (username === username) {
@@ -223,14 +223,14 @@ const ManagePasswords = () => {
       });
       return;
     }
-    
+
     const success = await deleteAdminUser(username);
-    
+
     if (success) {
       // Refresh admin users
       const admins = await getAdminUsers();
       setAdminUsers(admins);
-      
+
       toast({
         title: "Success",
         description: `Admin ${username} deleted successfully`,
@@ -243,7 +243,7 @@ const ManagePasswords = () => {
       });
     }
   };
-  
+
   const handleAddTeam = async () => {
     if (!newTeamId || !newTeamPassword) {
       toast({
@@ -253,7 +253,7 @@ const ManagePasswords = () => {
       });
       return;
     }
-    
+
     // Check if team exists
     if (!teams[newTeamId]) {
       toast({
@@ -263,19 +263,19 @@ const ManagePasswords = () => {
       });
       return;
     }
-    
+
     const success = await setTeamPassword(newTeamId, newTeamPassword);
-    
+
     if (success) {
       setTeamPasswords(prev => ({
         ...prev,
         [newTeamId]: newTeamPassword
       }));
-      
+
       setNewTeamId('');
       setNewTeamPassword('');
       setShowAddTeamForm(false);
-      
+
       toast({
         title: "Success",
         description: `Password set for ${teams[newTeamId].teamName}`,
@@ -304,7 +304,7 @@ const ManagePasswords = () => {
         <User className="w-6 h-6 mr-2" />
         Manage Admin Credentials
       </h1>
-      
+
       <div className="bg-white rounded-lg shadow mb-8">
         <div className="flex justify-between items-center p-4 border-b">
           <div className="grid grid-cols-12 gap-4 w-full font-medium text-gray-600">
@@ -312,7 +312,7 @@ const ManagePasswords = () => {
             <div className="col-span-5">Password</div>
             <div className="col-span-3">Actions</div>
           </div>
-          <button 
+          <button
             onClick={() => setShowAddAdminForm(!showAddAdminForm)}
             className="flex items-center text-sm bg-[hsl(var(--vb-blue))] text-white px-3 py-2 rounded-md hover:bg-opacity-90"
           >
@@ -372,7 +372,7 @@ const ManagePasswords = () => {
           adminUsers.map((admin, index) => (
             <div key={index} className="grid grid-cols-12 gap-4 p-4 items-center border-b last:border-b-0 hover:bg-gray-50">
               <div className="col-span-4 font-medium">{admin.username}</div>
-              
+
               <div className="col-span-5">
                 {editingAdminIndex === index ? (
                   <input
@@ -405,7 +405,7 @@ const ManagePasswords = () => {
                   </div>
                 )}
               </div>
-              
+
               <div className="col-span-3 flex space-x-2">
                 {editingAdminIndex === index ? (
                   <>
@@ -452,13 +452,13 @@ const ManagePasswords = () => {
           ))
         )}
       </div>
-      
+
       {/* Team Passwords Section */}
       <h1 className="text-2xl font-bold mb-6 flex items-center">
         <Users className="w-6 h-6 mr-2" />
         Manage Team Credentials
       </h1>
-      
+
       <div className="bg-white rounded-lg shadow">
         <div className="flex justify-between items-center p-4 border-b">
           <div className="grid grid-cols-12 gap-4 w-full font-medium text-gray-600">
@@ -466,7 +466,7 @@ const ManagePasswords = () => {
             <div className="col-span-5">Password</div>
             <div className="col-span-3">Actions</div>
           </div>
-          <button 
+          <button
             onClick={() => setShowAddTeamForm(!showAddTeamForm)}
             className="flex items-center text-sm bg-[hsl(var(--vb-blue))] text-white px-3 py-2 rounded-md hover:bg-opacity-90"
           >
@@ -531,7 +531,7 @@ const ManagePasswords = () => {
           Object.entries(teams).map(([teamId, team]) => (
             <div key={teamId} className="grid grid-cols-12 gap-4 p-4 items-center border-b last:border-b-0 hover:bg-gray-50">
               <div className="col-span-4 font-medium">{team.teamName}</div>
-              
+
               <div className="col-span-5">
                 {editingTeamId === teamId ? (
                   <input
@@ -568,7 +568,7 @@ const ManagePasswords = () => {
                   </div>
                 )}
               </div>
-              
+
               <div className="col-span-3 flex space-x-2">
                 {editingTeamId === teamId ? (
                   <>

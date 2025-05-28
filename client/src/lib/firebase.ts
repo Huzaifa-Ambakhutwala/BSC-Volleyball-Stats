@@ -58,7 +58,7 @@ export const verifyAdminCredentials = async (username: string, password: string)
     // Use the existing admin users system from the app
     const adminUsersRef = ref(database, 'adminUsers');
     const snapshot = await get(adminUsersRef);
-    
+
     if (!snapshot.exists()) {
       // Try fallback to direct check on default admin
       if (username === 'Mehdi' && password === '0000') {
@@ -69,9 +69,9 @@ export const verifyAdminCredentials = async (username: string, password: string)
       }
       throw new Error('No admin users found');
     }
-    
+
     const adminUsers = snapshot.val();
-    
+
     // Find the admin user with matching username
     for (const adminId in adminUsers) {
       const adminUser = adminUsers[adminId];
@@ -87,7 +87,7 @@ export const verifyAdminCredentials = async (username: string, password: string)
         }
       }
     }
-    
+
     throw new Error('Admin user not found');
   } catch (error) {
     console.error('Error verifying admin credentials:', error);
@@ -100,13 +100,13 @@ export const unlockMatch = async (matchId: string, adminUsername: string) => {
     // Get the match data
     const matchRef = ref(database, `matches/${matchId}`);
     const snapshot = await get(matchRef);
-    
+
     if (!snapshot.exists()) {
       throw new Error('Match not found');
     }
-    
+
     const match = snapshot.val();
-    
+
     // Create an audit log entry
     const unlockLogsRef = ref(database, `unlockLogs/${matchId}`);
     const newLogRef = push(unlockLogsRef);
@@ -115,39 +115,39 @@ export const unlockMatch = async (matchId: string, adminUsername: string) => {
       timestamp: Date.now(),
       previousStatus: match.status || 'unknown'
     });
-    
+
     // Update match status
     const updates: any = {
       status: 'in_progress',
     };
-    
+
     // Set the current set to 1 if it was already completed
     if (match.status === 'completed') {
       updates.currentSet = 1;
     }
-    
+
     // Unlock all completed sets
     if (match.completedSets) {
       const updatedCompletedSets = { ...match.completedSets };
-      
+
       if (updatedCompletedSets.set1) {
         updatedCompletedSets.set1 = false;
       }
-      
+
       if (updatedCompletedSets.set2) {
         updatedCompletedSets.set2 = false;
       }
-      
+
       if (updatedCompletedSets.set3) {
         updatedCompletedSets.set3 = false;
       }
-      
+
       updates.completedSets = updatedCompletedSets;
     }
-    
+
     // Update the match
     await update(matchRef, updates);
-    
+
     // Create a notification for administrators and other users
     const notificationsRef = ref(database, 'notifications');
     const newNotificationRef = push(notificationsRef);
@@ -158,7 +158,7 @@ export const unlockMatch = async (matchId: string, adminUsername: string) => {
       timestamp: Date.now(),
       message: `Match on Court ${match.courtNumber} was unlocked by admin ${adminUsername}`
     });
-    
+
     return true;
   } catch (error) {
     console.error('Error unlocking match:', error);
@@ -170,7 +170,7 @@ export const unlockMatch = async (matchId: string, adminUsername: string) => {
 export const addPlayer = async (name: string, jerseyNumber?: number, jerseyName?: string) => {
   const playersRef = ref(database, 'players');
   const newPlayerRef = push(playersRef);
-  await set(newPlayerRef, { 
+  await set(newPlayerRef, {
     name,
     jerseyNumber: jerseyNumber || 0,
     jerseyName: jerseyName || ''
@@ -208,17 +208,17 @@ export const updatePlayer = async (playerId: string, name: string, jerseyNumber?
   try {
     console.log(`Updating player with ID: ${playerId}, name: ${name}, jersey: ${jerseyNumber}, jerseyName: ${jerseyName}`);
     const playerRef = ref(database, `players/${playerId}`);
-    
+
     const updates: any = { name };
-    
+
     if (jerseyNumber !== undefined) {
       updates.jerseyNumber = jerseyNumber;
     }
-    
+
     if (jerseyName !== undefined) {
       updates.jerseyName = jerseyName;
     }
-    
+
     await update(playerRef, updates);
     console.log('Player update completed successfully');
     return true;

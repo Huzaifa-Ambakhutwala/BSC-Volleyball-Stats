@@ -33,76 +33,70 @@ const AdminDashboard = () => {
                 {!hasFullAccess && ' (View Only)'}
               </p>
             </div>
-            <button 
-              onClick={logout} 
+            <button
+              onClick={logout}
               className="text-sm text-white hover:text-[hsl(var(--vb-yellow))] transition"
             >
               Logout
             </button>
           </div>
-          
+
           {/* Admin Tabs Section */}
           <div className="px-6 py-4 bg-gray-50">
             <div className="border-b border-gray-200">
               <nav className="flex -mb-px overflow-x-auto">
-                <button 
-                  className={`px-6 py-3 border-b-2 font-medium ${
-                    activeTab === 'players' 
-                      ? 'border-[hsl(var(--vb-blue))] text-[hsl(var(--vb-blue))]' 
+                <button
+                  className={`px-6 py-3 border-b-2 font-medium ${activeTab === 'players'
+                      ? 'border-[hsl(var(--vb-blue))] text-[hsl(var(--vb-blue))]'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  } transition whitespace-nowrap`}
+                    } transition whitespace-nowrap`}
                   onClick={() => setActiveTab('players')}
                 >
                   Add Players
                 </button>
-                <button 
-                  className={`px-6 py-3 border-b-2 font-medium ${
-                    activeTab === 'teams' 
-                      ? 'border-[hsl(var(--vb-blue))] text-[hsl(var(--vb-blue))]' 
+                <button
+                  className={`px-6 py-3 border-b-2 font-medium ${activeTab === 'teams'
+                      ? 'border-[hsl(var(--vb-blue))] text-[hsl(var(--vb-blue))]'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  } transition whitespace-nowrap`}
+                    } transition whitespace-nowrap`}
                   onClick={() => setActiveTab('teams')}
                 >
                   Create Teams
                 </button>
-                <button 
-                  className={`px-6 py-3 border-b-2 font-medium ${
-                    activeTab === 'schedule' 
-                      ? 'border-[hsl(var(--vb-blue))] text-[hsl(var(--vb-blue))]' 
+                <button
+                  className={`px-6 py-3 border-b-2 font-medium ${activeTab === 'schedule'
+                      ? 'border-[hsl(var(--vb-blue))] text-[hsl(var(--vb-blue))]'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  } transition whitespace-nowrap`}
+                    } transition whitespace-nowrap`}
                   onClick={() => setActiveTab('schedule')}
                 >
                   Create Schedule
                 </button>
                 {canManagePasswords && (
-                  <button 
-                    className={`px-6 py-3 border-b-2 font-medium ${
-                      activeTab === 'passwords' 
-                        ? 'border-[hsl(var(--vb-blue))] text-[hsl(var(--vb-blue))]' 
+                  <button
+                    className={`px-6 py-3 border-b-2 font-medium ${activeTab === 'passwords'
+                        ? 'border-[hsl(var(--vb-blue))] text-[hsl(var(--vb-blue))]'
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    } transition whitespace-nowrap`}
+                      } transition whitespace-nowrap`}
                     onClick={() => setActiveTab('passwords')}
                   >
                     Manage Passwords
                   </button>
                 )}
-                <button 
-                  className={`px-6 py-3 border-b-2 font-medium ${
-                    activeTab === 'stats' 
-                      ? 'border-[hsl(var(--vb-blue))] text-[hsl(var(--vb-blue))]' 
+                <button
+                  className={`px-6 py-3 border-b-2 font-medium ${activeTab === 'stats'
+                      ? 'border-[hsl(var(--vb-blue))] text-[hsl(var(--vb-blue))]'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  } transition whitespace-nowrap`}
+                    } transition whitespace-nowrap`}
                   onClick={() => setActiveTab('stats')}
                 >
                   Player Stats
                 </button>
-                <button 
-                  className={`px-6 py-3 border-b-2 font-medium ${
-                    activeTab === 'guide' 
-                      ? 'border-[hsl(var(--vb-blue))] text-[hsl(var(--vb-blue))]' 
+                <button
+                  className={`px-6 py-3 border-b-2 font-medium ${activeTab === 'guide'
+                      ? 'border-[hsl(var(--vb-blue))] text-[hsl(var(--vb-blue))]'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  } transition whitespace-nowrap`}
+                    } transition whitespace-nowrap`}
                   onClick={() => setActiveTab('guide')}
                 >
                   User Guide

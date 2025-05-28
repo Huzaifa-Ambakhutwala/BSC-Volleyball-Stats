@@ -77,6 +77,14 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
+
+  async updateUserAccessLevel(id: number, accessLevel: "full" | "limited"): Promise<User | undefined> {
+    const [user] = await db.update(users)
+      .set({ accessLevel })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
   
   // Player methods
   async getPlayer(id: number): Promise<Player_DB | undefined> {

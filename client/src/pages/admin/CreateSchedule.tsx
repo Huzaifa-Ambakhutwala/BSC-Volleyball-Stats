@@ -11,6 +11,7 @@ import {
 } from '@/lib/firebase';
 import type { Team, Match } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
+import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 import { Calendar, Clock, Trophy, PlusCircle, Pencil, Trash2, Save, X, Loader2, Users, Hash } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 
@@ -21,6 +22,7 @@ const CreateSchedule = () => {
   const [teamB, setTeamB] = useState<string>('');
   const [trackerTeam, setTrackerTeam] = useState<string>('');
   const [startTime, setStartTime] = useState<string>('');
+  const { canEdit, canDelete } = useAdminPermissions();
   const [teams, setTeams] = useState<Record<string, Team>>({});
   const [matches, setMatches] = useState<Record<string, Match>>({});
   const [isLoadingTeams, setIsLoadingTeams] = useState(true);

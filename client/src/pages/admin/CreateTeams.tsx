@@ -439,13 +439,14 @@ const CreateTeams = () => {
       </div>
       
       {/* Create Team Form */}
-      <div>
-        <h3 className="text-lg font-semibold mb-4 flex items-center">
-          <PlusCircle className="h-5 w-5 mr-2" />
-          Create New Team
-        </h3>
-        <div className="space-y-4 max-w-lg border rounded-md p-4 bg-gray-50">
-          <div>
+      {canEdit && (
+        <div>
+          <h3 className="text-lg font-semibold mb-4 flex items-center">
+            <PlusCircle className="h-5 w-5 mr-2" />
+            Create New Team
+          </h3>
+          <div className="space-y-4 max-w-lg border rounded-md p-4 bg-gray-50">
+            <div>
             <label htmlFor="teamName" className="block text-sm font-medium text-gray-700 mb-1">Team Name</label>
             <input 
               type="text" 
@@ -581,8 +582,9 @@ const CreateTeams = () => {
               )}
             </button>
           </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

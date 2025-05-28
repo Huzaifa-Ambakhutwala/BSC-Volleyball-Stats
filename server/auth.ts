@@ -15,6 +15,7 @@ declare global {
       username: string;
       password: string;
       isAdmin: boolean;
+      accessLevel?: string; // "full" or "limited"
     }
   }
 }

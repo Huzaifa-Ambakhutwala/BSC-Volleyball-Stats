@@ -19,6 +19,7 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUserAccessLevel(id: number, accessLevel: "full" | "limited"): Promise<User | undefined>;
   
   // Player methods
   getPlayer(id: number): Promise<Player_DB | undefined>;

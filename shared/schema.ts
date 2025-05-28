@@ -81,6 +81,7 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   isAdmin: boolean("is_admin").default(false).notNull(),
+  accessLevel: text("access_level", { enum: ["full", "limited"] }).default("limited"), // Admin access level
 });
 
 export const players = pgTable("players", {

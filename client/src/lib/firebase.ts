@@ -1191,6 +1191,7 @@ export const createEmptyPlayerStats = (setNumber: number = 1): PlayerStats => ({
 export type AdminUser = {
   username: string;
   password: string;
+  accessLevel?: 'full' | 'limited';
 };
 
 // Authentication

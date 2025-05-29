@@ -152,7 +152,7 @@ const ManagePasswords = () => {
       return;
     }
 
-    const success = await addAdminUser(newAdminUsername, newAdminPassword);
+    const success = await addAdminUser(newAdminUsername, newAdminPassword, newAdminAccessLevel);
 
     if (success) {
       // Refresh admin users
@@ -193,7 +193,7 @@ const ManagePasswords = () => {
       return;
     }
 
-    const success = await updateAdminUser(username, newPassword);
+    const success = await updateAdminUser(username, newPassword, newAdminAccessLevel);
 
     if (success) {
       // Refresh admin users
@@ -217,11 +217,11 @@ const ManagePasswords = () => {
   };
 
   const handleDeleteAdmin = async (username: string) => {
-    // Cannot delete the currently logged in admin
-    if (username === username) {
+    // Cannot delete Mehdi (primary admin)
+    if (username === 'Mehdi') {
       toast({
         title: "Error",
-        description: "You cannot delete your own account",
+        description: "Cannot delete the primary admin account",
         variant: "destructive",
       });
       return;

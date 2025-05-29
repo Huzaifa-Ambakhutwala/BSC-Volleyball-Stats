@@ -1335,7 +1335,7 @@ export const getAdminUsers = async (): Promise<AdminUser[]> => {
   }
 };
 
-export const addAdminUser = async (username: string, password: string): Promise<boolean> => {
+export const addAdminUser = async (username: string, password: string, accessLevel: 'full' | 'limited' = 'limited'): Promise<boolean> => {
   try {
     // Check if username already exists
     const adminUsersRef = ref(database, 'adminUsers');
@@ -1349,7 +1349,7 @@ export const addAdminUser = async (username: string, password: string): Promise<
     }
 
     const newAdminRef = push(adminUsersRef);
-    await set(newAdminRef, { username, password });
+    await set(newAdminRef, { username, password, accessLevel });
     return true;
   } catch (error) {
     console.error('Error adding admin user:', error);
@@ -1357,7 +1357,7 @@ export const addAdminUser = async (username: string, password: string): Promise<
   }
 };
 
-export const updateAdminUser = async (username: string, newPassword: string): Promise<boolean> => {
+export const updateAdminUser = async (username: string, newPassword: string, accessLevel?: 'full' | 'limited'): Promise<boolean> => {
   try {
     const adminUsersRef = ref(database, 'adminUsers');
     const snapshot = await get(adminUsersRef);
@@ -1373,7 +1373,11 @@ export const updateAdminUser = async (username: string, newPassword: string): Pr
 
     if (!adminId) return false;
 
-    await update(ref(database, `adminUsers/${adminId}`), { password: newPassword });
+    const updateData: any = { password: newPassword };
+    if (accessLevel) {
+      updateData.accessLevel = accessLevel;
+    }
+    await update(ref(database, `adminUsers/${adminId}`), updateData);
     return true;
   } catch (error) {
     console.error('Error updating admin user:', error);

@@ -417,21 +417,25 @@ const CreateSchedule = () => {
                         {formatDate(match.startTime)}
                       </div>
                       <div className="flex justify-center space-x-1">
-                        <button 
-                          className="text-blue-500 p-1 hover:bg-blue-50 rounded" 
-                          onClick={() => handleEditClick(match)}
-                          title="Edit"
-                        >
-                          <Pencil className="h-5 w-5" />
-                        </button>
-                        <button 
-                          className="text-red-500 p-1 hover:bg-red-50 rounded" 
-                          onClick={() => handleDeleteClick(match.id)}
-                          title="Delete"
-                          disabled={isDeleting}
-                        >
-                          <Trash2 className="h-5 w-5" />
-                        </button>
+                        {canEdit && (
+                          <button 
+                            className="text-blue-500 p-1 hover:bg-blue-50 rounded" 
+                            onClick={() => handleEditClick(match)}
+                            title="Edit"
+                          >
+                            <Pencil className="h-5 w-5" />
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button 
+                            className="text-red-500 p-1 hover:bg-red-50 rounded" 
+                            onClick={() => handleDeleteClick(match.id)}
+                            title="Delete"
+                            disabled={isDeleting}
+                          >
+                            <Trash2 className="h-5 w-5" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   )}
@@ -443,11 +447,12 @@ const CreateSchedule = () => {
       </div>
 
       {/* Create Match Form */}
-      <div>
-        <h3 className="text-lg font-semibold mb-4 flex items-center">
-          <PlusCircle className="h-5 w-5 mr-2" />
-          Schedule New Match
-        </h3>
+      {canEdit && (
+        <div>
+          <h3 className="text-lg font-semibold mb-4 flex items-center">
+            <PlusCircle className="h-5 w-5 mr-2" />
+            Schedule New Match
+          </h3>
         <div className="space-y-4 max-w-lg border rounded-md p-4 bg-gray-50">
           <div>
             <label htmlFor="gameNumber" className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
@@ -562,7 +567,8 @@ const CreateSchedule = () => {
             {isSubmitting ? 'Scheduling...' : 'Schedule Match'}
           </button>
         </div>
-      </div>
+        </div>
+      )}
     </div>
   );
 };

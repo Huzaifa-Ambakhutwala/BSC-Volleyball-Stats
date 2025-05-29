@@ -177,8 +177,10 @@ const ManagePasswords = () => {
   };
 
   const handleEditAdmin = (index: number) => {
+    const admin = adminUsers[index];
     setEditingAdminIndex(index);
-    setNewPassword(adminUsers[index].password);
+    setNewPassword(admin.password);
+    setNewAdminAccessLevel(admin.accessLevel || 'limited');
   };
 
   const handleSaveAdminPassword = async (username: string) => {
@@ -309,8 +311,9 @@ const ManagePasswords = () => {
       <div className="bg-white rounded-lg shadow mb-8">
         <div className="flex justify-between items-center p-4 border-b">
           <div className="grid grid-cols-12 gap-4 w-full font-medium text-gray-600">
-            <div className="col-span-4">Username</div>
-            <div className="col-span-5">Password</div>
+            <div className="col-span-3">Username</div>
+            <div className="col-span-3">Password</div>
+            <div className="col-span-3">Access Level</div>
             <div className="col-span-3">Actions</div>
           </div>
           <button
@@ -324,7 +327,7 @@ const ManagePasswords = () => {
 
         {showAddAdminForm && (
           <div className="grid grid-cols-12 gap-4 p-4 items-center border-b bg-gray-50">
-            <div className="col-span-4">
+            <div className="col-span-3">
               <input
                 type="text"
                 value={newAdminUsername}
@@ -333,7 +336,7 @@ const ManagePasswords = () => {
                 placeholder="Enter admin username"
               />
             </div>
-            <div className="col-span-5">
+            <div className="col-span-3">
               <input
                 type="text"
                 value={newAdminPassword}
@@ -341,6 +344,16 @@ const ManagePasswords = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[hsl(var(--vb-blue))] focus:border-[hsl(var(--vb-blue))]"
                 placeholder="Enter admin password"
               />
+            </div>
+            <div className="col-span-3">
+              <select
+                value={newAdminAccessLevel}
+                onChange={(e) => setNewAdminAccessLevel(e.target.value as 'full' | 'limited')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[hsl(var(--vb-blue))] focus:border-[hsl(var(--vb-blue))]"
+              >
+                <option value="limited">Limited Access</option>
+                <option value="full">Full Access</option>
+              </select>
             </div>
             <div className="col-span-3 flex space-x-2">
               <button
@@ -372,9 +385,9 @@ const ManagePasswords = () => {
         ) : (
           adminUsers.map((admin, index) => (
             <div key={index} className="grid grid-cols-12 gap-4 p-4 items-center border-b last:border-b-0 hover:bg-gray-50">
-              <div className="col-span-4 font-medium">{admin.username}</div>
+              <div className="col-span-3 font-medium">{admin.username}</div>
 
-              <div className="col-span-5">
+              <div className="col-span-3">
                 {editingAdminIndex === index ? (
                   <input
                     type="text"
@@ -404,6 +417,27 @@ const ManagePasswords = () => {
                       )}
                     </button>
                   </div>
+                )}
+              </div>
+
+              <div className="col-span-3">
+                {editingAdminIndex === index ? (
+                  <select
+                    value={newAdminAccessLevel}
+                    onChange={(e) => setNewAdminAccessLevel(e.target.value as 'full' | 'limited')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[hsl(var(--vb-blue))] focus:border-[hsl(var(--vb-blue))]"
+                  >
+                    <option value="limited">Limited Access</option>
+                    <option value="full">Full Access</option>
+                  </select>
+                ) : (
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    admin.accessLevel === 'full' 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {admin.accessLevel === 'full' ? 'Full Access' : 'Limited Access'}
+                  </span>
                 )}
               </div>
 

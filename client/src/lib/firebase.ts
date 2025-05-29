@@ -1324,11 +1324,17 @@ export const getAdminUsers = async (): Promise<AdminUser[]> => {
 
     // If no admins exist yet, create the default admin
     if (Object.keys(adminUsers).length === 0) {
-      await addAdminUser('Mehdi', '0000');
-      return [{ username: 'Mehdi', password: '0000' }];
+      await addAdminUser('Mehdi', '0000', 'full');
+      return [{ username: 'Mehdi', password: '0000', accessLevel: 'full' }];
     }
 
-    return Object.values(adminUsers);
+    // Map admin users and ensure Mehdi has full access
+    const adminList = Object.values(adminUsers).map((admin: any) => ({
+      ...admin,
+      accessLevel: admin.username === 'Mehdi' ? 'full' : (admin.accessLevel || 'limited')
+    }));
+    
+    return adminList;
   } catch (error) {
     console.error('Error getting admin users:', error);
     return [];

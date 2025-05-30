@@ -9,6 +9,7 @@ import {
   isSetLocked as checkIsSetLocked
 } from '@/lib/firebase';
 import { calculateTotalPoints, calculateTotalFaults } from '@/lib/statCalculations';
+import { getOptimizedTextStyle } from '@/lib/colorUtils';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, CheckCircle2, Award } from 'lucide-react';
 
@@ -74,25 +75,19 @@ const PlayerStatActions = ({ player, playerId, matchId, teamId, isSelected, onSe
 
   return (
     <div
-      className={`w-full cursor-pointer rounded-lg p-2 transition-colors ${isSelected
-        ? 'border-2 border-[hsl(var(--vb-blue))]'
-        : 'border border-gray-200 hover:bg-gray-50'
-        }`}
-      style={teamColor && !isSelected ? { backgroundColor: teamColor + '30' } : {}}
+      className={`w-full cursor-pointer rounded-lg p-3 transition-all duration-200 border-2 ${
+        isSelected ? 'shadow-lg' : 'hover:shadow-md'
+      }`}
+      style={{
+        ...(teamColor ? getOptimizedTextStyle(teamColor) : {}),
+        backgroundColor: teamColor ? (getOptimizedTextStyle(teamColor).backgroundColor || teamColor) : '#f8f9fa',
+        borderColor: isSelected ? '#666' : teamColor || '#d1d5db'
+      }}
       onClick={onSelect}
     >
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-1">
-          {teamColor && (
-            <div
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: teamColor }}
-            />
-          )}
-          <h4
-            className={`font-semibold text-sm ${teamColor && !isSelected ? getTextColor(teamColor) : 'text-[hsl(var(--vb-blue))]'}`}
-            style={isSelected && teamColor ? { color: teamColor } : {}}
-          >
+        <div className="flex flex-col">
+          <h4 className="font-bold text-lg tracking-wide">
             {player.jerseyNumber ? `${player.jerseyNumber} - ${player.jerseyName || ''}` : player.name}
           </h4>
           {player.jerseyNumber && player.jerseyName && (

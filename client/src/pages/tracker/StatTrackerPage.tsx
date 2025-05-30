@@ -1145,6 +1145,7 @@ const StatTrackerPage = () => {
                               playerId={playerId}
                               matchId={selectedMatchId}
                               teamId={(swapTeamPositions ? teamB : teamA)?.id}
+                              teamColor={(swapTeamPositions ? teamB : teamA)?.teamColor}
                               isSelected={selectedPlayerId === playerId}
                               onSelect={() => handlePlayerSelect(playerId)}
                               currentSet={currentSet}
@@ -1192,6 +1193,7 @@ const StatTrackerPage = () => {
                               playerId={playerId}
                               matchId={selectedMatchId}
                               teamId={(swapTeamPositions ? teamA : teamB)?.id}
+                              teamColor={(swapTeamPositions ? teamA : teamB)?.teamColor}
                               isSelected={selectedPlayerId === playerId}
                               onSelect={() => handlePlayerSelect(playerId)}
                               currentSet={currentSet}

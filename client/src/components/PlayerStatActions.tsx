@@ -18,6 +18,7 @@ interface PlayerStatActionsProps {
   playerId: string;
   matchId: string;
   teamId?: string;
+  teamColor?: string;
   isSelected: boolean;
   onSelect: () => void;
   currentSet?: number; // Which set to record stats for
@@ -25,9 +26,12 @@ interface PlayerStatActionsProps {
 
 // Note: Calculation functions moved to shared utility in /lib/statCalculations.ts
 
-const PlayerStatActions = ({ player, playerId, matchId, teamId, isSelected, onSelect, currentSet = 1 }: PlayerStatActionsProps) => {
+const PlayerStatActions = ({ player, playerId, matchId, teamId, teamColor: propTeamColor, isSelected, onSelect, currentSet = 1 }: PlayerStatActionsProps) => {
   const [stats, setStats] = useState<PlayerStats>(createEmptyPlayerStats());
-  const [teamColor, setTeamColor] = useState<string | null>(null);
+  const [fetchedTeamColor, setFetchedTeamColor] = useState<string | null>(null);
+  
+  // Use the prop team color if available, otherwise use the fetched one
+  const teamColor = propTeamColor || fetchedTeamColor;
 
   useEffect(() => {
     if (!matchId || !playerId) return;
@@ -49,16 +53,16 @@ const PlayerStatActions = ({ player, playerId, matchId, teamId, isSelected, onSe
     return () => unsubscribe();
   }, [matchId, playerId, currentSet]);
 
-  // Load team color if teamId is provided
+  // Load team color if teamId is provided and no prop color
   useEffect(() => {
-    if (teamId) {
+    if (teamId && !propTeamColor) {
       getTeamById(teamId).then(team => {
         if (team && team.teamColor) {
-          setTeamColor(team.teamColor);
+          setFetchedTeamColor(team.teamColor);
         }
       });
     }
-  }, [teamId]);
+  }, [teamId, propTeamColor]);
 
   const totalPoints = calculateTotalPoints(stats);
   const totalFaults = calculateTotalFaults(stats);

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'wouter';
 import { getMatchById, getTeamById, getStatLogs, getMatchStats, getPlayers, type StatLog, createEmptyPlayerStats } from '@/lib/firebase';
+import { calculateTotalPoints, calculateTotalFaults } from '@/lib/statCalculations';
 import type { Match, Team, Player, PlayerStats, MatchStats } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';

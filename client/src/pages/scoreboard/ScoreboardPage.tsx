@@ -37,7 +37,12 @@ const ScoreboardPage = () => {
       dumps: '🧮',
       footFaults: '👣',
       reaches: '🙋',
-      carries: '🤲'
+      carries: '🤲',
+      points: '⭐',
+      outOfBounds: '🚫',
+      faults: '⚠️',
+      set: '📈',
+      neutralBlocks: '🧱'
     };
     return emojiMap[statName] || '📊';
   };

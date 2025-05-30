@@ -59,6 +59,17 @@ const StatTrackerPage = () => {
   const { trackerUser, setTrackerUser } = useContext(TrackerUserContext);
   const [teamsMap, setTeamsMap] = useState<Record<string, Team>>({});
 
+  // Helper function to determine text color based on background color for readability
+  const getTextColor = (hexColor: string): string => {
+    if (!hexColor) return 'text-black';
+    const color = hexColor.replace('#', '');
+    const r = parseInt(color.substr(0, 2), 16);
+    const g = parseInt(color.substr(2, 2), 16);
+    const b = parseInt(color.substr(4, 2), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 128 ? 'text-black' : 'text-white';
+  };
+
   // Add fallback to localStorage if context is not available
   useEffect(() => {
     if (!trackerUser) {
@@ -1096,9 +1107,15 @@ const StatTrackerPage = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
                   {/* Team Players - Left Column */}
                   <div className="lg:col-span-1">
-                    <h3 className="text-lg font-semibold mb-4" style={{ color: (swapTeamPositions ? teamB?.teamColor : teamA?.teamColor) || undefined }}>
+                    <div 
+                      className={`w-full rounded-lg p-3 mb-4 border-2 text-center font-semibold ${getTextColor((swapTeamPositions ? teamB?.teamColor : teamA?.teamColor) || '#3B82F6')}`}
+                      style={{ 
+                        backgroundColor: (swapTeamPositions ? teamB?.teamColor : teamA?.teamColor) || '#3B82F6',
+                        borderColor: (swapTeamPositions ? teamB?.teamColor : teamA?.teamColor) || '#3B82F6'
+                      }}
+                    >
                       {(swapTeamPositions ? teamB?.teamName : teamA?.teamName) || (swapTeamPositions ? 'Team B' : 'Team A')}
-                    </h3>
+                    </div>
                     {(swapTeamPositions ? teamB : teamA) ? (
                       <div className="space-y-2">
                         {(swapTeamPositions ? teamB : teamA)?.players.map(playerId => {
@@ -1134,9 +1151,15 @@ const StatTrackerPage = () => {
 
                   {/* Team Players - Right Column */}
                   <div className="lg:col-span-1">
-                    <h3 className="text-lg font-semibold mb-4" style={{ color: (swapTeamPositions ? teamA?.teamColor : teamB?.teamColor) || undefined }}>
+                    <div 
+                      className={`w-full rounded-lg p-3 mb-4 border-2 text-center font-semibold ${getTextColor((swapTeamPositions ? teamA?.teamColor : teamB?.teamColor) || '#EAB308')}`}
+                      style={{ 
+                        backgroundColor: (swapTeamPositions ? teamA?.teamColor : teamB?.teamColor) || '#EAB308',
+                        borderColor: (swapTeamPositions ? teamA?.teamColor : teamB?.teamColor) || '#EAB308'
+                      }}
+                    >
                       {(swapTeamPositions ? teamA?.teamName : teamB?.teamName) || (swapTeamPositions ? 'Team A' : 'Team B')}
-                    </h3>
+                    </div>
                     {(swapTeamPositions ? teamA : teamB) ? (
                       <div className="space-y-2">
                         {(swapTeamPositions ? teamA : teamB)?.players.map(playerId => {

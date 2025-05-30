@@ -633,6 +633,22 @@ const StatTrackerPage = () => {
   const handleDeleteLog = async (logId: string) => {
     if (!selectedMatchId || isDeletingLog) return;
 
+    // Check if match is completed or all sets are locked
+    const isMatchCompleted = currentMatch?.status === 'completed';
+    const isMatchLocked = currentMatch && (
+      (currentMatch.completedSets?.set1 && currentMatch.completedSets?.set2 && currentMatch.completedSets?.set3) ||
+      isMatchCompleted
+    );
+
+    if (isMatchLocked) {
+      toast({
+        title: "Cannot Delete",
+        description: "Cannot delete actions after match is submitted",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsDeletingLog(true);
     try {
       const success = await deleteStatLog(selectedMatchId, logId);
@@ -1182,16 +1198,33 @@ const StatTrackerPage = () => {
                             </td>
                             <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
                               {/* Only show delete button for the most recent log (first in the array) */}
-                              {index === 0 && (
-                                <button
-                                  onClick={() => handleDeleteLog(log.id)}
-                                  disabled={isDeletingLog}
-                                  className="text-red-500 hover:text-red-700 focus:outline-none disabled:opacity-50"
-                                  title="Delete this log entry"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              )}
+                              {index === 0 && (() => {
+                                // Check if match is completed or all sets are locked
+                                const isMatchCompleted = currentMatch?.status === 'completed';
+                                const isMatchLocked = currentMatch && (
+                                  (currentMatch.completedSets?.set1 && currentMatch.completedSets?.set2 && currentMatch.completedSets?.set3) ||
+                                  isMatchCompleted
+                                );
+                                const canDelete = !isMatchLocked && !isDeletingLog;
+                                const tooltipText = isMatchLocked 
+                                  ? "Cannot delete actions after match is submitted" 
+                                  : "Delete this log entry";
+
+                                return (
+                                  <button
+                                    onClick={() => canDelete && handleDeleteLog(log.id)}
+                                    disabled={!canDelete}
+                                    className={`focus:outline-none ${
+                                      canDelete 
+                                        ? "text-red-500 hover:text-red-700" 
+                                        : "text-gray-300 cursor-not-allowed"
+                                    }`}
+                                    title={tooltipText}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                );
+                              })()}
                             </td>
                           </tr>
                         ))}

@@ -688,6 +688,30 @@ const StatTrackerPage = () => {
     }
   };
 
+  // Helper function to calculate sets won by each team
+  const calculateSetsWon = (match: Match | null) => {
+    if (!match?.setScores) return { teamA: 0, teamB: 0 };
+
+    let teamAWins = 0;
+    let teamBWins = 0;
+
+    // Check each set
+    ['set1', 'set2', 'set3'].forEach(setKey => {
+      const setScore = match.setScores?.[setKey as keyof typeof match.setScores];
+      if (setScore && typeof setScore === 'object' && 'scoreA' in setScore && 'scoreB' in setScore) {
+        const { scoreA, scoreB } = setScore;
+        if (scoreA > scoreB) {
+          teamAWins++;
+        } else if (scoreB > scoreA) {
+          teamBWins++;
+        }
+        // If scores are equal, neither team wins the set
+      }
+    });
+
+    return { teamA: teamAWins, teamB: teamBWins };
+  };
+
   if (isLoading) {
     return (
       <section className="py-8 bg-gray-50">
@@ -868,19 +892,6 @@ const StatTrackerPage = () => {
                             <span>Finalize Set {currentSet} & Advance to Set {currentSet + 1}</span>
                           </button>
                         )}
-
-                        {/* Submit full match button - only show when all required sets are completed */}
-                        {currentMatch && currentMatch.completedSets &&
-                          ((currentMatch.completedSets.set1 && currentMatch.completedSets.set2) ||
-                            (currentMatch.completedSets.set1 && currentMatch.completedSets.set3) ||
-                            (currentMatch.completedSets.set2 && currentMatch.completedSets.set3)) && (
-                            <button
-                              className="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition flex items-center justify-center space-x-2 font-semibold"
-                              onClick={openFinalizeMatchDialog}
-                            >
-                              <span>Submit Full Match</span>
-                            </button>
-                          )}
                       </>
                     )}
                   </div>
@@ -1072,7 +1083,7 @@ const StatTrackerPage = () => {
                             <div className="text-sm md:text-lg font-bold text-gray-600 mb-2 truncate">
                               {(swapTeamPositions ? teamB?.teamName : teamA?.teamName) || (swapTeamPositions ? 'Team B' : 'Team A')}
                             </div>
-                            <div 
+                            <div
                               className="text-4xl md:text-6xl font-black tracking-wider"
                               style={{
                                 ...getOptimizedTextStyle((swapTeamPositions ? teamB?.teamColor : teamA?.teamColor) || '#3B82F6'),
@@ -1095,7 +1106,7 @@ const StatTrackerPage = () => {
                             <div className="text-sm md:text-lg font-bold text-gray-600 mb-2 truncate">
                               {(swapTeamPositions ? teamA?.teamName : teamB?.teamName) || (swapTeamPositions ? 'Team A' : 'Team B')}
                             </div>
-                            <div 
+                            <div
                               className="text-4xl md:text-6xl font-black tracking-wider"
                               style={{
                                 ...getOptimizedTextStyle((swapTeamPositions ? teamA?.teamColor : teamB?.teamColor) || '#EAB308'),
@@ -1122,9 +1133,9 @@ const StatTrackerPage = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
                   {/* Team Players - Left Column */}
                   <div className="lg:col-span-1">
-                    <div 
+                    <div
                       className="w-full rounded-lg p-4 mb-4 border-2 text-center"
-                      style={{ 
+                      style={{
                         ...getOptimizedTextStyle((swapTeamPositions ? teamB?.teamColor : teamA?.teamColor) || '#3B82F6'),
                         backgroundColor: getOptimizedTextStyle((swapTeamPositions ? teamB?.teamColor : teamA?.teamColor) || '#3B82F6').backgroundColor || (swapTeamPositions ? teamB?.teamColor : teamA?.teamColor) || '#3B82F6',
                         borderColor: (swapTeamPositions ? teamB?.teamColor : teamA?.teamColor) || '#3B82F6'
@@ -1170,9 +1181,9 @@ const StatTrackerPage = () => {
 
                   {/* Team Players - Right Column */}
                   <div className="lg:col-span-1">
-                    <div 
+                    <div
                       className="w-full rounded-lg p-4 mb-4 border-2 text-center"
-                      style={{ 
+                      style={{
                         ...getOptimizedTextStyle((swapTeamPositions ? teamA?.teamColor : teamB?.teamColor) || '#EAB308'),
                         backgroundColor: getOptimizedTextStyle((swapTeamPositions ? teamA?.teamColor : teamB?.teamColor) || '#EAB308').backgroundColor || (swapTeamPositions ? teamA?.teamColor : teamB?.teamColor) || '#EAB308',
                         borderColor: (swapTeamPositions ? teamA?.teamColor : teamB?.teamColor) || '#EAB308'
@@ -1281,19 +1292,18 @@ const StatTrackerPage = () => {
                                   isMatchCompleted
                                 );
                                 const canDelete = !isMatchLocked && !isDeletingLog;
-                                const tooltipText = isMatchLocked 
-                                  ? "Cannot delete actions after match is submitted" 
+                                const tooltipText = isMatchLocked
+                                  ? "Cannot delete actions after match is submitted"
                                   : "Delete this log entry";
 
                                 return (
                                   <button
                                     onClick={() => canDelete && handleDeleteLog(log.id)}
                                     disabled={!canDelete}
-                                    className={`focus:outline-none ${
-                                      canDelete 
-                                        ? "text-red-500 hover:text-red-700" 
-                                        : "text-gray-300 cursor-not-allowed"
-                                    }`}
+                                    className={`focus:outline-none ${canDelete
+                                      ? "text-red-500 hover:text-red-700"
+                                      : "text-gray-300 cursor-not-allowed"
+                                      }`}
                                     title={tooltipText}
                                   >
                                     <Trash2 className="w-4 h-4" />
@@ -1441,16 +1451,22 @@ const StatTrackerPage = () => {
                 {/* Final Result */}
                 <div className="mt-4 flex items-center justify-between bg-gray-100 p-2 rounded">
                   <span className="font-medium">Final Result:</span>
-                  <div className="flex items-center space-x-6">
-                    <div className="text-center">
-                      <div className="text-xs font-medium text-gray-500">{teamA?.teamName || 'Team A'}</div>
-                      <div className="font-bold text-lg text-blue-600">{currentMatch?.scoreA || 0}</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-xs font-medium text-gray-500">{teamB?.teamName || 'Team B'}</div>
-                      <div className="font-bold text-lg text-amber-500">{currentMatch?.scoreB || 0}</div>
-                    </div>
-                  </div>
+                  {(() => {
+                    const { teamA: teamAWins, teamB: teamBWins } = calculateSetsWon(currentMatch);
+                    return (
+                      <div className="flex items-center space-x-6">
+                        <div className="text-center">
+                          <div className="text-xs font-medium text-gray-500">{teamA?.teamName || 'Team A'}</div>
+                          <div className="font-bold text-lg text-blue-600">{teamAWins}</div>
+                        </div>
+                        <div className="text-gray-400">|</div>
+                        <div className="text-center">
+                          <div className="text-xs font-medium text-gray-500">{teamB?.teamName || 'Team B'}</div>
+                          <div className="font-bold text-lg text-amber-500">{teamBWins}</div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 

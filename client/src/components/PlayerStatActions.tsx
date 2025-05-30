@@ -29,7 +29,7 @@ interface PlayerStatActionsProps {
 const PlayerStatActions = ({ player, playerId, matchId, teamId, teamColor: propTeamColor, isSelected, onSelect, currentSet = 1 }: PlayerStatActionsProps) => {
   const [stats, setStats] = useState<PlayerStats>(createEmptyPlayerStats());
   const [fetchedTeamColor, setFetchedTeamColor] = useState<string | null>(null);
-  
+
   // Use the prop team color if available, otherwise use the fetched one
   const teamColor = propTeamColor || fetchedTeamColor;
 
@@ -79,9 +79,8 @@ const PlayerStatActions = ({ player, playerId, matchId, teamId, teamColor: propT
 
   return (
     <div
-      className={`w-full cursor-pointer rounded-lg p-3 transition-all duration-200 border-2 ${
-        isSelected ? 'shadow-lg' : 'hover:shadow-md'
-      }`}
+      className={`w-full cursor-pointer rounded-lg p-3 transition-all duration-200 border-2 ${isSelected ? 'shadow-lg' : 'hover:shadow-md'
+        }`}
       style={{
         ...(teamColor ? getOptimizedTextStyle(teamColor) : {}),
         backgroundColor: teamColor ? (getOptimizedTextStyle(teamColor).backgroundColor || teamColor) : '#f8f9fa',
@@ -95,7 +94,7 @@ const PlayerStatActions = ({ player, playerId, matchId, teamId, teamColor: propT
             {player.jerseyNumber ? `${player.jerseyNumber} - ${player.jerseyName || ''}` : player.name}
           </h4>
           {player.jerseyNumber && player.jerseyName && (
-            <p className="text-xs text-gray-500 -mt-1">
+            <p className={`text-xs -mt-1 ${teamColor ? getTextColor(teamColor) : 'text-gray-500'}`}>
               {player.name}
             </p>
           )}

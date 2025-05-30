@@ -245,7 +245,11 @@ const ScoreboardPage = () => {
           dumps: 0,
           footFaults: 0,
           reaches: 0,
-          carries: 0
+          carries: 0,
+          points: 0,
+          outOfBounds: 0,
+          faults: 0,
+          neutralBlocks: 0
         };
 
         // Copy all valid stat values

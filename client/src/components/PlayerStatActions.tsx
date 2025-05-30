@@ -8,6 +8,7 @@ import {
   listenToMatchById,
   isSetLocked as checkIsSetLocked
 } from '@/lib/firebase';
+import { calculateTotalPoints, calculateTotalFaults } from '@/lib/statCalculations';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, CheckCircle2, Award } from 'lucide-react';
 
@@ -21,19 +22,7 @@ interface PlayerStatActionsProps {
   currentSet?: number; // Which set to record stats for
 }
 
-// Helper to calculate total points earned - includes all point-earning stats
-const getTotalPointsContribution = (stats: PlayerStats): number => {
-  const earned = stats.aces + stats.spikes + stats.blocks + stats.tips +
-    stats.dumps + (stats.points || 0);
-  return earned;
-};
-
-// Helper to calculate total faults - includes all fault types
-const getTotalFaults = (stats: PlayerStats): number => {
-  return stats.serveErrors + stats.spikeErrors + stats.netTouches +
-    stats.footFaults + stats.carries + stats.reaches +
-    (stats.outOfBounds || 0) + (stats.faults || 0);
-};
+// Note: Calculation functions moved to shared utility in /lib/statCalculations.ts
 
 const PlayerStatActions = ({ player, playerId, matchId, teamId, isSelected, onSelect, currentSet = 1 }: PlayerStatActionsProps) => {
   const [stats, setStats] = useState<PlayerStats>(createEmptyPlayerStats());
@@ -70,8 +59,8 @@ const PlayerStatActions = ({ player, playerId, matchId, teamId, isSelected, onSe
     }
   }, [teamId]);
 
-  const totalPoints = getTotalPointsContribution(stats);
-  const totalFaults = getTotalFaults(stats);
+  const totalPoints = calculateTotalPoints(stats);
+  const totalFaults = calculateTotalFaults(stats);
 
   // Get text color based on background color
   const getTextColor = (hexColor: string): string => {

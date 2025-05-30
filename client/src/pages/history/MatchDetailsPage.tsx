@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'wouter';
 import { getMatchById, getTeamById, getStatLogs, getMatchStats, getPlayers, type StatLog, createEmptyPlayerStats } from '@/lib/firebase';
 import { calculateTotalPoints, calculateTotalFaults } from '@/lib/statCalculations';
+import { getOptimizedTextStyle } from '@/lib/colorUtils';
 import type { Match, Team, Player, PlayerStats, MatchStats } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -257,7 +258,14 @@ const MatchDetailsPage = () => {
                 </div>
                 
                 {/* Show the specific set score if a set is selected, otherwise show match.scoreA */}
-                <div className="text-4xl font-bold" style={{ color: teamAColor }}>
+                <div 
+                  className="text-6xl font-black tracking-wider px-4 py-2 rounded-lg border-2"
+                  style={{
+                    ...getOptimizedTextStyle(teamAColor),
+                    backgroundColor: getOptimizedTextStyle(teamAColor).backgroundColor || teamAColor,
+                    borderColor: 'rgba(0,0,0,0.1)'
+                  }}
+                >
                   {currentSet && match.setScores 
                     ? (currentSet === 1 && match.setScores.set1 ? match.setScores.set1.scoreA : 
                        currentSet === 2 && match.setScores.set2 ? match.setScores.set2.scoreA : 
@@ -319,7 +327,14 @@ const MatchDetailsPage = () => {
                 </div>
                 
                 {/* Show the specific set score if a set is selected, otherwise show match.scoreB */}
-                <div className="text-4xl font-bold" style={{ color: teamBColor }}>
+                <div 
+                  className="text-6xl font-black tracking-wider px-4 py-2 rounded-lg border-2"
+                  style={{
+                    ...getOptimizedTextStyle(teamBColor),
+                    backgroundColor: getOptimizedTextStyle(teamBColor).backgroundColor || teamBColor,
+                    borderColor: 'rgba(0,0,0,0.1)'
+                  }}
+                >
                   {currentSet && match.setScores 
                     ? (currentSet === 1 && match.setScores.set1 ? match.setScores.set1.scoreB : 
                        currentSet === 2 && match.setScores.set2 ? match.setScores.set2.scoreB : 

@@ -19,6 +19,7 @@ import {
   type StatLog,
   getTeams
 } from '@/lib/firebase';
+import { getOptimizedTextStyle } from '@/lib/colorUtils';
 import type { Match, Team, Player } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
 import PlayerStatActions, { StatActions } from '@/components/PlayerStatActions';
@@ -1062,17 +1063,23 @@ const StatTrackerPage = () => {
 
                 {/* Centered Current Set Score Display */}
                 <div className="flex justify-center mb-6">
-                  <div className="bg-white border-2 border-gray-200 rounded-lg px-8 py-4 shadow-md">
+                  <div className="bg-white border-2 border-gray-200 rounded-lg px-8 py-6 shadow-lg">
                     <div className="text-center">
-                      <h2 className="text-lg font-semibold text-gray-600 mb-2">Set {currentSet} Score</h2>
-                      <div className="flex items-center justify-center space-x-4">
+                      <h2 className="text-xl font-bold text-gray-700 mb-4">Set {currentSet} Score</h2>
+                      <div className="flex items-center justify-center space-x-6">
                         <div className="text-center">
-                          <div className="text-sm font-medium text-gray-500 mb-1">
+                          <div className="text-lg font-bold text-gray-600 mb-2">
                             {(swapTeamPositions ? teamB?.teamName : teamA?.teamName) || (swapTeamPositions ? 'Team B' : 'Team A')}
                           </div>
                           <div 
-                            className="text-4xl font-bold"
-                            style={{ color: (swapTeamPositions ? teamB?.teamColor : teamA?.teamColor) || '#3B82F6' }}
+                            className="text-6xl font-black tracking-wider"
+                            style={{
+                              ...getOptimizedTextStyle((swapTeamPositions ? teamB?.teamColor : teamA?.teamColor) || '#3B82F6'),
+                              backgroundColor: getOptimizedTextStyle((swapTeamPositions ? teamB?.teamColor : teamA?.teamColor) || '#3B82F6').backgroundColor || (swapTeamPositions ? teamB?.teamColor : teamA?.teamColor) || '#3B82F6',
+                              padding: '8px 16px',
+                              borderRadius: '8px',
+                              border: '2px solid rgba(0,0,0,0.1)'
+                            }}
                           >
                             {(() => {
                               const currentSetScore = currentMatch.setScores && currentMatch.setScores[`set${currentSet}` as keyof typeof currentMatch.setScores];
@@ -1082,14 +1089,20 @@ const StatTrackerPage = () => {
                             })()}
                           </div>
                         </div>
-                        <div className="text-3xl font-bold text-gray-400">-</div>
+                        <div className="text-4xl font-bold text-gray-400">-</div>
                         <div className="text-center">
-                          <div className="text-sm font-medium text-gray-500 mb-1">
+                          <div className="text-lg font-bold text-gray-600 mb-2">
                             {(swapTeamPositions ? teamA?.teamName : teamB?.teamName) || (swapTeamPositions ? 'Team A' : 'Team B')}
                           </div>
                           <div 
-                            className="text-4xl font-bold"
-                            style={{ color: (swapTeamPositions ? teamA?.teamColor : teamB?.teamColor) || '#EAB308' }}
+                            className="text-6xl font-black tracking-wider"
+                            style={{
+                              ...getOptimizedTextStyle((swapTeamPositions ? teamA?.teamColor : teamB?.teamColor) || '#EAB308'),
+                              backgroundColor: getOptimizedTextStyle((swapTeamPositions ? teamA?.teamColor : teamB?.teamColor) || '#EAB308').backgroundColor || (swapTeamPositions ? teamA?.teamColor : teamB?.teamColor) || '#EAB308',
+                              padding: '8px 16px',
+                              borderRadius: '8px',
+                              border: '2px solid rgba(0,0,0,0.1)'
+                            }}
                           >
                             {(() => {
                               const currentSetScore = currentMatch.setScores && currentMatch.setScores[`set${currentSet}` as keyof typeof currentMatch.setScores];
@@ -1108,13 +1121,16 @@ const StatTrackerPage = () => {
                   {/* Team Players - Left Column */}
                   <div className="lg:col-span-1">
                     <div 
-                      className={`w-full rounded-lg p-3 mb-4 border-2 text-center font-semibold ${getTextColor((swapTeamPositions ? teamB?.teamColor : teamA?.teamColor) || '#3B82F6')}`}
+                      className="w-full rounded-lg p-4 mb-4 border-2 text-center"
                       style={{ 
-                        backgroundColor: (swapTeamPositions ? teamB?.teamColor : teamA?.teamColor) || '#3B82F6',
+                        ...getOptimizedTextStyle((swapTeamPositions ? teamB?.teamColor : teamA?.teamColor) || '#3B82F6'),
+                        backgroundColor: getOptimizedTextStyle((swapTeamPositions ? teamB?.teamColor : teamA?.teamColor) || '#3B82F6').backgroundColor || (swapTeamPositions ? teamB?.teamColor : teamA?.teamColor) || '#3B82F6',
                         borderColor: (swapTeamPositions ? teamB?.teamColor : teamA?.teamColor) || '#3B82F6'
                       }}
                     >
-                      {(swapTeamPositions ? teamB?.teamName : teamA?.teamName) || (swapTeamPositions ? 'Team B' : 'Team A')}
+                      <div className="text-2xl font-black tracking-wide">
+                        {(swapTeamPositions ? teamB?.teamName : teamA?.teamName) || (swapTeamPositions ? 'Team B' : 'Team A')}
+                      </div>
                     </div>
                     {(swapTeamPositions ? teamB : teamA) ? (
                       <div className="space-y-2">
@@ -1152,13 +1168,16 @@ const StatTrackerPage = () => {
                   {/* Team Players - Right Column */}
                   <div className="lg:col-span-1">
                     <div 
-                      className={`w-full rounded-lg p-3 mb-4 border-2 text-center font-semibold ${getTextColor((swapTeamPositions ? teamA?.teamColor : teamB?.teamColor) || '#EAB308')}`}
+                      className="w-full rounded-lg p-4 mb-4 border-2 text-center"
                       style={{ 
-                        backgroundColor: (swapTeamPositions ? teamA?.teamColor : teamB?.teamColor) || '#EAB308',
+                        ...getOptimizedTextStyle((swapTeamPositions ? teamA?.teamColor : teamB?.teamColor) || '#EAB308'),
+                        backgroundColor: getOptimizedTextStyle((swapTeamPositions ? teamA?.teamColor : teamB?.teamColor) || '#EAB308').backgroundColor || (swapTeamPositions ? teamA?.teamColor : teamB?.teamColor) || '#EAB308',
                         borderColor: (swapTeamPositions ? teamA?.teamColor : teamB?.teamColor) || '#EAB308'
                       }}
                     >
-                      {(swapTeamPositions ? teamA?.teamName : teamB?.teamName) || (swapTeamPositions ? 'Team A' : 'Team B')}
+                      <div className="text-2xl font-black tracking-wide">
+                        {(swapTeamPositions ? teamA?.teamName : teamB?.teamName) || (swapTeamPositions ? 'Team A' : 'Team B')}
+                      </div>
                     </div>
                     {(swapTeamPositions ? teamA : teamB) ? (
                       <div className="space-y-2">

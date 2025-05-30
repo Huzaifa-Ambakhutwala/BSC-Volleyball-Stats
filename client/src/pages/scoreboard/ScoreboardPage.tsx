@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'wouter';
 import { listenToMatchesByCourtNumber, getTeamById, getPlayers, listenToMatchStats } from '@/lib/firebase';
 import { calculateTotalPoints, calculateTotalFaults } from '@/lib/statCalculations';
+import { getOptimizedTextStyle } from '@/lib/colorUtils';
 import type { Match, Team, Player, PlayerStats, MatchStats } from '@shared/schema';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';

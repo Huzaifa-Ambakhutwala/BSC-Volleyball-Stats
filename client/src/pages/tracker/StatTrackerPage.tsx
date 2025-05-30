@@ -1027,23 +1027,8 @@ const StatTrackerPage = () => {
               {/* Current Set Score Controls */}
               <div className="p-4 bg-white border-b border-gray-200">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                  <div className="flex items-center space-x-4">
-                    <span className="font-bold text-lg">
-                      Set {currentSet} Score:
-                    </span>
-                    <div className="flex items-center space-x-1">
-                      <span className="text-[hsl(var(--vb-blue))] font-bold text-3xl">
-                        {currentMatch.setScores && currentMatch.setScores[`set${currentSet}` as keyof typeof currentMatch.setScores]
-                          ? (currentMatch.setScores[`set${currentSet}` as keyof typeof currentMatch.setScores] as any).scoreA
-                          : currentMatch.scoreA}
-                      </span>
-                      <span className="text-gray-500 text-xl">-</span>
-                      <span className="text-[hsl(var(--vb-yellow))] font-bold text-3xl">
-                        {currentMatch.setScores && currentMatch.setScores[`set${currentSet}` as keyof typeof currentMatch.setScores]
-                          ? (currentMatch.setScores[`set${currentSet}` as keyof typeof currentMatch.setScores] as any).scoreB
-                          : currentMatch.scoreB}
-                      </span>
-                    </div>
+                  <div className="text-sm text-gray-600">
+                    Use the buttons below to adjust scores
                   </div>
                 </div>
               </div>
@@ -1062,6 +1047,50 @@ const StatTrackerPage = () => {
                     </svg>
                     Swap Team Positions
                   </button>
+                </div>
+
+                {/* Centered Current Set Score Display */}
+                <div className="flex justify-center mb-6">
+                  <div className="bg-white border-2 border-gray-200 rounded-lg px-8 py-4 shadow-md">
+                    <div className="text-center">
+                      <h2 className="text-lg font-semibold text-gray-600 mb-2">Set {currentSet} Score</h2>
+                      <div className="flex items-center justify-center space-x-4">
+                        <div className="text-center">
+                          <div className="text-sm font-medium text-gray-500 mb-1">
+                            {(swapTeamPositions ? teamB?.teamName : teamA?.teamName) || (swapTeamPositions ? 'Team B' : 'Team A')}
+                          </div>
+                          <div 
+                            className="text-4xl font-bold"
+                            style={{ color: (swapTeamPositions ? teamB?.teamColor : teamA?.teamColor) || '#3B82F6' }}
+                          >
+                            {(() => {
+                              const currentSetScore = currentMatch.setScores && currentMatch.setScores[`set${currentSet}` as keyof typeof currentMatch.setScores];
+                              const scoreA = currentSetScore ? (currentSetScore as any).scoreA : currentMatch.scoreA;
+                              const scoreB = currentSetScore ? (currentSetScore as any).scoreB : currentMatch.scoreB;
+                              return swapTeamPositions ? scoreB : scoreA;
+                            })()}
+                          </div>
+                        </div>
+                        <div className="text-3xl font-bold text-gray-400">-</div>
+                        <div className="text-center">
+                          <div className="text-sm font-medium text-gray-500 mb-1">
+                            {(swapTeamPositions ? teamA?.teamName : teamB?.teamName) || (swapTeamPositions ? 'Team A' : 'Team B')}
+                          </div>
+                          <div 
+                            className="text-4xl font-bold"
+                            style={{ color: (swapTeamPositions ? teamA?.teamColor : teamB?.teamColor) || '#EAB308' }}
+                          >
+                            {(() => {
+                              const currentSetScore = currentMatch.setScores && currentMatch.setScores[`set${currentSet}` as keyof typeof currentMatch.setScores];
+                              const scoreA = currentSetScore ? (currentSetScore as any).scoreA : currentMatch.scoreA;
+                              const scoreB = currentSetScore ? (currentSetScore as any).scoreB : currentMatch.scoreB;
+                              return swapTeamPositions ? scoreA : scoreB;
+                            })()}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">

@@ -16,6 +16,7 @@ import GameHistoryPage from "@/pages/history/GameHistoryPage";
 import MatchDetailsPage from "@/pages/history/MatchDetailsPage";
 import LeaderboardPage from "@/pages/leaderboard/LeaderboardPage";
 import SchedulePage from "@/pages/schedule/SchedulePage";
+import FeedbackPage from "@/pages/FeedbackPage";
 import Home from "@/pages/Home";
 import { useEffect, useState, lazy, Suspense } from "react";
 import { useLocation } from "wouter";

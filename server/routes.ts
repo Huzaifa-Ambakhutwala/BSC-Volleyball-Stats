@@ -493,6 +493,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Feedback API routes
+  const multer = require('multer');
+  const fs = require('fs').promises;
+  const path = require('path');
+
+  // Configure multer for file uploads
+  const storage = multer.diskStorage({
+    destination: async (req: any, file: any, cb: any) => {
+      const uploadDir = path.join(process.cwd(), 'feedback', 'screenshots');
+      try {
+        await fs.mkdir(uploadDir, { recursive: true });
+        cb(null, uploadDir);
+      } catch (error) {
+        cb(error);
+      }
+    },
+    filename: (req: any, file: any, cb: any) => {
+      const timestamp = Date.now();
+      const ext = path.extname(file.originalname);
+      cb(null, `screenshot-${timestamp}${ext}`);
+    }
+  });
+
+  const upload = multer({
+    storage,
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10MB limit
+    },
+    fileFilter: (req: any, file: any, cb: any) => {
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error('Invalid file type. Only JPG, PNG, and WebP are allowed.'));
+      }
+    }
+  });
+
+  // Submit feedback (public endpoint)
+  app.post("/api/feedback", upload.single('screenshot'), async (req, res) => {
+    try {
+      const { type, message } = req.body;
+
+      if (!type || !message) {
+        return res.status(400).json({ message: "Type and message are required" });
+      }
+
+      const timestamp = new Date().toISOString();
+      const feedbackId = `feedback-${Date.now()}`;
+      
+      const feedbackData = {
+        id: feedbackId,
+        type,
+        message,
+        timestamp,
+        screenshotPath: req.file ? `feedback/screenshots/${req.file.filename}` : undefined
+      };
+
+      // Ensure feedback directory exists
+      const feedbackDir = path.join(process.cwd(), 'feedback');
+      await fs.mkdir(feedbackDir, { recursive: true });
+
+      // Save feedback as JSON file
+      const feedbackFile = path.join(feedbackDir, `${feedbackId}.json`);
+      await fs.writeFile(feedbackFile, JSON.stringify(feedbackData, null, 2));
+
+      res.status(201).json({ message: "Feedback submitted successfully", id: feedbackId });
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      res.status(500).json({ message: "Error submitting feedback" });
+    }
+  });
+
+  // Get all feedback (admin only)
+  app.get("/api/feedback", isAuthenticated, async (req, res) => {
+    try {
+      const feedbackDir = path.join(process.cwd(), 'feedback');
+      
+      try {
+        const files = await fs.readdir(feedbackDir);
+        const feedbackFiles = files.filter((file: string) => file.endsWith('.json'));
+        
+        const feedbackData = await Promise.all(
+          feedbackFiles.map(async (file: string) => {
+            try {
+              const filePath = path.join(feedbackDir, file);
+              const content = await fs.readFile(filePath, 'utf8');
+              return JSON.parse(content);
+            } catch (error) {
+              console.error(`Error reading feedback file ${file}:`, error);
+              return null;
+            }
+          })
+        );
+
+        // Filter out any null entries and sort by timestamp (newest first)
+        const validFeedback = feedbackData
+          .filter(item => item !== null)
+          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+        res.json(validFeedback);
+      } catch (error) {
+        // If feedback directory doesn't exist, return empty array
+        res.json([]);
+      }
+    } catch (error) {
+      console.error('Error fetching feedback:', error);
+      res.status(500).json({ message: "Error fetching feedback" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

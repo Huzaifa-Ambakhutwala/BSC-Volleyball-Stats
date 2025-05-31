@@ -548,6 +548,49 @@ export const getTeamPassword = async (teamId: string): Promise<string | null> =>
   }
 };
 
+// Tracker Logging System
+export const logTrackerAction = async (logData: {
+  teamName: string;
+  action: string;
+  matchId?: string;
+  set?: number;
+  playerId?: string;
+  details?: string;
+}) => {
+  try {
+    const logEntry = {
+      ...logData,
+      timestamp: new Date().toISOString(),
+      createdAt: new Date().toISOString()
+    };
+    
+    const logsRef = ref(database, 'trackerLogs');
+    await push(logsRef, logEntry);
+    console.log('Tracker action logged:', logEntry);
+  } catch (error) {
+    console.error('Error logging tracker action:', error);
+  }
+};
+
+export const getTrackerLogs = async (): Promise<any[]> => {
+  try {
+    const logsRef = ref(database, 'trackerLogs');
+    const snapshot = await get(logsRef);
+    
+    if (snapshot.exists()) {
+      const logsData = snapshot.val();
+      return Object.entries(logsData).map(([id, log]: [string, any]) => ({
+        id,
+        ...log,
+      })).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    }
+    return [];
+  } catch (error) {
+    console.error('Error fetching tracker logs:', error);
+    return [];
+  }
+};
+
 // Authentication for stat trackers
 export const loginStatTracker = async (teamId: string, password: string): Promise<TrackerUser | null> => {
   try {

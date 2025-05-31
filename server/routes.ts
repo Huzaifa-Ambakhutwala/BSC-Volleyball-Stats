@@ -7,7 +7,8 @@ import {
   insertTeamSchema, 
   insertTeamPlayerSchema, 
   insertMatchSchema,
-  insertPlayerStatSchema
+  insertPlayerStatSchema,
+  insertTrackerLogSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -450,6 +451,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updatedStats);
     } catch (error) {
       res.status(500).json({ message: "Error updating player stats", error });
+    }
+  });
+
+  // Tracker Logs API
+  app.post("/api/tracker-logs", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertTrackerLogSchema.parse(req.body);
+      const log = await storage.createTrackerLog(validatedData);
+      res.status(201).json(log);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid log data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Error creating tracker log", error });
+    }
+  });
+
+  app.get("/api/tracker-logs", isAuthenticated, async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 100;
+      const offset = parseInt(req.query.offset as string) || 0;
+      const teamName = req.query.teamName as string;
+      const action = req.query.action as string;
+      const search = req.query.search as string;
+
+      let logs;
+      if (search) {
+        logs = await storage.searchTrackerLogs(search);
+      } else if (teamName) {
+        logs = await storage.getTrackerLogsByTeam(teamName);
+      } else if (action) {
+        logs = await storage.getTrackerLogsByAction(action);
+      } else {
+        logs = await storage.getTrackerLogs(limit, offset);
+      }
+
+      res.json(logs);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching tracker logs", error });
     }
   });
 

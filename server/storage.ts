@@ -205,6 +205,41 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return updatedStat;
   }
+
+  // Tracker Logs methods
+  async createTrackerLog(log: InsertTrackerLog): Promise<TrackerLog_DB> {
+    const [newLog] = await db.insert(trackerLogs).values(log).returning();
+    return newLog;
+  }
+
+  async getTrackerLogs(limit: number = 100, offset: number = 0): Promise<TrackerLog_DB[]> {
+    return await db.select()
+      .from(trackerLogs)
+      .orderBy(sql`${trackerLogs.timestamp} DESC`)
+      .limit(limit)
+      .offset(offset);
+  }
+
+  async getTrackerLogsByTeam(teamName: string): Promise<TrackerLog_DB[]> {
+    return await db.select()
+      .from(trackerLogs)
+      .where(eq(trackerLogs.teamName, teamName))
+      .orderBy(sql`${trackerLogs.timestamp} DESC`);
+  }
+
+  async getTrackerLogsByAction(action: string): Promise<TrackerLog_DB[]> {
+    return await db.select()
+      .from(trackerLogs)
+      .where(eq(trackerLogs.action, action))
+      .orderBy(sql`${trackerLogs.timestamp} DESC`);
+  }
+
+  async searchTrackerLogs(searchTerm: string): Promise<TrackerLog_DB[]> {
+    return await db.select()
+      .from(trackerLogs)
+      .where(sql`${trackerLogs.teamName} ILIKE ${`%${searchTerm}%`} OR ${trackerLogs.action} ILIKE ${`%${searchTerm}%`}`)
+      .orderBy(sql`${trackerLogs.timestamp} DESC`);
+  }
 }
 
 export const storage = new DatabaseStorage();

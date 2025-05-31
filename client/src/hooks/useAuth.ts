@@ -38,21 +38,53 @@ export const useAuth = () => {
     localStorage.setItem('bscVolleyballAuth', JSON.stringify(authState));
   }, [authState]);
 
+  // Check if user is already authenticated on mount
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const response = await fetch('/api/user', {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const userData = await response.json();
+          setAuthState({ 
+            isAuthenticated: true, 
+            username: userData.username, 
+            id: userData.id 
+          });
+        }
+      } catch (error) {
+        console.error('Error checking auth status:', error);
+      }
+    };
+
+    // Only check if not already authenticated
+    if (!authState.isAuthenticated) {
+      checkAuthStatus();
+    }
+  }, []);
+
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      // Import dynamically to avoid circular dependencies
-      const { loginAdmin } = await import('../lib/firebase');
-      const success = await loginAdmin(username, password);
-      
-      if (success) {
-        // Set the state
-        setAuthState({ isAuthenticated: true, username, id: 1 });
+      // Use server-side authentication API
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ username, password }),
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        setAuthState({ isAuthenticated: true, username: userData.username, id: userData.id });
         return true;
       }
       return false;
     } catch (error) {
       console.error('Error logging in:', error);
-      // Fall back to hardcoded credentials if firebase fails
+      // Fall back to hardcoded credentials if server fails
       if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
         setAuthState({ isAuthenticated: true, username, id: 1 });
         return true;
@@ -61,8 +93,17 @@ export const useAuth = () => {
     }
   };
 
-  const logout = () => {
-    setAuthState({ isAuthenticated: false, username: null });
+  const logout = async () => {
+    try {
+      await fetch('/api/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.error('Error logging out:', error);
+    } finally {
+      setAuthState({ isAuthenticated: false, username: null });
+    }
   };
 
   return {

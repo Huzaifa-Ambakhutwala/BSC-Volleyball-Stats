@@ -27,7 +27,9 @@ const FeedbackView = () => {
   const fetchFeedback = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/feedback');
+      const response = await fetch('/api/feedback', {
+        credentials: 'include'
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch feedback');
       }

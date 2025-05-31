@@ -94,6 +94,15 @@ const AdminDashboard = () => {
                   Player Stats
                 </button>
                 <button
+                  className={`px-6 py-3 border-b-2 font-medium ${activeTab === 'logs'
+                      ? 'border-[hsl(var(--vb-blue))] text-[hsl(var(--vb-blue))]'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    } transition whitespace-nowrap`}
+                  onClick={() => setActiveTab('logs')}
+                >
+                  Tracker Logs
+                </button>
+                <button
                   className={`px-6 py-3 border-b-2 font-medium ${activeTab === 'guide'
                       ? 'border-[hsl(var(--vb-blue))] text-[hsl(var(--vb-blue))]'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -107,12 +116,13 @@ const AdminDashboard = () => {
           </div>
 
           {/* Tab Content */}
-          <div className={activeTab === 'guide' ? 'p-0' : 'p-6'}>
+          <div className={activeTab === 'guide' || activeTab === 'logs' ? 'p-0' : 'p-6'}>
             {activeTab === 'players' && <AddPlayers />}
             {activeTab === 'teams' && <CreateTeams />}
             {activeTab === 'schedule' && <CreateSchedule />}
             {activeTab === 'passwords' && <ManagePasswords />}
             {activeTab === 'stats' && <AllPlayerStats />}
+            {activeTab === 'logs' && <TrackerLogs />}
             {activeTab === 'guide' && (
               <div className="h-screen">
                 <UserGuide />

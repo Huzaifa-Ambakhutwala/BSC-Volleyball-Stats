@@ -237,7 +237,7 @@ const FeedbackView = () => {
                       <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                         <p className="text-sm font-medium text-gray-700 mb-2">Screenshot:</p>
                         <img
-                          src={`/${item.screenshotPath}`}
+                          src={`/api/feedback/screenshots/${item.screenshotPath?.split('/').pop()}`}
                           alt="Feedback screenshot"
                           className="max-w-full h-auto rounded border shadow-sm max-h-96 object-contain"
                           onError={(e) => {

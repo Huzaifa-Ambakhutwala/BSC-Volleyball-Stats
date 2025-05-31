@@ -566,6 +566,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Serve screenshot files
+  app.get("/api/feedback/screenshots/:filename", isAuthenticated, async (req, res) => {
+    try {
+      const filename = req.params.filename;
+      const filePath = path.join(process.cwd(), 'feedback', 'screenshots', filename);
+      
+      // Check if file exists
+      try {
+        await fs.access(filePath);
+        res.sendFile(filePath);
+      } catch (error) {
+        res.status(404).json({ message: "Screenshot not found" });
+      }
+    } catch (error) {
+      console.error('Error serving screenshot:', error);
+      res.status(500).json({ message: "Error serving screenshot" });
+    }
+  });
+
   // Get all feedback (admin only)
   app.get("/api/feedback", isAuthenticated, async (req, res) => {
     try {

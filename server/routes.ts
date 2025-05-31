@@ -11,6 +11,9 @@ import {
   insertTrackerLogSchema
 } from "@shared/schema";
 import { z } from "zod";
+import multer from 'multer';
+import { promises as fs } from 'fs';
+import path from 'path';
 
 // Middleware to ensure user is authenticated
 function isAuthenticated(req: Request, res: Response, next: Function) {
@@ -494,12 +497,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Feedback API routes
-  const multer = require('multer');
-  const fs = require('fs').promises;
-  const path = require('path');
 
   // Configure multer for file uploads
-  const storage = multer.diskStorage({
+  const multerStorage = multer.diskStorage({
     destination: async (req: any, file: any, cb: any) => {
       const uploadDir = path.join(process.cwd(), 'feedback', 'screenshots');
       try {
@@ -517,7 +517,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const upload = multer({
-    storage,
+    storage: multerStorage,
     limits: {
       fileSize: 10 * 1024 * 1024, // 10MB limit
     },
@@ -532,7 +532,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Submit feedback (public endpoint)
-  app.post("/api/feedback", upload.single('screenshot'), async (req, res) => {
+  app.post("/api/feedback", upload.single('screenshot'), async (req: any, res) => {
     try {
       const { type, message } = req.body;
 

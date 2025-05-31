@@ -123,6 +123,7 @@ function Router() {
           <Route path="/history/:matchId" component={MatchDetailsPage} />
           <Route path="/leaderboard" component={LeaderboardPage} />
           <Route path="/schedule" component={SchedulePage} />
+          <Route path="/feedback" component={FeedbackPage} />
           <Route path="/debug">
             {() => {
               const [loading, setLoading] = useState(true);

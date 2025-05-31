@@ -240,8 +240,12 @@ const FeedbackView = () => {
                           src={`/api/feedback/screenshots/${item.screenshotPath?.split('/').pop()}`}
                           alt="Feedback screenshot"
                           className="max-w-full h-auto rounded border shadow-sm max-h-96 object-contain"
+                          crossOrigin="use-credentials"
+                          onLoad={() => console.log('Screenshot loaded successfully')}
                           onError={(e) => {
+                            console.error('Screenshot failed to load:', e);
                             const target = e.target as HTMLImageElement;
+                            console.log('Failed URL:', target.src);
                             target.style.display = 'none';
                             const errorDiv = document.createElement('div');
                             errorDiv.className = 'text-red-600 text-sm';

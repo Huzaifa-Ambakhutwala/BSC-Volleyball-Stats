@@ -3,15 +3,16 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Download, Search, Filter, Calendar, User, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { database, ref, get, onValue, off } from '@/lib/firebase';
 
 interface TrackerLog {
-  id: number;
+  id: string;
   teamName: string;
   action: string;
   timestamp: string;
-  matchId?: number;
+  matchId?: string;
   set?: number;
-  playerId?: number;
+  playerId?: string;
   details?: string;
   createdAt: string;
 }
@@ -41,12 +42,21 @@ const TrackerLogs = () => {
   const fetchLogs = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/tracker-logs');
-      if (!response.ok) {
-        throw new Error('Failed to fetch logs');
+      const logsRef = ref(database, 'trackerLogs');
+      const snapshot = await get(logsRef);
+      
+      if (snapshot.exists()) {
+        const logsData = snapshot.val();
+        const logsArray = Object.entries(logsData).map(([id, log]: [string, any]) => ({
+          id,
+          ...log,
+        }));
+        // Sort by timestamp, newest first
+        logsArray.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        setLogs(logsArray);
+      } else {
+        setLogs([]);
       }
-      const data = await response.json();
-      setLogs(data);
     } catch (error) {
       console.error('Error fetching logs:', error);
       toast({

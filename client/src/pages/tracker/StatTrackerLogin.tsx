@@ -71,6 +71,14 @@ const StatTrackerLogin = () => {
         // Set the user in context
         setTrackerUser(trackerUser);
         
+        // Log the team login action
+        try {
+          const { logTeamLogin } = await import('@/lib/trackerLogger');
+          await logTeamLogin(trackerUser.teamName);
+        } catch (error) {
+          console.error('Error logging team login:', error);
+        }
+        
         // Force a check for matches immediately
         console.log(`Checking matches for team ID: ${selectedTeam}`);
         const matches = await getMatchesForTracker(selectedTeam);

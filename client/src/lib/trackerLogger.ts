@@ -1,155 +1,99 @@
-/**
- * Comprehensive logging system for the Stat Tracker page
- * Tracks all user interactions and sends them to the database
- */
+import { logTrackerAction } from './firebase';
 
-import type { InsertTrackerLog } from '@shared/schema';
-
-interface LogAction {
-  action: string;
-  matchId?: string;
-  set?: number;
-  playerId?: string;
-  details?: any;
-}
-
-class TrackerLogger {
-  private teamName: string = '';
-  private isLoggingEnabled: boolean = true;
-
-  // Initialize the logger with team information
-  init(teamName: string) {
-    this.teamName = teamName;
-    this.log('Tracker Login', undefined, undefined, undefined, {
-      loginTime: new Date().toISOString()
-    });
-  }
-
-  // Main logging method
-  async log(action: string, matchId?: string, set?: number, playerId?: string, details?: any) {
-    if (!this.isLoggingEnabled || !this.teamName) {
-      return;
+// Get the current team information from localStorage
+const getCurrentTeam = () => {
+  try {
+    const trackerUser = localStorage.getItem('trackerUser');
+    if (trackerUser) {
+      return JSON.parse(trackerUser);
     }
+  } catch (error) {
+    console.error('Error getting current team:', error);
+  }
+  return null;
+};
 
-    const logData: InsertTrackerLog = {
-      teamName: this.teamName,
-      action,
-      matchId: matchId ? parseInt(matchId) : undefined,
-      set,
-      playerId: playerId ? parseInt(playerId) : undefined,
-      details: details ? JSON.stringify(details) : undefined,
-      timestamp: new Date()
-    };
-
-    try {
-      const response = await fetch('/api/tracker-logs', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(logData),
-      });
-
-      if (!response.ok) {
-        console.error('Failed to log tracker action:', response.statusText);
-      }
-    } catch (error) {
-      console.error('Error logging tracker action:', error);
-    }
+// Main logging function
+export const logAction = async (
+  action: string,
+  details?: string,
+  matchId?: string,
+  set?: number,
+  playerId?: string,
+  playerName?: string
+) => {
+  const currentTeam = getCurrentTeam();
+  if (!currentTeam) {
+    console.warn('No team logged in, skipping log action');
+    return;
   }
 
-  // Specific logging methods for different actions
-  logStatAdd(action: string, matchId: string, set: number, playerId: string, playerName?: string) {
-    this.log(`Add ${action}`, matchId, set, playerId, {
-      playerName,
-      statType: action
-    });
-  }
+  const logData = {
+    teamName: currentTeam.teamName,
+    action,
+    matchId,
+    set,
+    playerId,
+    details: details || `${action}${playerName ? ` for ${playerName}` : ''}`
+  };
 
-  logStatDelete(action: string, matchId: string, set: number, playerId: string, playerName?: string) {
-    this.log(`Delete ${action}`, matchId, set, playerId, {
-      playerName,
-      statType: action
-    });
-  }
+  await logTrackerAction(logData);
+};
 
-  logScoreChange(matchId: string, set: number, newScoreA: number, newScoreB: number, teamA?: string, teamB?: string) {
-    this.log('Score Changed', matchId, set, undefined, {
-      newScoreA,
-      newScoreB,
-      teamA,
-      teamB
-    });
-  }
+// Specific logging functions for different actions
+export const logStatAction = async (
+  statType: string,
+  operation: 'add' | 'delete',
+  playerName: string,
+  matchId: string,
+  set: number,
+  playerId: string
+) => {
+  await logAction(
+    `${operation === 'add' ? 'Add' : 'Delete'} ${statType}`,
+    `${operation === 'add' ? 'Added' : 'Deleted'} ${statType} for ${playerName}`,
+    matchId,
+    set,
+    playerId,
+    playerName
+  );
+};
 
-  logSetAdvance(matchId: string, fromSet: number, toSet: number) {
-    this.log('Set Advanced', matchId, toSet, undefined, {
-      fromSet,
-      toSet
-    });
-  }
+export const logScoreChange = async (
+  newScoreA: number,
+  newScoreB: number,
+  matchId: string,
+  set: number
+) => {
+  await logAction(
+    'Score Changed',
+    `Score updated to ${newScoreA}-${newScoreB}`,
+    matchId,
+    set
+  );
+};
 
-  logSetFinalize(matchId: string, set: number, finalScoreA: number, finalScoreB: number) {
-    this.log('Set Finalized', matchId, set, undefined, {
-      finalScoreA,
-      finalScoreB
-    });
-  }
+export const logTeamLogin = async (teamName: string) => {
+  await logAction('Team Login', `${teamName} logged into stat tracker`);
+};
 
-  logMatchSubmit(matchId: string) {
-    this.log('Match Submitted', matchId, undefined, undefined, {
-      completedAt: new Date().toISOString()
-    });
-  }
+export const logTeamLogout = async (teamName: string) => {
+  await logAction('Team Logout', `${teamName} logged out of stat tracker`);
+};
 
-  logTeamSwap(matchId: string, set: number) {
-    this.log('Team Positions Swapped', matchId, set, undefined, {
-      swapTime: new Date().toISOString()
-    });
-  }
+export const logMatchSelection = async (matchId: string, courtNumber: number) => {
+  await logAction(
+    'Match Selected',
+    `Selected match on Court ${courtNumber}`,
+    matchId
+  );
+};
 
-  logPlayerSelect(matchId: string, set: number, playerId: string, playerName?: string) {
-    this.log('Player Selected', matchId, set, playerId, {
-      playerName
-    });
-  }
-
-  logMatchSelect(matchId: string, courtNumber?: number, teamA?: string, teamB?: string) {
-    this.log('Match Selected', matchId, undefined, undefined, {
-      courtNumber,
-      teamA,
-      teamB
-    });
-  }
-
-  logLogout() {
-    this.log('Tracker Logout', undefined, undefined, undefined, {
-      logoutTime: new Date().toISOString()
-    });
-  }
-
-  logAdminUnlock(matchId: string, adminUsername: string) {
-    this.log('Admin Match Unlock', matchId, undefined, undefined, {
-      adminUsername,
-      unlockTime: new Date().toISOString()
-    });
-  }
-
-  // Disable logging (for testing or maintenance)
-  disable() {
-    this.isLoggingEnabled = false;
-  }
-
-  // Enable logging
-  enable() {
-    this.isLoggingEnabled = true;
-  }
-
-  // Get current team name
-  getTeamName(): string {
-    return this.teamName;
-  }
-}
-
-// Export a singleton instance
-export const trackerLogger = new TrackerLogger();
+export const logSetAdvance = async (matchId: string, newSet: number) => {
+  await logAction(
+    'Set Advanced',
+    `Advanced to Set ${newSet}`,
+    matchId,
+    newSet
+  );
+};

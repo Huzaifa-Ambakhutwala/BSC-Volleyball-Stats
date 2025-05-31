@@ -163,10 +163,38 @@ const TrackerLogs = () => {
               <h1 className="text-2xl font-bold text-gray-900">Tracker Logs</h1>
               <p className="text-gray-600 mt-1">Monitor all stat tracker activities and interactions</p>
             </div>
-            <Button onClick={exportToCSV} className="btn-blue">
-              <Download className="w-4 h-4 mr-2" />
-              Export CSV
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={async () => {
+                  try {
+                    const { logTrackerAction } = await import('@/lib/firebase');
+                    await logTrackerAction({
+                      teamName: 'Test Team',
+                      action: 'Test Log Entry',
+                      details: 'Admin test log created from Tracker Logs page'
+                    });
+                    toast({
+                      title: "Test Log Created",
+                      description: "A test log entry has been added. Refresh to see it.",
+                    });
+                    fetchLogs(); // Refresh the logs
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description: "Failed to create test log",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+                className="btn-green"
+              >
+                Test Log
+              </Button>
+              <Button onClick={exportToCSV} className="btn-blue">
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+            </div>
           </div>
         </div>
 

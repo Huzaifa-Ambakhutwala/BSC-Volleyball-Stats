@@ -15,6 +15,9 @@ interface TrackerLog {
   playerId?: string;
   details?: string;
   createdAt: string;
+  teamAName?: string;
+  teamBName?: string;
+  playerName?: string;
 }
 
 const TrackerLogs = () => {
@@ -164,7 +167,7 @@ const TrackerLogs = () => {
               <p className="text-gray-600 mt-1">Monitor all stat tracker activities and interactions</p>
             </div>
             <div className="flex gap-2">
-              <Button 
+              <Button
                 onClick={async () => {
                   try {
                     const { logTrackerAction } = await import('@/lib/firebase');
@@ -313,16 +316,28 @@ const TrackerLogs = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {log.matchId && (
                         <div>
-                          <div>Match: {log.matchId}</div>
-                          {log.set && <div className="text-xs text-gray-500">Set: {log.set}</div>}
+                          <div className="font-medium">
+                            {log.teamAName && log.teamBName ? (
+                              `${log.teamAName} vs ${log.teamBName}`
+                            ) : (
+                              `Match: ${log.matchId}`
+                            )}
+                          </div>
+                          {log.set && (
+                            <div className="text-xs text-gray-500">
+                              Set {log.set}
+                            </div>
+                          )}
                         </div>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {log.playerId && (
                         <div>
-                          <div>ID: {log.playerId}</div>
-                          {details && details.playerName && (
+                          <div className="font-medium">
+                            {log.playerName || `Player ${log.playerId}`}
+                          </div>
+                          {details && details.playerName && !log.playerName && (
                             <div className="text-xs text-gray-500">{details.playerName}</div>
                           )}
                         </div>

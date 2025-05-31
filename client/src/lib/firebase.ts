@@ -563,7 +563,7 @@ export const logTrackerAction = async (logData: {
       timestamp: new Date().toISOString(),
       createdAt: new Date().toISOString()
     };
-    
+
     const logsRef = ref(database, 'trackerLogs');
     await push(logsRef, logEntry);
     console.log('Tracker action logged:', logEntry);
@@ -576,13 +576,65 @@ export const getTrackerLogs = async (): Promise<any[]> => {
   try {
     const logsRef = ref(database, 'trackerLogs');
     const snapshot = await get(logsRef);
-    
+
     if (snapshot.exists()) {
       const logsData = snapshot.val();
-      return Object.entries(logsData).map(([id, log]: [string, any]) => ({
+      const logs = Object.entries(logsData).map(([id, log]: [string, any]) => ({
         id,
         ...log,
-      })).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      }));
+
+      // Get all unique match IDs and player IDs
+      const matchIds = Array.from(new Set(logs.filter(log => log.matchId).map(log => log.matchId)));
+      const playerIds = Array.from(new Set(logs.filter(log => log.playerId).map(log => log.playerId)));
+
+      // Fetch matches and players data
+      const matchesRef = ref(database, 'matches');
+      const playersRef = ref(database, 'players');
+      const teamsRef = ref(database, 'teams');
+
+      const [matchesSnapshot, playersSnapshot, teamsSnapshot] = await Promise.all([
+        get(matchesRef),
+        get(playersRef),
+        get(teamsRef)
+      ]);
+
+      const matches = matchesSnapshot.val() || {};
+      const players = playersSnapshot.val() || {};
+      const teams = teamsSnapshot.val() || {};
+
+      // Enrich logs with match and player information
+      const enrichedLogs = logs.map(log => {
+        const match = log.matchId ? matches[log.matchId] : null;
+        const player = log.playerId ? players[log.playerId] : null;
+
+        // Get team names from the teams collection
+        let teamAName = null;
+        let teamBName = null;
+
+        if (match) {
+          // Get team A name
+          if (match.teamA) {
+            const teamA = teams[match.teamA];
+            teamAName = teamA?.teamName || null;
+          }
+
+          // Get team B name
+          if (match.teamB) {
+            const teamB = teams[match.teamB];
+            teamBName = teamB?.teamName || null;
+          }
+        }
+
+        return {
+          ...log,
+          teamAName,
+          teamBName,
+          playerName: player?.name
+        };
+      });
+
+      return enrichedLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     }
     return [];
   } catch (error) {
@@ -1376,7 +1428,7 @@ export const getAdminUsers = async (): Promise<AdminUser[]> => {
       ...admin,
       accessLevel: admin.username === 'Mehdi' ? 'full' : (admin.accessLevel || 'limited')
     }));
-    
+
     return adminList;
   } catch (error) {
     console.error('Error getting admin users:', error);

@@ -50,6 +50,12 @@ const Header = () => {
                   Leaderboard
                 </Link>
               </li>
+              <li>
+                <Link href="/feedback"
+                  className={`hover:text-[hsl(var(--vb-yellow))] transition ${location.startsWith('/feedback') ? 'text-[hsl(var(--vb-yellow))]' : ''}`}>
+                  Feedback
+                </Link>
+              </li>
             </ul>
           </nav>
         </div>

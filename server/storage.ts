@@ -4,7 +4,8 @@ import {
   teams, type Team_DB, type InsertTeam,
   teamPlayers, type TeamPlayer, type InsertTeamPlayer,
   matches, type Match_DB, type InsertMatch,
-  playerStats, type PlayerStat_DB, type InsertPlayerStat
+  playerStats, type PlayerStat_DB, type InsertPlayerStat,
+  trackerLogs, type TrackerLog_DB, type InsertTrackerLog
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, inArray, sql } from "drizzle-orm";
@@ -47,6 +48,13 @@ export interface IStorage {
   getMatchStats(matchId: number): Promise<PlayerStat_DB[]>;
   createPlayerStat(stat: InsertPlayerStat): Promise<PlayerStat_DB>;
   updatePlayerStat(matchId: number, playerId: number, updates: Partial<InsertPlayerStat>): Promise<PlayerStat_DB | undefined>;
+  
+  // Tracker Logs methods
+  createTrackerLog(log: InsertTrackerLog): Promise<TrackerLog_DB>;
+  getTrackerLogs(limit?: number, offset?: number): Promise<TrackerLog_DB[]>;
+  getTrackerLogsByTeam(teamName: string): Promise<TrackerLog_DB[]>;
+  getTrackerLogsByAction(action: string): Promise<TrackerLog_DB[]>;
+  searchTrackerLogs(searchTerm: string): Promise<TrackerLog_DB[]>;
   
   // Session store for authentication
   sessionStore: any;

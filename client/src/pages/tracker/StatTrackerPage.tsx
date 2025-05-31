@@ -1073,9 +1073,18 @@ const StatTrackerPage = () => {
                 </div>
 
                 {/* Sticky Current Set Score Display */}
-                <div className="sticky top-0 z-50 bg-white border-b-2 border-gray-200 shadow-lg mb-6">
+                <div
+                  className="sticky top-0 z-50 bg-white border-b-2 border-gray-200 shadow-lg mb-6"
+                  style={{
+                    position: 'sticky',
+                    top: 0,
+                    zIndex: 50,
+                    width: '100%',
+                    transform: 'translateZ(0)' // Force GPU acceleration
+                  }}
+                >
                   <div className="flex justify-center py-4 px-4">
-                    <div className="bg-white border-2 border-gray-200 rounded-lg px-6 py-4 shadow-md max-w-full">
+                    <div className="bg-white border-2 border-gray-200 rounded-lg px-6 py-4 shadow-md max-w-full w-full">
                       <div className="text-center">
                         <h2 className="text-lg md:text-xl font-bold text-gray-700 mb-3">Set {currentSet} Score</h2>
                         <div className="flex items-center justify-center space-x-3 md:space-x-6">

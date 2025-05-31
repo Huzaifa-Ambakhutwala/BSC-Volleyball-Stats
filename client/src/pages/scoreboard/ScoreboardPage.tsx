@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'wouter';
-import { listenToMatchesByCourtNumber, getTeamById, getPlayers, listenToMatchStats } from '@/lib/firebase';
+import { listenToMatchesByCourtNumber, getTeamById, getPlayers, listenToMatchStats, getStatLogs, type StatLog } from '@/lib/firebase';
 import { calculateTotalPoints, calculateTotalFaults } from '@/lib/statCalculations';
 import { getOptimizedTextStyle } from '@/lib/colorUtils';
 import type { Match, Team, Player, PlayerStats, MatchStats } from '@shared/schema';
@@ -22,6 +22,7 @@ const ScoreboardPage = () => {
   const [allPlayers, setAllPlayers] = useState<Record<string, Player>>({});
   const [matchStatsData, setMatchStatsData] = useState<MatchStats>({});
   const [statsLoading, setStatsLoading] = useState(false);
+  const [statLogs, setStatLogs] = useState<StatLog[]>([]);
   const { toast } = useToast();
 
   // Helper function to get emoji for stat type
@@ -293,6 +294,15 @@ const ScoreboardPage = () => {
     };
   }, [currentMatch]);
 
+  // Fetch stat logs for the current match
+  useEffect(() => {
+    if (!currentMatch?.id) {
+      setStatLogs([]);
+      return;
+    }
+    getStatLogs(currentMatch.id).then(setStatLogs);
+  }, [currentMatch]);
+
   const formatTime = (timeString: string) => {
     try {
       return format(new Date(timeString), 'h:mm a');
@@ -373,190 +383,158 @@ const ScoreboardPage = () => {
                   <Activity className="w-5 h-5 mr-2" />
                   Player Statistics
                 </h3>
-
-                {statsLoading ? (
-                  <div className="text-center py-8">
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
-                    <p>Loading player statistics...</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Team A Stats */}
-                    <div>
-                      <h4
-                        className="text-md font-semibold mb-3 pb-2 border-b"
-                        style={{ color: teamA?.teamColor, borderColor: teamA?.teamColor }}
-                      >
-                        {teamA?.teamName || 'Team A'}
-                      </h4>
-                      <div className="space-y-4">
-                        {playersA.map(player => {
-                          // Print player ID for debugging
-                          console.log(`[DEBUG-PLAYER-ID] Team A player: ${player.name}, ID: ${player.id}`);
-
-                          // Check if this player ID exists in the stats
-                          console.log(`[STATS-CHECK] Player ${player.id} has stats:`, !!matchStatsData[player.id]);
-
-                          // Hard-code a temporary test with the IDs from our logs
-                          const knownStatsIds = ["-OP2UkL0-hoG-HnZYJlU", "-OP2UkP00FgMO0IqPgR2", "-OP2UkrEwTsLlzAfKkPv",
-                            "-OP2UktLuETRCYgo3z0E", "-OP2UktusIt0eOLwnIrI", "-OP2UkvC167jMXB_qvOZ"];
-
-                          // See if player.id matches any known ID with stats
-                          const isKnownId = knownStatsIds.includes(player.id);
-                          console.log(`[KNOWN-ID-CHECK] Player ${player.id} is in known IDs: ${isKnownId}`);
-
-                          // Get stats from matchStatsData
-                          const playerData = matchStatsData[player.id] || {};
-
-                          // Calculate totals
-                          const totalEarnedPoints = (playerData.aces || 0) + (playerData.spikes || 0) +
-                            (playerData.blocks || 0) + (playerData.digs || 0) + (playerData.tips || 0) +
-                            (playerData.dumps || 0);
-
-                          const totalFaults = (playerData.serveErrors || 0) + (playerData.spikeErrors || 0) +
-                            (playerData.netTouches || 0) + (playerData.footFaults || 0) + (playerData.carries || 0) +
-                            (playerData.reaches || 0);
-
-                          const hasStats = totalEarnedPoints > 0 || totalFaults > 0;
-
-                          // Log our findings
-                          console.log(`[STATS-CALC] Player ${player.id}: hasStats=${hasStats}, earnedPoints=${totalEarnedPoints}, faults=${totalFaults}`);
-
-                          return (
-                            <div key={player.id} className="border border-gray-200 rounded-lg p-4">
-                              <h5 className="font-semibold mb-2">
-                                {player.name}
-                                {isKnownId && <span className="text-xs text-blue-600 ml-1">(Has Firebase Stats)</span>}
-                              </h5>
-
-
-                              {hasStats ? (
-                                <>
-                                  <div className="flex space-x-2 mb-3">
-                                    <div className="px-2 py-1 bg-green-100 text-green-800 rounded-md text-xs font-medium">
-                                      Points: {totalEarnedPoints}
-                                    </div>
-                                    <div className="px-2 py-1 bg-red-100 text-red-800 rounded-md text-xs font-medium">
-                                      Faults: {totalFaults}
-                                    </div>
-                                  </div>
-
-                                  <div className="flex flex-wrap gap-2">
-                                    {Object.entries(playerData).map(([key, value]) => {
-                                      if (value && typeof value === 'number' && value > 0) {
-                                        const statName = key as keyof PlayerStats;
-                                        return (
-                                          <div
-                                            key={key}
-                                            className={`flex items-center py-1 px-2 rounded text-white text-xs ${getStatCategoryColor(statName)}`}
-                                            title={`${statName}: ${value}`}
-                                          >
-                                            <span className="mr-1">{getStatEmoji(statName)}</span>
-                                            <span className="capitalize">{statName}: {value}</span>
-                                          </div>
-                                        );
-                                      }
-                                      return null;
-                                    })}
-                                  </div>
-                                </>
-                              ) : (
-                                <div className="text-sm text-gray-500">No recorded stats for this player</div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Team A Column */}
+                  <div>
+                    <div
+                      className="text-center text-lg font-bold mb-3 py-2 rounded"
+                      style={{
+                        backgroundColor: getOptimizedTextStyle(teamA?.teamColor || '#3B82F6').backgroundColor || teamA?.teamColor || '#3B82F6',
+                        color: getOptimizedTextStyle(teamA?.teamColor || '#3B82F6').color || '#fff',
+                      }}
+                    >
+                      {teamA?.teamName || 'Team A'}
                     </div>
-
-                    {/* Team B Stats */}
-                    <div>
-                      <h4
-                        className="text-md font-semibold mb-3 pb-2 border-b"
-                        style={{ color: teamB?.teamColor, borderColor: teamB?.teamColor }}
-                      >
-                        {teamB?.teamName || 'Team B'}
-                      </h4>
-                      <div className="space-y-4">
-                        {playersB.map(player => {
-                          // Print player ID for debugging
-                          console.log(`[DEBUG-PLAYER-ID] Team B player: ${player.name}, ID: ${player.id}`);
-
-                          // Check if this player ID exists in the stats
-                          console.log(`[STATS-CHECK] Player ${player.id} has stats:`, !!matchStatsData[player.id]);
-
-                          // Hard-code a temporary test with the IDs from our logs
-                          const knownStatsIds = ["-OP2UkL0-hoG-HnZYJlU", "-OP2UkP00FgMO0IqPgR2", "-OP2UkrEwTsLlzAfKkPv",
-                            "-OP2UktLuETRCYgo3z0E", "-OP2UktusIt0eOLwnIrI", "-OP2UkvC167jMXB_qvOZ"];
-
-                          // See if player.id matches any known ID with stats
-                          const isKnownId = knownStatsIds.includes(player.id);
-                          console.log(`[KNOWN-ID-CHECK] Player ${player.id} is in known IDs: ${isKnownId}`);
-
-                          // Get stats from matchStatsData
-                          const playerData = matchStatsData[player.id] || {};
-
-                          // Calculate totals
-                          const totalEarnedPoints = (playerData.aces || 0) + (playerData.spikes || 0) +
-                            (playerData.blocks || 0) + (playerData.digs || 0) + (playerData.tips || 0) +
-                            (playerData.dumps || 0);
-
-                          const totalFaults = (playerData.serveErrors || 0) + (playerData.spikeErrors || 0) +
-                            (playerData.netTouches || 0) + (playerData.footFaults || 0) + (playerData.carries || 0) +
-                            (playerData.reaches || 0);
-
-                          const hasStats = totalEarnedPoints > 0 || totalFaults > 0;
-
-                          // Log our findings
-                          console.log(`[STATS-CALC] Player ${player.id}: hasStats=${hasStats}, earnedPoints=${totalEarnedPoints}, faults=${totalFaults}`);
-
-                          return (
-                            <div key={player.id} className="border border-gray-200 rounded-lg p-4">
-                              <h5 className="font-semibold mb-2">
-                                {player.name}
-                                {isKnownId && <span className="text-xs text-blue-600 ml-1">(Has Firebase Stats)</span>}
-                              </h5>
-
-                              {hasStats ? (
-                                <>
-                                  <div className="flex space-x-2 mb-3">
-                                    <div className="px-2 py-1 bg-green-100 text-green-800 rounded-md text-xs font-medium">
-                                      Points: {totalEarnedPoints}
-                                    </div>
-                                    <div className="px-2 py-1 bg-red-100 text-red-800 rounded-md text-xs font-medium">
-                                      Faults: {totalFaults}
-                                    </div>
+                    <div className="space-y-4">
+                      {playersA.map(player => {
+                        const logs = statLogs.filter(log => log.playerId === player.id);
+                        const statTotals: Partial<PlayerStats> = {};
+                        logs.forEach(log => {
+                          if (log.statName) {
+                            const statName = log.statName as keyof PlayerStats;
+                            statTotals[statName] = (statTotals[statName] || 0) + (log.value || 1);
+                          }
+                        });
+                        const totalEarnedPoints = (statTotals.aces || 0) + (statTotals.spikes || 0) + (statTotals.blocks || 0) +
+                          (statTotals.digs || 0) + (statTotals.tips || 0) + (statTotals.dumps || 0);
+                        const totalFaults = (statTotals.serveErrors || 0) + (statTotals.spikeErrors || 0) +
+                          (statTotals.netTouches || 0) + (statTotals.footFaults || 0) + (statTotals.carries || 0) +
+                          (statTotals.reaches || 0);
+                        const hasStats = totalEarnedPoints > 0 || totalFaults > 0;
+                        return (
+                          <div
+                            key={player.id}
+                            className="rounded-lg p-4 border-2 shadow"
+                            style={{
+                              backgroundColor: getOptimizedTextStyle(teamA?.teamColor || '#3B82F6').backgroundColor || teamA?.teamColor || '#3B82F6',
+                              color: getOptimizedTextStyle(teamA?.teamColor || '#3B82F6').color || '#fff',
+                              borderColor: teamA?.teamColor || '#3B82F6'
+                            }}
+                          >
+                            <h5 className="font-semibold mb-2">{player?.name || player.id}</h5>
+                            {hasStats ? (
+                              <>
+                                <div className="flex space-x-2 mb-3">
+                                  <div className="px-2 py-1 bg-white bg-opacity-30 rounded-md text-xs font-medium">
+                                    Points: {totalEarnedPoints}
                                   </div>
-
-                                  <div className="flex flex-wrap gap-2">
-                                    {Object.entries(playerData).map(([key, value]) => {
-                                      if (value && typeof value === 'number' && value > 0) {
-                                        const statName = key as keyof PlayerStats;
-                                        return (
-                                          <div
-                                            key={key}
-                                            className={`flex items-center py-1 px-2 rounded text-white text-xs ${getStatCategoryColor(statName)}`}
-                                            title={`${statName}: ${value}`}
-                                          >
-                                            <span className="mr-1">{getStatEmoji(statName)}</span>
-                                            <span className="capitalize">{statName}: {value}</span>
-                                          </div>
-                                        );
-                                      }
-                                      return null;
-                                    })}
+                                  <div className="px-2 py-1 bg-white bg-opacity-30 rounded-md text-xs font-medium">
+                                    Faults: {totalFaults}
                                   </div>
-                                </>
-                              ) : (
-                                <div className="text-sm text-gray-500">No recorded stats for this player</div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  {Object.entries(statTotals).map(([key, value]) => {
+                                    if (value > 0) {
+                                      const statName = key as keyof PlayerStats;
+                                      return (
+                                        <div
+                                          key={key}
+                                          className={`flex items-center py-1 px-2 rounded text-xs ${getStatCategoryColor(statName)} bg-white bg-opacity-20`}
+                                          title={`${statName}: ${value}`}
+                                        >
+                                          <span className="mr-1">{getStatEmoji(statName)}</span>
+                                          <span className="capitalize">{statName}: {value}</span>
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  })}
+                                </div>
+                              </>
+                            ) : (
+                              <div className="text-sm opacity-80">No recorded stats for this player</div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                )}
+                  {/* Team B Column */}
+                  <div>
+                    <div
+                      className="text-center text-lg font-bold mb-3 py-2 rounded"
+                      style={{
+                        backgroundColor: getOptimizedTextStyle(teamB?.teamColor || '#EAB308').backgroundColor || teamB?.teamColor || '#EAB308',
+                        color: getOptimizedTextStyle(teamB?.teamColor || '#EAB308').color || '#fff',
+                      }}
+                    >
+                      {teamB?.teamName || 'Team B'}
+                    </div>
+                    <div className="space-y-4">
+                      {playersB.map(player => {
+                        const logs = statLogs.filter(log => log.playerId === player.id);
+                        const statTotals: Partial<PlayerStats> = {};
+                        logs.forEach(log => {
+                          if (log.statName) {
+                            const statName = log.statName as keyof PlayerStats;
+                            statTotals[statName] = (statTotals[statName] || 0) + (log.value || 1);
+                          }
+                        });
+                        const totalEarnedPoints = (statTotals.aces || 0) + (statTotals.spikes || 0) + (statTotals.blocks || 0) +
+                          (statTotals.digs || 0) + (statTotals.tips || 0) + (statTotals.dumps || 0);
+                        const totalFaults = (statTotals.serveErrors || 0) + (statTotals.spikeErrors || 0) +
+                          (statTotals.netTouches || 0) + (statTotals.footFaults || 0) + (statTotals.carries || 0) +
+                          (statTotals.reaches || 0);
+                        const hasStats = totalEarnedPoints > 0 || totalFaults > 0;
+                        return (
+                          <div
+                            key={player.id}
+                            className="rounded-lg p-4 border-2 shadow"
+                            style={{
+                              backgroundColor: getOptimizedTextStyle(teamB?.teamColor || '#EAB308').backgroundColor || teamB?.teamColor || '#EAB308',
+                              color: getOptimizedTextStyle(teamB?.teamColor || '#EAB308').color || '#fff',
+                              borderColor: teamB?.teamColor || '#EAB308'
+                            }}
+                          >
+                            <h5 className="font-semibold mb-2">{player?.name || player.id}</h5>
+                            {hasStats ? (
+                              <>
+                                <div className="flex space-x-2 mb-3">
+                                  <div className="px-2 py-1 bg-white bg-opacity-30 rounded-md text-xs font-medium">
+                                    Points: {totalEarnedPoints}
+                                  </div>
+                                  <div className="px-2 py-1 bg-white bg-opacity-30 rounded-md text-xs font-medium">
+                                    Faults: {totalFaults}
+                                  </div>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  {Object.entries(statTotals).map(([key, value]) => {
+                                    if (value > 0) {
+                                      const statName = key as keyof PlayerStats;
+                                      return (
+                                        <div
+                                          key={key}
+                                          className={`flex items-center py-1 px-2 rounded text-xs ${getStatCategoryColor(statName)} bg-white bg-opacity-20`}
+                                          title={`${statName}: ${value}`}
+                                        >
+                                          <span className="mr-1">{getStatEmoji(statName)}</span>
+                                          <span className="capitalize">{statName}: {value}</span>
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  })}
+                                </div>
+                              </>
+                            ) : (
+                              <div className="text-sm opacity-80">No recorded stats for this player</div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

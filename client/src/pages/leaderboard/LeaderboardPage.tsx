@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getPlayers, getMatches, getMatchStats } from '@/lib/firebase';
+import { getPlayers, getMatches, getMatchStats, getTeams } from '@/lib/firebase';
 import type { Player, Match, PlayerStats } from '@shared/schema';
 import { Trophy, Medal, Users, ArrowUp, ArrowDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -10,7 +10,10 @@ type PlayerWithScore = {
   player: Player;
   score: number;
   matchCount: number;
-  teamName?: string;
+  team?: {
+    name: string;
+    color: string;
+  };
   stats: PlayerStats;
 };
 
@@ -45,7 +48,7 @@ const LeaderboardPage = () => {
       footFaults: -1,
       reaches: -1,
       carries: -1,
-      outOfBounds: -1, 
+      outOfBounds: -1,
       faults: -1
     };
 
@@ -73,7 +76,7 @@ const LeaderboardPage = () => {
   // Sort players based on selected field and direction
   const sortedPlayers = [...playersWithScores].sort((a, b) => {
     let comparison = 0;
-    
+
     switch (sortField) {
       case 'score':
         comparison = b.score - a.score; // Higher score first
@@ -82,7 +85,7 @@ const LeaderboardPage = () => {
         comparison = a.player.name.localeCompare(b.player.name);
         break;
       case 'team':
-        comparison = (a.teamName || '').localeCompare(b.teamName || '');
+        comparison = (a.team?.name || '').localeCompare(b.team?.name || '');
         break;
       case 'matches':
         comparison = b.matchCount - a.matchCount; // More matches first
@@ -90,14 +93,14 @@ const LeaderboardPage = () => {
       default:
         comparison = b.score - a.score;
     }
-    
+
     // Reverse if ascending
     return sortDirection === 'asc' ? -comparison : comparison;
   });
-  
+
   // Get the top player for MVP badge
-  const mvpPlayer = playersWithScores.length > 0 
-    ? [...playersWithScores].sort((a, b) => b.score - a.score)[0] 
+  const mvpPlayer = playersWithScores.length > 0
+    ? [...playersWithScores].sort((a, b) => b.score - a.score)[0]
     : null;
 
   useEffect(() => {
@@ -170,13 +173,16 @@ const LeaderboardPage = () => {
             reaches: 0,
             carries: 0,
             points: 0,
-            outOfBounds: 0, 
+            outOfBounds: 0,
             faults: 0,
             neutralBlocks: 0
           },
           matchCount: 0
         });
       });
+
+      // Get all teams data
+      const teamsData = await getTeams();
 
       // For each match, get stats and add to player totals
       for (const matchId of Object.keys(matches)) {
@@ -187,13 +193,23 @@ const LeaderboardPage = () => {
           // Add stats for each player in this match
           Object.entries(matchStats).forEach(([playerId, stats]) => {
             const playerData = playerStatsMap.get(playerId);
-            
+
             if (playerData) {
-              // Since we don't have direct access to team players, 
-              // we'll use a simple approach of matching with one of the teams
-              // We can enhance this later if needed with a more robust team assignment
-              const teamId = match.teamA;
-              
+              // Find which team this player belongs to
+              let teamId = '';
+              let teamInfo = null;
+
+              // Check team A
+              if (teamsData[match.teamA]?.players?.includes(playerId)) {
+                teamId = match.teamA;
+                teamInfo = teamsData[match.teamA];
+              }
+              // Check team B
+              else if (teamsData[match.teamB]?.players?.includes(playerId)) {
+                teamId = match.teamB;
+                teamInfo = teamsData[match.teamB];
+              }
+
               // Update stats
               const updatedStats = { ...playerData.stats };
               Object.keys(stats).forEach(key => {
@@ -217,16 +233,22 @@ const LeaderboardPage = () => {
 
       // Calculate scores and create the leaderboard data
       const playersWithScoresData = Array.from(playerStatsMap.entries())
-        .map(([id, data]) => ({
-          id,
-          player: players[id],
-          score: calculatePlayerScore(data.stats),
-          matchCount: data.matchCount,
-          teamName: data.teamId ? teams[data.teamId] : undefined,
-          stats: data.stats
-        }))
+        .map(([id, data]) => {
+          const teamInfo = data.teamId ? teamsData[data.teamId] : null;
+          return {
+            id,
+            player: players[id],
+            score: calculatePlayerScore(data.stats),
+            matchCount: data.matchCount,
+            team: teamInfo ? {
+              name: teamInfo.teamName,
+              color: teamInfo.teamColor || '#3B82F6' // Default to blue if no color specified
+            } : undefined,
+            stats: data.stats
+          };
+        })
         .filter(item => item.matchCount > 0); // Only include players who have participated in matches
-      
+
       setPlayersWithScores(playersWithScoresData);
     } catch (error) {
       console.error('Error processing player statistics:', error);
@@ -262,9 +284,20 @@ const LeaderboardPage = () => {
   // Sort icon helper
   const SortIcon = ({ field }: { field: SortField }) => {
     if (field !== sortField) return null;
-    return sortDirection === 'asc' ? 
-      <ArrowUp className="w-4 h-4 ml-1" /> : 
+    return sortDirection === 'asc' ?
+      <ArrowUp className="w-4 h-4 ml-1" /> :
       <ArrowDown className="w-4 h-4 ml-1" />;
+  };
+
+  // Helper function to determine text color based on background color
+  const getTextColor = (hexColor: string): string => {
+    const c = hexColor.substring(1); // strip #
+    const rgb = parseInt(c, 16); // convert rrggbb to decimal
+    const r = (rgb >> 16) & 0xff;
+    const g = (rgb >> 8) & 0xff;
+    const b = (rgb >> 0) & 0xff;
+    const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
+    return brightness > 150 ? 'black' : 'white';
   };
 
   if (isLoading) {
@@ -304,7 +337,7 @@ const LeaderboardPage = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-10">
                     Rank
                   </th>
-                  <th 
+                  <th
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                     onClick={() => handleSort('name')}
                   >
@@ -313,7 +346,7 @@ const LeaderboardPage = () => {
                       <SortIcon field="name" />
                     </div>
                   </th>
-                  <th 
+                  <th
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                     onClick={() => handleSort('team')}
                   >
@@ -322,7 +355,7 @@ const LeaderboardPage = () => {
                       <SortIcon field="team" />
                     </div>
                   </th>
-                  <th 
+                  <th
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                     onClick={() => handleSort('score')}
                   >
@@ -331,7 +364,7 @@ const LeaderboardPage = () => {
                       <SortIcon field="score" />
                     </div>
                   </th>
-                  <th 
+                  <th
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                     onClick={() => handleSort('matches')}
                   >
@@ -344,8 +377,8 @@ const LeaderboardPage = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {sortedPlayers.map((player, index) => (
-                  <tr 
-                    key={player.id} 
+                  <tr
+                    key={player.id}
                     className={`${index < 3 ? 'bg-gray-50' : ''} hover:bg-gray-50 transition-colors`}
                   >
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -361,15 +394,30 @@ const LeaderboardPage = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {player.teamName || 'Unassigned'}
+                      {player.team ? (
+                        <span
+                          style={{
+                            backgroundColor: player.team.color,
+                            color: getTextColor(player.team.color),
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            fontWeight: 'bold',
+                            display: 'inline-block',
+                          }}
+                        >
+                          {player.team.name}
+                        </span>
+                      ) : (
+                        "Unassigned"
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-semibold text-gray-900">
                         {player.score}
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
-                        <div 
-                          className="bg-blue-600 h-1.5 rounded-full" 
+                        <div
+                          className="bg-blue-600 h-1.5 rounded-full"
                           style={{ width: `${Math.min(100, (player.score / (mvpPlayer?.score || 100)) * 100)}%` }}
                         ></div>
                       </div>

@@ -153,6 +153,18 @@ export const playerStats = pgTable("player_stats", {
   unq: uniqueIndex("player_match_unique").on(t.matchId, t.playerId),
 }));
 
+export const trackerLogs = pgTable("tracker_logs", {
+  id: serial("id").primaryKey(),
+  teamName: text("team_name").notNull(),
+  action: text("action").notNull(),
+  timestamp: timestamp("timestamp", { withTimezone: true }).defaultNow().notNull(),
+  matchId: integer("match_id"),
+  set: integer("set"),
+  playerId: integer("player_id"),
+  details: json("details"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
 }));
@@ -204,6 +216,17 @@ export const playerStatsRelations = relations(playerStats, ({ one }) => ({
   }),
 }));
 
+export const trackerLogsRelations = relations(trackerLogs, ({ one }) => ({
+  match: one(matches, {
+    fields: [trackerLogs.matchId],
+    references: [matches.id],
+  }),
+  player: one(players, {
+    fields: [trackerLogs.playerId],
+    references: [players.id],
+  }),
+}));
+
 // Insert Schemas
 export const insertUserSchema = createInsertSchema(users, {
   isAdmin: z.boolean().default(false)
@@ -246,3 +269,11 @@ export type Match_DB = typeof matches.$inferSelect;
 
 export type InsertPlayerStat = z.infer<typeof insertPlayerStatSchema>;
 export type PlayerStat_DB = typeof playerStats.$inferSelect;
+
+export const insertTrackerLogSchema = createInsertSchema(trackerLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertTrackerLog = z.infer<typeof insertTrackerLogSchema>;
+export type TrackerLog_DB = typeof trackerLogs.$inferSelect;

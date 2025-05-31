@@ -27,8 +27,8 @@ const TrackerLogs = () => {
   const { toast } = useToast();
 
   // Get unique teams and actions for filters
-  const uniqueTeams = [...new Set(logs.map(log => log.teamName))].sort();
-  const uniqueActions = [...new Set(logs.map(log => log.action))].sort();
+  const uniqueTeams = Array.from(new Set(logs.map(log => log.teamName))).sort();
+  const uniqueActions = Array.from(new Set(logs.map(log => log.action))).sort();
 
   useEffect(() => {
     fetchLogs();

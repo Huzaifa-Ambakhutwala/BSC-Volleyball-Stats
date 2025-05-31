@@ -244,7 +244,7 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
   // Display which set is being tracked
   const setDisplay = currentSet ? `Set ${currentSet}` : "Unknown Set";
 
-  const handleStatUpdate = (statName: keyof PlayerStats, label: string, category: 'earned' | 'fault' | 'neutral' = 'earned') => {
+  const handleStatUpdate = async (statName: keyof PlayerStats, label: string, category: 'earned' | 'fault' | 'neutral' = 'earned') => {
     if (!selectedPlayerId || !matchId) return;
 
     // Set loading state
@@ -257,27 +257,50 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
       category = 'neutral'; // Change to neutral category - counted but doesn't affect score
     }
 
-    // Update the stat with category to properly handle scoring, and include current set
-    updatePlayerStat(matchId, selectedPlayerId, statName, 1, category, currentSet)
-      .then(() => {
-        // Show success toast
-        toast({
-          title: "Stat Recorded",
-          description: `${label} stat updated successfully (Set ${currentSet})`,
-          variant: "default",
-        });
-        if (onStatEntered) onStatEntered();
-      })
-      .catch((error) => {
-        toast({
-          title: "Error",
-          description: "Failed to update stat",
-          variant: "destructive",
-        });
-      })
-      .finally(() => {
-        setIsUpdating(false);
+    try {
+      // Update the stat with category to properly handle scoring, and include current set
+      await updatePlayerStat(matchId, selectedPlayerId, statName, 1, category, currentSet);
+      
+      // Log the stat action to TrackerLogs
+      try {
+        const { logStatAction } = await import('@/lib/trackerLogger');
+        const { get, ref, database } = await import('@/lib/firebase');
+        
+        // Get player name for logging
+        const playerRef = ref(database, `players/${selectedPlayerId}`);
+        const playerSnapshot = await get(playerRef);
+        const player = playerSnapshot.val();
+        
+        if (player) {
+          await logStatAction(
+            label,
+            'add',
+            player.name,
+            matchId,
+            currentSet,
+            selectedPlayerId
+          );
+        }
+      } catch (logError) {
+        console.error('Error logging stat action:', logError);
+      }
+      
+      // Show success toast
+      toast({
+        title: "Stat Recorded",
+        description: `${label} stat updated successfully (Set ${currentSet})`,
+        variant: "default",
       });
+      if (onStatEntered) onStatEntered();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update stat",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   return (

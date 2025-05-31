@@ -1,9 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { Download, Search, Filter, Calendar, User, Activity } from 'lucide-react';
+import { Download, Search, Filter, Calendar, User, Activity, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getTrackerLogs } from '@/lib/firebase';
+import { getTrackerLogs, deleteTrackerLog } from '@/lib/firebase';
+import { useAdminPermissions } from '@/hooks/useAdminPermissions';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface TrackerLog {
   id: string;
@@ -28,7 +39,10 @@ const TrackerLogs = () => {
   const [teamFilter, setTeamFilter] = useState('');
   const [actionFilter, setActionFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
+  const [logToDelete, setLogToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
+  const { hasFullAccess } = useAdminPermissions();
 
   // Get unique teams and actions for filters
   const uniqueTeams = Array.from(new Set(logs.map(log => log.teamName))).sort();
@@ -140,6 +154,34 @@ const TrackerLogs = () => {
       return JSON.parse(details);
     } catch {
       return details;
+    }
+  };
+
+  const handleDeleteLog = async (logId: string) => {
+    setLogToDelete(logId);
+  };
+
+  const confirmDelete = async () => {
+    if (!logToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteTrackerLog(logToDelete);
+      setLogs(prevLogs => prevLogs.filter(log => log.id !== logToDelete));
+      toast({
+        title: "Success",
+        description: "Log entry deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting log:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete log entry",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setLogToDelete(null);
     }
   };
 
@@ -293,6 +335,11 @@ const TrackerLogs = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Details
                 </th>
+                {hasFullAccess && (
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -360,6 +407,17 @@ const TrackerLogs = () => {
                         </div>
                       )}
                     </td>
+                    {hasFullAccess && (
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button
+                          onClick={() => handleDeleteLog(log.id)}
+                          className="text-red-600 hover:text-red-900 focus:outline-none"
+                          title="Delete log entry"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 );
               })}
@@ -377,6 +435,35 @@ const TrackerLogs = () => {
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!logToDelete} onOpenChange={() => setLogToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Log Entry</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this log entry? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

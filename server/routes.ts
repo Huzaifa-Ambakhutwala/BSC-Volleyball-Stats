@@ -2,10 +2,10 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
-import { 
-  insertPlayerSchema, 
-  insertTeamSchema, 
-  insertTeamPlayerSchema, 
+import {
+  insertPlayerSchema,
+  insertTeamSchema,
+  insertTeamPlayerSchema,
   insertMatchSchema,
   insertPlayerStatSchema,
   insertTrackerLogSchema
@@ -26,7 +26,7 @@ function isAuthenticated(req: Request, res: Response, next: Function) {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
   setupAuth(app);
-  
+
   // Debug route to provide information about the application configuration
   app.get("/api/debug/env", async (req, res) => {
     try {
@@ -34,8 +34,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         environment: process.env.NODE_ENV,
         hasDatabaseUrl: !!process.env.DATABASE_URL,
-        hasFirebaseConfig: !!process.env.VITE_FIREBASE_API_KEY && 
-                           !!process.env.VITE_FIREBASE_DATABASE_URL,
+        hasFirebaseConfig: !!process.env.VITE_FIREBASE_API_KEY &&
+          !!process.env.VITE_FIREBASE_DATABASE_URL,
         server: 'active'
       });
     } catch (error) {
@@ -43,7 +43,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: String(error) });
     }
   });
-  
+
   // Debug route to check Firebase configuration (redacted to avoid exposing secrets)
   app.get("/api/debug/firebase", async (req, res) => {
     try {
@@ -56,12 +56,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID ? "AVAILABLE" : "MISSING",
         appId: process.env.VITE_FIREBASE_APP_ID ? "AVAILABLE" : "MISSING",
       };
-      
+
       res.json({
         firebaseConfig: firebaseConfigStatus,
         timestamp: new Date().toISOString(),
-        databaseUrlFormat: process.env.VITE_FIREBASE_DATABASE_URL ? 
-          "Appears to be a " + (process.env.VITE_FIREBASE_DATABASE_URL.includes("firebaseio.com") ? "valid" : "suspicious") + " Firebase URL" : 
+        databaseUrlFormat: process.env.VITE_FIREBASE_DATABASE_URL ?
+          "Appears to be a " + (process.env.VITE_FIREBASE_DATABASE_URL.includes("firebaseio.com") ? "valid" : "suspicious") + " Firebase URL" :
           "Missing database URL"
       });
     } catch (error) {
@@ -69,21 +69,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: String(error) });
     }
   });
-  
+
   // Special debug route to test matches for a specific team
   app.get("/api/debug/team-matches/:teamId", async (req, res) => {
     try {
       // Import necessary Firebase functions
       const { initializeApp, getApps } = await import('firebase/app');
       const { getDatabase, ref, get } = await import('firebase/database');
-      
+
       // Get team ID from request params
       const teamId = req.params.teamId;
-      
+
       if (!teamId) {
         return res.status(400).json({ error: "No team ID provided" });
       }
-      
+
       // Initialize Firebase if not already initialized
       if (!getApps().length) {
         const firebaseConfig = {
@@ -95,36 +95,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
           messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
           appId: process.env.VITE_FIREBASE_APP_ID,
         };
-        
+
         initializeApp(firebaseConfig);
       }
-      
+
       // Access the database
       const database = getDatabase();
-      
+
       // Fetch all matches
       const matchesRef = ref(database, 'matches');
       const matchesSnapshot = await get(matchesRef);
       const allMatches = matchesSnapshot.val() || {};
-      
+
       // Fetch all teams for reference (to display names)
       const teamsRef = ref(database, 'teams');
       const teamsSnapshot = await get(teamsRef);
       const allTeams = teamsSnapshot.val() || {};
-      
+
       // Collect detailed match information for the requested team
       const matchSummary = {};
       const matchesAsTeamA = [];
       const matchesAsTeamB = [];
       const matchesAsTracker = [];
-      
+
       // Loop through matches and categorize them
       Object.entries(allMatches).forEach(([matchId, matchData]) => {
         const match = matchData as any;
         const teamAName = allTeams[match.teamA]?.teamName || 'Unknown Team';
         const teamBName = allTeams[match.teamB]?.teamName || 'Unknown Team';
         const trackerTeamName = allTeams[match.trackerTeam]?.teamName || 'Unknown Team';
-        
+
         // Create a match summary with readable info
         const matchInfo = {
           id: matchId,
@@ -145,37 +145,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
           startTime: match.startTime,
           score: `${match.scoreA}-${match.scoreB}`
         };
-        
+
         // Add match to the appropriate category
         if (String(match.teamA) === String(teamId)) {
           matchesAsTeamA.push(matchInfo);
         }
-        
+
         if (String(match.teamB) === String(teamId)) {
           matchesAsTeamB.push(matchInfo);
         }
-        
+
         // Check for tracker team using both direct and looser comparison
         if (
-          String(match.trackerTeam) === String(teamId) || 
-          (match.trackerTeam && teamId && 
-           (String(match.trackerTeam).includes(teamId) || 
-            String(teamId).includes(match.trackerTeam)))
+          String(match.trackerTeam) === String(teamId) ||
+          (match.trackerTeam && teamId &&
+            (String(match.trackerTeam).includes(teamId) ||
+              String(teamId).includes(match.trackerTeam)))
         ) {
           matchesAsTracker.push(matchInfo);
         }
       });
-      
+
       // Check for any exact string matches in the raw data
       const exactStringMatches = Object.entries(allMatches)
         .filter(([_, match]) => String((match as any).trackerTeam) === String(teamId))
         .map(([id]) => id);
-      
+
       // Compile results
       matchSummary['asTeamA'] = matchesAsTeamA;
       matchSummary['asTeamB'] = matchesAsTeamB;
       matchSummary['asTracker'] = matchesAsTracker;
-      
+
       res.json({
         teamId,
         matchCounts: {
@@ -216,7 +216,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!player) {
         return res.status(404).json({ message: "Player not found" });
       }
-      
+
       res.json(player);
     } catch (error) {
       res.status(500).json({ message: "Error fetching player", error });
@@ -257,7 +257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!team) {
         return res.status(404).json({ message: "Team not found" });
       }
-      
+
       res.json(team);
     } catch (error) {
       res.status(500).json({ message: "Error fetching team", error });
@@ -326,7 +326,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!match) {
         return res.status(404).json({ message: "Match not found" });
       }
-      
+
       res.json(match);
     } catch (error) {
       res.status(500).json({ message: "Error fetching match", error });
@@ -376,7 +376,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!match) {
         return res.status(404).json({ message: "Match not found" });
       }
-      
+
       res.json(match);
     } catch (error) {
       res.status(500).json({ message: "Error updating match score", error });
@@ -402,7 +402,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const matchId = parseInt(req.params.matchId);
       const playerId = parseInt(req.params.playerId);
-      
+
       if (isNaN(matchId) || isNaN(playerId)) {
         return res.status(400).json({ message: "Invalid IDs" });
       }
@@ -411,7 +411,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!stats) {
         return res.status(404).json({ message: "Stats not found" });
       }
-      
+
       res.json(stats);
     } catch (error) {
       res.status(500).json({ message: "Error fetching player stats", error });
@@ -435,7 +435,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const matchId = parseInt(req.params.matchId);
       const playerId = parseInt(req.params.playerId);
-      
+
       if (isNaN(matchId) || isNaN(playerId)) {
         return res.status(400).json({ message: "Invalid IDs" });
       }
@@ -450,7 +450,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!updatedStats) {
         return res.status(404).json({ message: "Stats not found" });
       }
-      
+
       res.json(updatedStats);
     } catch (error) {
       res.status(500).json({ message: "Error updating player stats", error });
@@ -542,7 +542,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const timestamp = new Date().toISOString();
       const feedbackId = `feedback-${Date.now()}`;
-      
+
       const feedbackData = {
         id: feedbackId,
         type,
@@ -571,7 +571,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const filename = req.params.filename;
       const filePath = path.join(process.cwd(), 'feedback', 'screenshots', filename);
-      
+
       // Check if file exists
       try {
         await fs.access(filePath);
@@ -585,15 +585,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete feedback (admin only)
+  app.delete("/api/feedback/:feedbackId", isAuthenticated, async (req, res) => {
+    try {
+      const feedbackId = req.params.feedbackId;
+      const feedbackDir = path.join(process.cwd(), 'feedback');
+      const feedbackFile = path.join(feedbackDir, `${feedbackId}.json`);
+      
+      // Read the feedback file to get screenshot path before deleting
+      let screenshotPath = null;
+      try {
+        const content = await fs.readFile(feedbackFile, 'utf8');
+        const feedbackData = JSON.parse(content);
+        screenshotPath = feedbackData.screenshotPath;
+      } catch (error) {
+        // Feedback file doesn't exist
+        return res.status(404).json({ message: "Feedback not found" });
+      }
+      
+      // Delete the feedback JSON file
+      await fs.unlink(feedbackFile);
+      
+      // Delete the screenshot file if it exists
+      if (screenshotPath) {
+        const fullScreenshotPath = path.join(process.cwd(), screenshotPath);
+        try {
+          await fs.unlink(fullScreenshotPath);
+        } catch (error) {
+          console.warn('Screenshot file not found or already deleted:', screenshotPath);
+        }
+      }
+      
+      res.json({ message: "Feedback deleted successfully" });
+    } catch (error) {
+      console.error('Error deleting feedback:', error);
+      res.status(500).json({ message: "Error deleting feedback" });
+    }
+  });
+
   // Get all feedback (admin only)
   app.get("/api/feedback", isAuthenticated, async (req, res) => {
     try {
       const feedbackDir = path.join(process.cwd(), 'feedback');
-      
+
       try {
         const files = await fs.readdir(feedbackDir);
         const feedbackFiles = files.filter((file: string) => file.endsWith('.json'));
-        
+
         const feedbackData = await Promise.all(
           feedbackFiles.map(async (file: string) => {
             try {
@@ -620,6 +658,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching feedback:', error);
       res.status(500).json({ message: "Error fetching feedback" });
+    }
+  });
+
+  // Delete feedback (admin only)
+  app.delete("/api/feedback/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const feedbackId = req.params.id;
+      const feedbackDir = path.join(process.cwd(), 'feedback');
+      const feedbackFile = path.join(feedbackDir, `${feedbackId}.json`);
+
+      // Read the feedback file to get screenshot path
+      const feedbackContent = await fs.readFile(feedbackFile, 'utf8');
+      const feedbackData = JSON.parse(feedbackContent);
+
+      // Delete the feedback JSON file
+      await fs.unlink(feedbackFile);
+
+      // If there's a screenshot, delete it too
+      if (feedbackData.screenshotPath) {
+        const screenshotPath = path.join(process.cwd(), feedbackData.screenshotPath);
+        try {
+          await fs.unlink(screenshotPath);
+        } catch (error) {
+          console.error('Error deleting screenshot:', error);
+          // Continue even if screenshot deletion fails
+        }
+      }
+
+      res.status(200).json({ message: "Feedback deleted successfully" });
+    } catch (error) {
+      console.error('Error deleting feedback:', error);
+      res.status(500).json({ message: "Error deleting feedback" });
     }
   });
 

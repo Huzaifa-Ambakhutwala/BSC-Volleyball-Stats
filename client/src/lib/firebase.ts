@@ -1516,6 +1516,16 @@ export const deleteAdminUser = async (username: string): Promise<boolean> => {
   }
 };
 
+export const deleteTrackerLog = async (logId: string): Promise<void> => {
+  try {
+    const logRef = ref(database, `trackerLogs/${logId}`);
+    await remove(logRef);
+  } catch (error) {
+    console.error('Error deleting tracker log:', error);
+    throw error;
+  }
+};
+
 
 
 

@@ -3,8 +3,19 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Image, Calendar, Filter, RefreshCw } from 'lucide-react';
+import { MessageSquare, Image, Calendar, Filter, RefreshCw, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { useAdminPermissions } from '@/hooks/useAdminPermissions';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface FeedbackSubmission {
   id: string;
@@ -20,7 +31,10 @@ const FeedbackView = () => {
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
+  const [feedbackToDelete, setFeedbackToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
+  const { hasFullAccess } = useAdminPermissions();
 
   const feedbackTypes = ['Bug', 'Glitch', 'UI Issue', 'Feature Request', 'Other'];
 
@@ -47,6 +61,36 @@ const FeedbackView = () => {
       setLoading(false);
     }
   };
+
+  const deleteFeedback = async (feedbackId: string) => {
+    try {
+      const response = await fetch(`/api/feedback/${feedbackId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete feedback');
+      }
+
+      toast({
+        title: "Success",
+        description: "Feedback deleted successfully",
+      });
+
+      // Refresh the feedback list
+      fetchFeedback();
+    } catch (error) {
+      console.error('Error deleting feedback:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete feedback",
+        variant: "destructive",
+      });
+    }
+  };
+
+
 
   useEffect(() => {
     fetchFeedback();
@@ -86,6 +130,42 @@ const FeedbackView = () => {
         return 'bg-gray-100 text-gray-800 border-gray-200';
       default:
         return 'bg-blue-100 text-blue-800 border-blue-200';
+    }
+  };
+
+  const handleDeleteFeedback = async (feedbackId: string) => {
+    setFeedbackToDelete(feedbackId);
+  };
+
+  const confirmDelete = async () => {
+    if (!feedbackToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/feedback/${feedbackToDelete}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete feedback');
+      }
+
+      setFeedback(prevFeedback => prevFeedback.filter(item => item.id !== feedbackToDelete));
+      toast({
+        title: "Success",
+        description: "Feedback deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting feedback:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete feedback",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setFeedbackToDelete(null);
     }
   };
 
@@ -201,8 +281,8 @@ const FeedbackView = () => {
               <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No feedback found</h3>
               <p className="text-gray-600">
-                {feedback.length === 0 
-                  ? "No feedback submissions yet." 
+                {feedback.length === 0
+                  ? "No feedback submissions yet."
                   : "No feedback matches the current filters."}
               </p>
             </div>
@@ -221,12 +301,23 @@ const FeedbackView = () => {
                           {format(new Date(item.timestamp), 'PPp')}
                         </div>
                       </div>
-                      {item.screenshotPath && (
-                        <Badge variant="outline" className="flex items-center">
-                          <Image className="h-3 w-3 mr-1" />
-                          Screenshot
-                        </Badge>
-                      )}
+                      <div className="flex items-center space-x-2">
+                        {item.screenshotPath && (
+                          <Badge variant="outline" className="flex items-center">
+                            <Image className="h-3 w-3 mr-1" />
+                            Screenshot
+                          </Badge>
+                        )}
+                        {hasFullAccess && (
+                          <button
+                            onClick={() => handleDeleteFeedback(item.id)}
+                            className="text-red-600 hover:text-red-900 focus:outline-none"
+                            title="Delete feedback"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <div className="mb-4">
@@ -262,6 +353,35 @@ const FeedbackView = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!feedbackToDelete} onOpenChange={() => setFeedbackToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Feedback</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this feedback submission? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

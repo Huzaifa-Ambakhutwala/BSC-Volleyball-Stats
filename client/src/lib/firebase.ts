@@ -246,7 +246,14 @@ export const createTeam = async (teamName: string, playerIds: string[], teamColo
   const teamsRef = ref(database, 'teams');
   const newTeamRef = push(teamsRef);
   await set(newTeamRef, { teamName, players: playerIds, teamColor });
-  return newTeamRef.key;
+  const teamId = newTeamRef.key;
+
+  // Set default password of "0000" for the new team
+  if (teamId) {
+    await setTeamPassword(teamId, "0000");
+  }
+
+  return teamId;
 };
 
 export const getTeams = async (): Promise<Record<string, Team>> => {

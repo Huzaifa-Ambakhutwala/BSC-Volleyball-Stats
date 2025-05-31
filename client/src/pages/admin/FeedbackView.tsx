@@ -62,33 +62,7 @@ const FeedbackView = () => {
     }
   };
 
-  const deleteFeedback = async (feedbackId: string) => {
-    try {
-      const response = await fetch(`/api/feedback/${feedbackId}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
 
-      if (!response.ok) {
-        throw new Error('Failed to delete feedback');
-      }
-
-      toast({
-        title: "Success",
-        description: "Feedback deleted successfully",
-      });
-
-      // Refresh the feedback list
-      fetchFeedback();
-    } catch (error) {
-      console.error('Error deleting feedback:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete feedback",
-        variant: "destructive",
-      });
-    }
-  };
 
 
 

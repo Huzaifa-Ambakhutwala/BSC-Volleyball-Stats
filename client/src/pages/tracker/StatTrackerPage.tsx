@@ -494,13 +494,15 @@ const StatTrackerPage = () => {
   const handleAdvanceToNextSet = async () => {
     if (!currentMatch || !selectedMatchId) return;
 
-    // Get the current set or default to 1
-    const currentSetNumber = currentMatch.currentSet || 1;
+    // Use the current set state that the user is viewing, not the match's currentSet
+    const currentSetNumber = currentSet;
 
     // Log current match state before advancing
     console.log('[AdvanceSet] Attempting to advance', {
       matchId: selectedMatchId,
       currentSetNumber,
+      viewingSet: currentSet,
+      matchCurrentSet: currentMatch.currentSet,
       completedSets: currentMatch.completedSets,
       match: currentMatch
     });

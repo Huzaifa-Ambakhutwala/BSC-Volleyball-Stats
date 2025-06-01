@@ -79,12 +79,18 @@ const PlayerStatActions = ({ player, playerId, matchId, teamId, teamColor: propT
 
   return (
     <div
-      className={`w-full cursor-pointer rounded-lg p-3 transition-all duration-200 border-2 ${isSelected ? 'shadow-lg' : 'hover:shadow-md'
-        }`}
+      className={`w-full cursor-pointer rounded-lg p-3 transition-all duration-200 border-4 ${
+        isSelected 
+          ? 'shadow-2xl transform scale-105' 
+          : 'hover:shadow-md border-2'
+      }`}
       style={{
         ...(teamColor ? getOptimizedTextStyle(teamColor) : {}),
         backgroundColor: teamColor ? (getOptimizedTextStyle(teamColor).backgroundColor || teamColor) : '#f8f9fa',
-        borderColor: isSelected ? '#666' : teamColor || '#d1d5db'
+        borderColor: isSelected ? '#FFD700' : teamColor || '#d1d5db',
+        ...(isSelected && {
+          boxShadow: '0 0 20px rgba(255, 215, 0, 0.6), 0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+        })
       }}
       onClick={onSelect}
     >

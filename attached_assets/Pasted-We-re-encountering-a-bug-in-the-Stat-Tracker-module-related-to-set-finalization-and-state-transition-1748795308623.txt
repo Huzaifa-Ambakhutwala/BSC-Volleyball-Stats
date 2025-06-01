@@ -1,0 +1,34 @@
+We’re encountering a bug in the Stat Tracker module related to set finalization and state transitions.
+
+🔍 Issue Description:
+	1.	Set 1 is finalized, but Set 2 remains locked or shows “Set 1 needs to be finalized” even though it is.
+	2.	Clicking on finalize for Set 2 sometimes throws an incorrect message: "Set 1 has already been finalized and cannot be modified" — even though the action is for Set 2.
+	3.	In other cases, the UI doesn’t reflect the correct state and gets stuck on Set 1, blocking progression.
+
+✅ Expected Behavior:
+	•	Once Set 1 is finalized and locked, Set 2 should unlock and become available for tracking and finalization.
+	•	Set state transitions should follow a strict logic:
+	•	Set 1 → Set 2 → Set 3.
+	•	Finalization button should trigger logic specifically for the currently active (and available) set, not always Set 1.
+	•	UI and backend must stay in sync for:
+	•	setStatus (locked/available/finalized)
+	•	currentSet
+	•	matchId, setNumber
+
+🧪 Suggested Debug Steps:
+	•	Check logic in backend/API where finalization happens — ensure it’s updating the correct set’s status.
+	•	Ensure currentSet state in frontend is dynamically mapped to the set being finalized, not hardcoded.
+	•	Confirm matchProgress state (or similar) properly updates unlocked status of the next set after current set is finalized.
+	•	Inspect the guard conditions preventing access to next set — especially the ones checking if previous set is finalized.
+	•	Test if the lockSet or finalizeSet functions are being called with correct setIndex or setId.
+
+📍 Location to Check in Code:
+	•	StatTrackerLogic.tsx or wherever set finalization buttons are handled.
+	•	Any utility like getSetStatus, handleFinalizeSet, or mutation calls like updateSetStatus.
+
+📌 Fix Checklist:
+	•	Ensure correct set index is passed in finalization logic.
+	•	Unlock next set after previous set is marked as “finalized”.
+	•	Update UI state (tabs/buttons) based on latest set status from server.
+	•	Add error boundary to show which set is actually failing, not always default to Set 1.
+	•	Retest by finalizing Set 1 and then ensuring Set 2 is immediately available.

@@ -451,14 +451,21 @@ const StatTrackerPage = () => {
     }
 
     // Check if we're trying to access a future set that's not unlocked yet
-    const currentMatchSet = currentMatch.currentSet || 1;
-    if (setNumber > currentMatchSet) {
-      toast({
-        title: `Set ${setNumber} Not Available`,
-        description: `You need to finalize set ${currentMatchSet} first before accessing set ${setNumber}.`,
-        variant: "destructive",
-      });
-      return;
+    // A set is available if:
+    // 1. It's set 1 (always available)
+    // 2. The previous set has been completed
+    if (setNumber > 1) {
+      const previousSetKey = `set${setNumber - 1}` as keyof typeof currentMatch.completedSets;
+      const isPreviousSetCompleted = currentMatch.completedSets?.[previousSetKey] || false;
+      
+      if (!isPreviousSetCompleted) {
+        toast({
+          title: `Set ${setNumber} Not Available`,
+          description: `You need to finalize set ${setNumber - 1} first before accessing set ${setNumber}.`,
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     // If validation passes, change the set

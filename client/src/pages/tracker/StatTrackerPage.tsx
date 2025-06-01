@@ -327,14 +327,25 @@ const StatTrackerPage = () => {
       console.log(`[SmartNavigation] Checking navigation for set ${currentSet}`, {
         currentSet,
         completedSets: currentMatch.completedSets,
+        matchStatus: currentMatch.status,
         isCurrentSetLocked: isSetLocked(currentMatch, currentSet)
       });
+      
+      // Check if all sets are completed (match is finished)
+      const allSetsCompleted = [1, 2, 3].every(setNum => isSetLocked(currentMatch, setNum));
+      
+      if (allSetsCompleted && currentMatch.status === 'completed') {
+        console.log(`[SmartNavigation] Match is completely finished, showing final state`);
+        // For completed matches, show the last set for viewing but don't allow interaction
+        setCurrentSet(3);
+        return;
+      }
       
       const availableSet = findFirstAvailableSet(currentMatch);
       console.log(`[SmartNavigation] First available set is: ${availableSet}`);
       
-      // If the current set we're viewing is locked
-      if (isSetLocked(currentMatch, currentSet)) {
+      // If the current set we're viewing is locked and there's an available set
+      if (isSetLocked(currentMatch, currentSet) && !allSetsCompleted) {
         if (availableSet !== currentSet) {
           console.log(`[SmartNavigation] Current set ${currentSet} is locked, auto-navigating to set ${availableSet}`);
           setCurrentSet(availableSet);
@@ -347,7 +358,7 @@ const StatTrackerPage = () => {
         }
       }
     }
-  }, [currentMatch?.completedSets, currentMatch?.currentSet, currentSet, toast]);
+  }, [currentMatch?.completedSets, currentMatch?.currentSet, currentMatch?.status, currentSet, toast]);
 
   // Load all teams for mapping team IDs to names
   useEffect(() => {
@@ -374,8 +385,8 @@ const StatTrackerPage = () => {
         return setNumber;
       }
     }
-    // If all sets are locked, return the last set (for viewing purposes)
-    return match.currentSet || 3;
+    // If all sets are locked, return the highest completed set for viewing
+    return 3;
   };
 
   const handleMatchSelect = (matchId: string) => {

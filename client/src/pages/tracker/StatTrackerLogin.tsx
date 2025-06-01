@@ -185,7 +185,7 @@ const StatTrackerLogin = () => {
               <Lock className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              If this is your first login, the password you enter will be set as your team password.
+              Default password is 0000
             </p>
           </div>
           

@@ -534,7 +534,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Submit feedback (public endpoint)
   app.post("/api/feedback", upload.single('screenshot'), async (req: any, res) => {
     try {
-      const { type, message } = req.body;
+      const { type, message, email } = req.body;
 
       if (!type || !message) {
         return res.status(400).json({ message: "Type and message are required" });
@@ -544,20 +544,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const feedbackId = `feedback-${Date.now()}`;
 
       const feedbackData = {
-        id: feedbackId,
+        feedbackId,
         type,
         message,
-        timestamp,
-        screenshotPath: req.file ? `feedback/screenshots/${req.file.filename}` : undefined
+        email: email || null,
+        timestamp
       };
 
-      // Ensure feedback directory exists
-      const feedbackDir = path.join(process.cwd(), 'feedback');
-      await fs.mkdir(feedbackDir, { recursive: true });
-
-      // Save feedback as JSON file
-      const feedbackFile = path.join(feedbackDir, `${feedbackId}.json`);
-      await fs.writeFile(feedbackFile, JSON.stringify(feedbackData, null, 2));
+      // Save feedback to database
+      const savedFeedback = await storage.createFeedback(feedbackData);
 
       res.status(201).json({ message: "Feedback submitted successfully", id: feedbackId });
     } catch (error) {
@@ -605,72 +600,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all feedback (admin only)
   app.get("/api/feedback", isAuthenticated, async (req, res) => {
     try {
-      const feedbackDir = path.join(process.cwd(), 'feedback');
-
-      try {
-        const files = await fs.readdir(feedbackDir);
-        const feedbackFiles = files.filter((file: string) => file.endsWith('.json'));
-
-        const feedbackData = await Promise.all(
-          feedbackFiles.map(async (file: string) => {
-            try {
-              const filePath = path.join(feedbackDir, file);
-              const content = await fs.readFile(filePath, 'utf8');
-              return JSON.parse(content);
-            } catch (error) {
-              console.error(`Error reading feedback file ${file}:`, error);
-              return null;
-            }
-          })
-        );
-
-        // Filter out any null entries and sort by timestamp (newest first)
-        const validFeedback = feedbackData
-          .filter(item => item !== null)
-          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-
-        res.json(validFeedback);
-      } catch (error) {
-        // If feedback directory doesn't exist, return empty array
-        res.json([]);
-      }
+      const feedbackList = await storage.getFeedback();
+      res.json(feedbackList);
     } catch (error) {
       console.error('Error fetching feedback:', error);
       res.status(500).json({ message: "Error fetching feedback" });
     }
   });
 
-  // Delete feedback (admin only)
-  app.delete("/api/feedback/:id", isAuthenticated, async (req: any, res) => {
-    try {
-      const feedbackId = req.params.id;
-      const feedbackDir = path.join(process.cwd(), 'feedback');
-      const feedbackFile = path.join(feedbackDir, `${feedbackId}.json`);
 
-      // Read the feedback file to get screenshot path
-      const feedbackContent = await fs.readFile(feedbackFile, 'utf8');
-      const feedbackData = JSON.parse(feedbackContent);
-
-      // Delete the feedback JSON file
-      await fs.unlink(feedbackFile);
-
-      // If there's a screenshot, delete it too
-      if (feedbackData.screenshotPath) {
-        const screenshotPath = path.join(process.cwd(), feedbackData.screenshotPath);
-        try {
-          await fs.unlink(screenshotPath);
-        } catch (error) {
-          console.error('Error deleting screenshot:', error);
-          // Continue even if screenshot deletion fails
-        }
-      }
-
-      res.status(200).json({ message: "Feedback deleted successfully" });
-    } catch (error) {
-      console.error('Error deleting feedback:', error);
-      res.status(500).json({ message: "Error deleting feedback" });
-    }
-  });
 
   const httpServer = createServer(app);
   return httpServer;

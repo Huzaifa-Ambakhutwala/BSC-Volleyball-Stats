@@ -274,21 +274,7 @@ const StatTrackerPage = () => {
 
       loadMatchTeams();
 
-      // Smart set navigation: if current set is locked, move to next available set
-      if (isSetLocked(currentMatch, currentSet)) {
-        const nextAvailableSet = findFirstAvailableSet(currentMatch);
-        if (nextAvailableSet !== currentSet) {
-          console.log(`[StatTrackerPage] Current set ${currentSet} is locked, auto-navigating to set ${nextAvailableSet}`);
-          setCurrentSet(nextAvailableSet);
-          
-          // Show informative message about auto-navigation
-          toast({
-            title: `Moved to Set ${nextAvailableSet}`,
-            description: `Set ${currentSet} is finalized. Automatically switched to the next available set.`,
-            variant: "default",
-          });
-        }
-      }
+
     }
 
     return () => {
@@ -334,6 +320,34 @@ const StatTrackerPage = () => {
 
     loadTeams();
   }, [currentMatch, teamA?.id, teamB?.id, toast]);
+
+  // Smart navigation: automatically move to available set when match data changes
+  useEffect(() => {
+    if (currentMatch && currentMatch.completedSets) {
+      console.log(`[SmartNavigation] Checking navigation for set ${currentSet}`, {
+        currentSet,
+        completedSets: currentMatch.completedSets,
+        isCurrentSetLocked: isSetLocked(currentMatch, currentSet)
+      });
+      
+      const availableSet = findFirstAvailableSet(currentMatch);
+      console.log(`[SmartNavigation] First available set is: ${availableSet}`);
+      
+      // If the current set we're viewing is locked
+      if (isSetLocked(currentMatch, currentSet)) {
+        if (availableSet !== currentSet) {
+          console.log(`[SmartNavigation] Current set ${currentSet} is locked, auto-navigating to set ${availableSet}`);
+          setCurrentSet(availableSet);
+          
+          toast({
+            title: `Moved to Set ${availableSet}`,
+            description: `Set ${currentSet} is finalized. Automatically switched to the next available set.`,
+            variant: "default",
+          });
+        }
+      }
+    }
+  }, [currentMatch?.completedSets, currentMatch?.currentSet, currentSet, toast]);
 
   // Load all teams for mapping team IDs to names
   useEffect(() => {

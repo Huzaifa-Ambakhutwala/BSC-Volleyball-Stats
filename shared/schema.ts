@@ -170,7 +170,7 @@ export const feedback = pgTable("feedback", {
   feedbackId: text("feedback_id").notNull().unique(),
   type: text("type").notNull(),
   message: text("message").notNull(),
-  screenshotPath: text("screenshot_path"),
+  email: text("email"),
   timestamp: timestamp("timestamp", { withTimezone: true }).defaultNow().notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });

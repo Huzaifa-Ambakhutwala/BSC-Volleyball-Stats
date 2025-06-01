@@ -540,7 +540,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Type and message are required" });
       }
 
-      const timestamp = new Date().toISOString();
+      const timestamp = new Date();
       const feedbackId = `feedback-${Date.now()}`;
 
       const feedbackData = {

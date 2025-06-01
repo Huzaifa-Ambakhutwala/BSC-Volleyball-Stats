@@ -165,6 +165,16 @@ export const trackerLogs = pgTable("tracker_logs", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
+export const feedback = pgTable("feedback", {
+  id: serial("id").primaryKey(),
+  feedbackId: text("feedback_id").notNull().unique(),
+  type: text("type").notNull(),
+  message: text("message").notNull(),
+  screenshotPath: text("screenshot_path"),
+  timestamp: timestamp("timestamp", { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
 }));
@@ -275,5 +285,13 @@ export const insertTrackerLogSchema = createInsertSchema(trackerLogs).omit({
   createdAt: true,
 });
 
+export const insertFeedbackSchema = createInsertSchema(feedback).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type InsertTrackerLog = z.infer<typeof insertTrackerLogSchema>;
 export type TrackerLog_DB = typeof trackerLogs.$inferSelect;
+
+export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
+export type Feedback_DB = typeof feedback.$inferSelect;

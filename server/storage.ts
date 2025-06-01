@@ -5,7 +5,8 @@ import {
   teamPlayers, type TeamPlayer, type InsertTeamPlayer,
   matches, type Match_DB, type InsertMatch,
   playerStats, type PlayerStat_DB, type InsertPlayerStat,
-  trackerLogs, type TrackerLog_DB, type InsertTrackerLog
+  trackerLogs, type TrackerLog_DB, type InsertTrackerLog,
+  feedback, type Feedback_DB, type InsertFeedback
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, inArray, sql } from "drizzle-orm";
@@ -55,6 +56,11 @@ export interface IStorage {
   getTrackerLogsByTeam(teamName: string): Promise<TrackerLog_DB[]>;
   getTrackerLogsByAction(action: string): Promise<TrackerLog_DB[]>;
   searchTrackerLogs(searchTerm: string): Promise<TrackerLog_DB[]>;
+
+  // Feedback methods
+  createFeedback(feedback: InsertFeedback): Promise<Feedback_DB>;
+  getFeedback(): Promise<Feedback_DB[]>;
+  deleteFeedback(feedbackId: string): Promise<boolean>;
 
   // Session store for authentication
   sessionStore: any;

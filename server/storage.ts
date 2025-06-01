@@ -300,6 +300,21 @@ export class DatabaseStorage implements IStorage {
       .where(sql`${trackerLogs.teamName} ILIKE ${`%${searchTerm}%`} OR ${trackerLogs.action} ILIKE ${`%${searchTerm}%`}`)
       .orderBy(sql`${trackerLogs.timestamp} DESC`);
   }
+
+  // Feedback methods
+  async createFeedback(feedbackData: InsertFeedback): Promise<Feedback_DB> {
+    const [feedbackRecord] = await db.insert(feedback).values(feedbackData).returning();
+    return feedbackRecord;
+  }
+
+  async getFeedback(): Promise<Feedback_DB[]> {
+    return await db.select().from(feedback).orderBy(sql`${feedback.timestamp} DESC`);
+  }
+
+  async deleteFeedback(feedbackId: string): Promise<boolean> {
+    const result = await db.delete(feedback).where(eq(feedback.feedbackId, feedbackId));
+    return (result.rowCount ?? 0) > 0;
+  }
 }
 
 export const storage = new DatabaseStorage();

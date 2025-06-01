@@ -589,31 +589,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/feedback/:feedbackId", isAuthenticated, async (req, res) => {
     try {
       const feedbackId = req.params.feedbackId;
-      const feedbackDir = path.join(process.cwd(), 'feedback');
-      const feedbackFile = path.join(feedbackDir, `${feedbackId}.json`);
+      const success = await storage.deleteFeedback(feedbackId);
       
-      // Read the feedback file to get screenshot path before deleting
-      let screenshotPath = null;
-      try {
-        const content = await fs.readFile(feedbackFile, 'utf8');
-        const feedbackData = JSON.parse(content);
-        screenshotPath = feedbackData.screenshotPath;
-      } catch (error) {
-        // Feedback file doesn't exist
+      if (!success) {
         return res.status(404).json({ message: "Feedback not found" });
-      }
-      
-      // Delete the feedback JSON file
-      await fs.unlink(feedbackFile);
-      
-      // Delete the screenshot file if it exists
-      if (screenshotPath) {
-        const fullScreenshotPath = path.join(process.cwd(), screenshotPath);
-        try {
-          await fs.unlink(fullScreenshotPath);
-        } catch (error) {
-          console.warn('Screenshot file not found or already deleted:', screenshotPath);
-        }
       }
       
       res.json({ message: "Feedback deleted successfully" });

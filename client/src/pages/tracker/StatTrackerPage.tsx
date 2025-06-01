@@ -164,11 +164,27 @@ const StatTrackerPage = () => {
       // Update matches with real-time data
       setMatches(matchesData);
 
-      // Select first match if none selected
+      // Smart match selection: choose first available (unlocked) match
       const matchIds = Object.keys(matchesData);
       if (matchIds.length > 0 && !selectedMatchId) {
-        console.log("[StatTrackerPage] Setting first match as selected:", matchIds[0]);
-        setSelectedMatchId(matchIds[0]);
+        const firstAvailableMatch = matchIds.find(matchId => {
+          const match = matchesData[matchId];
+          return match.status !== 'completed';
+        });
+
+        if (firstAvailableMatch) {
+          console.log("[StatTrackerPage] Setting first available match as selected:", firstAvailableMatch);
+          setSelectedMatchId(firstAvailableMatch);
+        } else {
+          // All matches are completed
+          console.log("[StatTrackerPage] All matches are completed, selecting first for viewing");
+          setSelectedMatchId(matchIds[0]);
+          toast({
+            title: "All Matches Complete",
+            description: "No available matches. All scheduled games for your team have been completed.",
+            variant: "default",
+          });
+        }
       }
 
       // Loading complete
@@ -257,6 +273,22 @@ const StatTrackerPage = () => {
       };
 
       loadMatchTeams();
+
+      // Smart set navigation: if current set is locked, move to next available set
+      if (isSetLocked(currentMatch, currentSet)) {
+        const nextAvailableSet = findFirstAvailableSet(currentMatch);
+        if (nextAvailableSet !== currentSet) {
+          console.log(`[StatTrackerPage] Current set ${currentSet} is locked, auto-navigating to set ${nextAvailableSet}`);
+          setCurrentSet(nextAvailableSet);
+          
+          // Show informative message about auto-navigation
+          toast({
+            title: `Moved to Set ${nextAvailableSet}`,
+            description: `Set ${currentSet} is finalized. Automatically switched to the next available set.`,
+            variant: "default",
+          });
+        }
+      }
     }
 
     return () => {
@@ -320,6 +352,18 @@ const StatTrackerPage = () => {
     loadTeams();
   }, [toast]);
 
+  // Helper function to find the first available (unlocked) set
+  const findFirstAvailableSet = (match: Match): number => {
+    // Check sets 1, 2, 3 in order
+    for (let setNumber = 1; setNumber <= 3; setNumber++) {
+      if (!isSetLocked(match, setNumber)) {
+        return setNumber;
+      }
+    }
+    // If all sets are locked, return the last set (for viewing purposes)
+    return match.currentSet || 3;
+  };
+
   const handleMatchSelect = (matchId: string) => {
     setSelectedMatchId(matchId);
 
@@ -327,12 +371,21 @@ const StatTrackerPage = () => {
     const match = matches[matchId];
     setCurrentMatch(match);
 
-    // Reset current set to match's current set (defaulting to 1)
-    setCurrentSet(match.currentSet || 1);
+    // Smart set selection: automatically go to the first available set
+    const firstAvailableSet = findFirstAvailableSet(match);
+    setCurrentSet(firstAvailableSet);
 
-    // Just select the match for now
-    // We already have listeners set up in the useEffect hooks
-    // that will update when selectedMatchId changes
+    console.log(`[MatchSelect] Selected match ${matchId}, auto-navigating to set ${firstAvailableSet}`);
+
+    // Check if all sets are locked and show appropriate message
+    const allSetsLocked = [1, 2, 3].every(setNum => isSetLocked(match, setNum));
+    if (allSetsLocked && match.status === 'completed') {
+      toast({
+        title: "Match Complete",
+        description: "All sets for this match have been finalized. Tracking is complete.",
+        variant: "default",
+      });
+    }
   };
 
   const handleUnlockRequest = (matchId: string) => {

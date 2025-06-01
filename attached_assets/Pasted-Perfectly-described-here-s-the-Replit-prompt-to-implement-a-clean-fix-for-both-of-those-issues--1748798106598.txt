@@ -1,0 +1,66 @@
+Perfectly described — here’s the Replit prompt to implement a clean fix for both of those issues:
+
+⸻
+
+🔧 Prompt: Improve Set/Game Navigation Logic After Login or Page Refresh
+
+🧩 Problem Summary:
+	1.	When a set is completed and locked, and the user navigates away or logs out and back in:
+	•	The app returns to the first set, even though it is locked.
+	•	Users are forced to manually switch to the next available set — this causes confusion, especially if they can’t interact with the locked set.
+	2.	Similarly, if the only available match is already locked, it still tries to return to it without any feedback — giving a false sense that something is wrong.
+
+⸻
+
+✅ Expected Behavior:
+
+For Sets:
+	•	After login or refresh, the app should automatically redirect the user to the next available (unlocked) set in that match.
+	•	If all sets are locked → show a message like:
+“All sets for this match have been finalized. Tracking is complete.”
+
+For Matches:
+	•	If the current match is already finalized and locked:
+	•	Check for any other available match for that team, and redirect to it.
+	•	If no other match is available, show:
+“No available matches. All scheduled games for your team have been completed.”
+
+⸻
+
+🧠 Implementation Notes:
+
+For Sets:
+	•	On component load or login:
+
+const firstAvailableSet = match.sets.find(set => set.status === 'available');
+if (firstAvailableSet) {
+  setCurrentSet(firstAvailableSet.number);
+} else {
+  setShowMatchComplete(true); // trigger a locked message state
+}
+
+
+
+For Matches:
+	•	After login or when loading team’s matches:
+
+const upcomingMatch = teamMatches.find(match => match.status !== 'locked');
+if (upcomingMatch) {
+  loadMatch(upcomingMatch.id);
+} else {
+  showNoMatchesMessage(); // UI for "All matches locked"
+}
+
+
+
+⸻
+
+🧪 Testing Scenarios:
+	•	Finalize Set 1 → refresh → should auto-land on Set 2
+	•	Finalize all sets → logout/login → should show locked message
+	•	Team has multiple matches → after finalizing current match, logout/login → should land on next available match
+	•	Team has only one match, and it’s locked → show “Game is locked” message
+
+⸻
+
+Let me know if you want the messages to be styled a specific way or also shown on mobile as a toast or modal.

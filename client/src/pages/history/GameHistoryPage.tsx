@@ -24,6 +24,9 @@ const GameHistoryPage = () => {
         Object.values(matchesData).forEach(match => {
           teamIds.add(match.teamA);
           teamIds.add(match.teamB);
+          if (match.trackerTeam) {
+            teamIds.add(match.trackerTeam);
+          }
         });
         
         const teamPromises = Array.from(teamIds).map(async (teamId) => {

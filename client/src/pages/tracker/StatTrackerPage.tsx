@@ -435,9 +435,9 @@ const StatTrackerPage = () => {
       // Get current set
       const setNum = currentMatch.currentSet || currentSet;
 
-      // Get current scores for the specific set
-      let currentSetScoreA = currentMatch.scoreA;
-      let currentSetScoreB = currentMatch.scoreB;
+      // Get current scores for the specific set - default to 0 for new sets
+      let currentSetScoreA = 0;
+      let currentSetScoreB = 0;
 
       // Use set-specific scores if available
       if (currentMatch.setScores) {
@@ -1191,8 +1191,8 @@ const StatTrackerPage = () => {
                             >
                               {(() => {
                                 const currentSetScore = currentMatch.setScores && currentMatch.setScores[`set${currentSet}` as keyof typeof currentMatch.setScores];
-                                const scoreA = currentSetScore ? (currentSetScore as any).scoreA : currentMatch.scoreA;
-                                const scoreB = currentSetScore ? (currentSetScore as any).scoreB : currentMatch.scoreB;
+                                const scoreA = currentSetScore ? (currentSetScore as any).scoreA : 0;
+                                const scoreB = currentSetScore ? (currentSetScore as any).scoreB : 0;
                                 return swapTeamPositions ? scoreB : scoreA;
                               })()}
                             </div>
@@ -1214,8 +1214,8 @@ const StatTrackerPage = () => {
                             >
                               {(() => {
                                 const currentSetScore = currentMatch.setScores && currentMatch.setScores[`set${currentSet}` as keyof typeof currentMatch.setScores];
-                                const scoreA = currentSetScore ? (currentSetScore as any).scoreA : currentMatch.scoreA;
-                                const scoreB = currentSetScore ? (currentSetScore as any).scoreB : currentMatch.scoreB;
+                                const scoreA = currentSetScore ? (currentSetScore as any).scoreA : 0;
+                                const scoreB = currentSetScore ? (currentSetScore as any).scoreB : 0;
                                 return swapTeamPositions ? scoreA : scoreB;
                               })()}
                             </div>

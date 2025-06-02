@@ -1622,6 +1622,16 @@ const StatTrackerPage = () => {
           onUnlock={handleUnlockComplete}
         />
       )}
+
+      {/* Set Unlock Modal */}
+      {showSetUnlockModal && setToUnlock && selectedMatchId && (
+        <SetUnlockModal
+          matchId={selectedMatchId}
+          setNumber={setToUnlock}
+          onClose={handleCloseSetUnlockModal}
+          onUnlock={handleSetUnlocked}
+        />
+      )}
     </section>
   );
 };

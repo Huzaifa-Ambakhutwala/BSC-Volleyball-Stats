@@ -34,7 +34,7 @@ const LeaderboardPage = () => {
   // Function to calculate player score based on weighted metrics
   const calculatePlayerScore = (stats: PlayerStats): number => {
     const weights = {
-      points: 3,
+      points: 1,
       spikes: 2,
       aces: 2,
       blocks: 1.5,
@@ -435,7 +435,7 @@ const LeaderboardPage = () => {
             <h3 className="font-medium text-sm mb-2">How scores are calculated:</h3>
             <div className="text-xs text-gray-600">
               <ul className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                <li>Points: 3 points</li>
+                <li>Points: 1 point</li>
                 <li>Spikes: 2 points</li>
                 <li>Aces: 2 points</li>
                 <li>Blocks: 1.5 points</li>

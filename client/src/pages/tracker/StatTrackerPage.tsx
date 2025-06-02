@@ -40,7 +40,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import MatchCardButton from '@/components/MatchCardButton';
 import AdminUnlockModal from '@/components/AdminUnlockModal';
-import SetUnlockModal from '@/components/SetUnlockModal';
 
 const StatTrackerPage = () => {
   const [matches, setMatches] = useState<Record<string, Match>>({});
@@ -92,8 +91,6 @@ const StatTrackerPage = () => {
   const [showFinalizeMatchDialog, setShowFinalizeMatchDialog] = useState(false);
   const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [matchToUnlock, setMatchToUnlock] = useState<string | null>(null);
-  const [showSetUnlockModal, setShowSetUnlockModal] = useState(false);
-  const [setToUnlock, setSetToUnlock] = useState<number | null>(null);
 
   // Logout handler
   const handleLogout = () => {
@@ -333,26 +330,26 @@ const StatTrackerPage = () => {
         matchStatus: currentMatch.status,
         isCurrentSetLocked: isSetLocked(currentMatch, currentSet)
       });
-
+      
       // Check if all sets are completed (match is finished)
       const allSetsCompleted = [1, 2, 3].every(setNum => isSetLocked(currentMatch, setNum));
-
+      
       if (allSetsCompleted && currentMatch.status === 'completed') {
         console.log(`[SmartNavigation] Match is completely finished, showing final state`);
         // For completed matches, show the last set for viewing but don't allow interaction
         setCurrentSet(3);
         return;
       }
-
+      
       const availableSet = findFirstAvailableSet(currentMatch);
       console.log(`[SmartNavigation] First available set is: ${availableSet}`);
-
+      
       // If the current set we're viewing is locked and there's an available set
       if (isSetLocked(currentMatch, currentSet) && !allSetsCompleted) {
         if (availableSet !== currentSet) {
           console.log(`[SmartNavigation] Current set ${currentSet} is locked, auto-navigating to set ${availableSet}`);
           setCurrentSet(availableSet);
-
+          
           toast({
             title: `Moved to Set ${availableSet}`,
             description: `Set ${currentSet} is finalized. Automatically switched to the next available set.`,
@@ -538,7 +535,7 @@ const StatTrackerPage = () => {
     if (setNumber > 1) {
       const previousSetKey = `set${setNumber - 1}` as keyof typeof currentMatch.completedSets;
       const isPreviousSetCompleted = currentMatch.completedSets?.[previousSetKey] || false;
-
+      
       if (!isPreviousSetCompleted) {
         toast({
           title: `Set ${setNumber} Not Available`,
@@ -802,28 +799,6 @@ const StatTrackerPage = () => {
     return { teamA: teamAWins, teamB: teamBWins };
   };
 
-  // Handler for opening set unlock modal
-  const handleSetUnlockClick = (setNumber: number) => {
-    setSetToUnlock(setNumber);
-    setShowSetUnlockModal(true);
-  };
-
-  // Handler for closing set unlock modal
-  const handleCloseSetUnlockModal = () => {
-    setShowSetUnlockModal(false);
-    setSetToUnlock(null);
-  };
-
-  // Handler for successful set unlock
-  const handleSetUnlocked = () => {
-    // The match will be automatically updated through the Firebase listener
-    toast({
-      title: "Success",
-      description: `Set ${setToUnlock} has been unlocked for editing.`,
-    });
-    handleCloseSetUnlockModal();
-  };
-
   if (isLoading) {
     return (
       <section className="py-8 bg-gray-50">
@@ -1047,15 +1022,12 @@ const StatTrackerPage = () => {
 
                       {/* Set lock status */}
                       {currentMatch.completedSets?.set1 && (
-                        <button 
-                          onClick={() => handleSetUnlockClick(1)}
-                          className="mt-2 text-xs text-center font-medium text-green-600 flex items-center justify-center hover:text-green-700 hover:bg-green-50 px-2 py-1 rounded border border-green-200 transition-colors"
-                        >
+                        <div className="mt-2 text-xs text-center font-medium text-green-600 flex items-center justify-center">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                           </svg>
                           Locked
-                        </button>
+                        </div>
                       )}
                     </div>
 
@@ -1620,16 +1592,6 @@ const StatTrackerPage = () => {
           matchId={matchToUnlock}
           onClose={() => setShowUnlockModal(false)}
           onUnlock={handleUnlockComplete}
-        />
-      )}
-
-      {/* Set Unlock Modal */}
-      {showSetUnlockModal && setToUnlock && selectedMatchId && (
-        <SetUnlockModal
-          matchId={selectedMatchId}
-          setNumber={setToUnlock}
-          onClose={handleCloseSetUnlockModal}
-          onUnlock={handleSetUnlocked}
         />
       )}
     </section>

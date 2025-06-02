@@ -166,74 +166,6 @@ export const unlockMatch = async (matchId: string, adminUsername: string) => {
   }
 };
 
-// Unlock individual set for a match
-export const unlockSet = async (matchId: string, setNumber: number, adminUsername: string) => {
-  try {
-    // Get the match data
-    const matchRef = ref(database, `matches/${matchId}`);
-    const snapshot = await get(matchRef);
-
-    if (!snapshot.exists()) {
-      throw new Error('Match not found');
-    }
-
-    const match = snapshot.val();
-
-    // Create an audit log entry for set unlock
-    const unlockLogsRef = ref(database, `setUnlockLogs/${matchId}`);
-    const newLogRef = push(unlockLogsRef);
-    await set(newLogRef, {
-      adminUsername,
-      setNumber,
-      timestamp: Date.now(),
-      previousSetStatus: match.completedSets?.[`set${setNumber}`] || false
-    });
-
-    // Update the specific set's completion status
-    const updates: any = {};
-    
-    if (match.completedSets) {
-      const updatedCompletedSets = { ...match.completedSets };
-      updatedCompletedSets[`set${setNumber}`] = false;
-      updates.completedSets = updatedCompletedSets;
-    }
-
-    // If unlocking a set, ensure the match status allows editing
-    if (match.status === 'completed') {
-      updates.status = 'in_progress';
-    }
-
-    // Update the match
-    await update(matchRef, updates);
-
-    // Log the action in tracker logs
-    await logTrackerAction({
-      teamName: adminUsername,
-      action: `Admin Unlock Set ${setNumber}`,
-      matchId,
-      set: setNumber,
-      details: `Set ${setNumber} unlocked by admin ${adminUsername}`
-    });
-
-    // Create a notification
-    const notificationsRef = ref(database, 'notifications');
-    const newNotificationRef = push(notificationsRef);
-    await set(newNotificationRef, {
-      type: 'set_unlocked',
-      matchId,
-      setNumber,
-      adminUsername,
-      timestamp: Date.now(),
-      message: `Set ${setNumber} on Court ${match.courtNumber} was unlocked by admin ${adminUsername}`
-    });
-
-    return true;
-  } catch (error) {
-    console.error('Error unlocking set:', error);
-    throw error;
-  }
-};
-
 // Players API
 export const addPlayer = async (name: string, jerseyNumber?: number, jerseyName?: string) => {
   const playersRef = ref(database, 'players');
@@ -1368,15 +1300,9 @@ export type AdminUser = {
 // Function to advance to the next set
 export const advanceToNextSet = async (matchId: string, currentSet: number): Promise<number> => {
   // Validate current set
-  if (currentSet < 1 || currentSet > 3) {
+  if (currentSet < 1 || currentSet > 2) {
     console.error(`[ADVANCE_SET] Invalid current set: ${currentSet}`);
-    return 0;
-  }
-
-  // Don't allow advancing if we're already on set 3
-  if (currentSet === 3) {
-    console.error(`[ADVANCE_SET] Cannot advance from set 3`);
-    return 0;
+    return 0; // Return 0 if invalid
   }
 
   const nextSet = currentSet + 1;
@@ -1393,25 +1319,12 @@ export const advanceToNextSet = async (matchId: string, currentSet: number): Pro
     return 0;
   }
 
-  // Mark current set as completed and update current set
   const setKey = `set${currentSet}`;
   const completedSets = { ...(match?.completedSets || {}), [setKey]: true };
 
-  // Reset the next set's score to 0-0
-  const setScores = match?.setScores || {
-    set1: { scoreA: 0, scoreB: 0 },
-    set2: { scoreA: 0, scoreB: 0 },
-    set3: { scoreA: 0, scoreB: 0 }
-  };
-  const nextSetKey = `set${nextSet}`;
-  setScores[nextSetKey] = { scoreA: 0, scoreB: 0 };
-
   const updates: any = {
     currentSet: nextSet,
-    completedSets,
-    setScores,
-    scoreA: 0, // Reset top-level scores for the new set
-    scoreB: 0
+    completedSets
   };
 
   try {

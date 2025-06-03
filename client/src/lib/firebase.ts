@@ -1545,8 +1545,11 @@ export const resetSet = async (
     const match = matchSnapshot.val();
 
     if (!match) {
+      console.error(`[RESET_SET] Match ${matchId} not found`);
       throw new Error('Match not found');
     }
+
+    console.log(`[RESET_SET] Current match data:`, match);
 
     // Update set scores
     const setScores = match.setScores || {};
@@ -1556,26 +1559,41 @@ export const resetSet = async (
     const completedSets = match.completedSets || {};
     completedSets[`set${setNumber}`] = false;
 
-    await update(matchRef, {
+    // Also update the current set if we're resetting the current one
+    const updates: any = {
       setScores: setScores,
       completedSets: completedSets
-    });
+    };
+
+    // If resetting the current set, also reset the main score
+    if (setNumber === (match.currentSet || 1)) {
+      updates.scoreA = 0;
+      updates.scoreB = 0;
+    }
+
+    console.log(`[RESET_SET] Updating match with:`, updates);
+    await update(matchRef, updates);
 
     // Delete all stat logs for this set
     const statLogsRef = ref(database, `statLogs/${matchId}`);
     const statLogsSnapshot = await get(statLogsRef);
     const statLogs = statLogsSnapshot.val() || {};
 
+    console.log(`[RESET_SET] Found stat logs:`, statLogs);
+
     const logsToDelete = [];
     for (const [logId, log] of Object.entries(statLogs)) {
       const statLog = log as StatLog;
+      console.log(`[RESET_SET] Checking log ${logId}:`, statLog);
       if (statLog.set === setNumber) {
         logsToDelete.push(logId);
+        console.log(`[RESET_SET] Will delete log ${logId} for set ${setNumber}`);
       }
     }
 
     // Delete the logs
     for (const logId of logsToDelete) {
+      console.log(`[RESET_SET] Deleting log ${logId}`);
       await remove(ref(database, `statLogs/${matchId}/${logId}`));
     }
 
@@ -1625,8 +1643,11 @@ export const resetFullGame = async (
     const match = matchSnapshot.val();
 
     if (!match) {
+      console.error(`[RESET_GAME] Match ${matchId} not found`);
       throw new Error('Match not found');
     }
+
+    console.log(`[RESET_GAME] Current match data:`, match);
 
     // Reset all sets to 0-0 and unlock all sets except set 1
     const resetData = {
@@ -1646,6 +1667,7 @@ export const resetFullGame = async (
       status: 'in_progress'
     };
 
+    console.log(`[RESET_GAME] Updating match with:`, resetData);
     await update(matchRef, resetData);
 
     // Delete all stat logs for this match

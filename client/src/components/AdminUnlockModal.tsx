@@ -7,14 +7,16 @@ interface AdminUnlockModalProps {
   matchId: string;
   setNumber?: number;
   onClose: () => void;
-  onUnlock: () => void;
+  onUnlock: (adminUsername?: string) => void;
+  isResetOperation?: boolean; // New prop to indicate this is for reset, not unlock
 }
 
 const AdminUnlockModal: React.FC<AdminUnlockModalProps> = ({
   matchId,
   setNumber,
   onClose,
-  onUnlock
+  onUnlock,
+  isResetOperation = false
 }) => {
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
@@ -63,11 +65,21 @@ const AdminUnlockModal: React.FC<AdminUnlockModalProps> = ({
     try {
       const admin = await verifyAdminCredentials(username, password);
       if (admin) {
-        await unlockMatch(matchId, username);
-        toast({
-          title: 'Success',
-          description: 'Match has been unlocked for editing.',
-        });
+        if (isResetOperation) {
+          // For reset operations, just verify credentials and proceed
+          console.log(`[AdminUnlockModal] Admin ${username} verified for reset operation`);
+          toast({
+            title: 'Success',
+            description: isResetOperation ? 'Admin verified. Proceeding with reset...' : 'Match has been unlocked for editing.',
+          });
+        } else {
+          // For unlock operations, actually unlock the match
+          await unlockMatch(matchId, username);
+          toast({
+            title: 'Success',
+            description: 'Match has been unlocked for editing.',
+          });
+        }
         onUnlock();
         onClose();
         return;
@@ -76,7 +88,7 @@ const AdminUnlockModal: React.FC<AdminUnlockModalProps> = ({
     } catch (error) {
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to unlock match',
+        description: error instanceof Error ? error.message : (isResetOperation ? 'Failed to verify admin credentials' : 'Failed to unlock match'),
         variant: 'destructive',
       });
     } finally {

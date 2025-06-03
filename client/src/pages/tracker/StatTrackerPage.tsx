@@ -97,6 +97,7 @@ const StatTrackerPage = () => {
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetType, setResetType] = useState<'set' | 'game' | null>(null);
   const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
+  const [verifiedAdminUsername, setVerifiedAdminUsername] = useState<string | null>(null);
 
   // Logout handler
   const handleLogout = () => {
@@ -1735,6 +1736,7 @@ const StatTrackerPage = () => {
           matchId={selectedMatchId}
           onClose={handleResetCancel}
           onUnlock={handleResetModalSuccess}
+          isResetOperation={true}
         />
       )}
 

@@ -17,7 +17,9 @@ import {
   verifyAdminCredentials,
   fetchAdminUsersList,
   type StatLog,
-  getTeams
+  getTeams,
+  resetSet,
+  resetFullGame
 } from '@/lib/firebase';
 import { getOptimizedTextStyle } from '@/lib/colorUtils';
 import type { Match, Team, Player } from '@shared/schema';
@@ -92,6 +94,9 @@ const StatTrackerPage = () => {
   const [showFinalizeMatchDialog, setShowFinalizeMatchDialog] = useState(false);
   const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [matchToUnlock, setMatchToUnlock] = useState<string | null>(null);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetType, setResetType] = useState<'set' | 'game' | null>(null);
+  const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
 
   // Logout handler
   const handleLogout = () => {

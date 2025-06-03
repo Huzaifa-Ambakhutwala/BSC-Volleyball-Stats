@@ -1529,6 +1529,160 @@ export const deleteTrackerLog = async (logId: string): Promise<void> => {
   }
 };
 
+// Reset Set Function
+export const resetSet = async (
+  matchId: string,
+  setNumber: number,
+  adminUsername: string,
+  teamName: string
+): Promise<void> => {
+  try {
+    console.log(`[RESET_SET] Starting reset for Set ${setNumber} in match ${matchId}`);
+
+    // Reset the set score to 0-0
+    const matchRef = ref(database, `matches/${matchId}`);
+    const matchSnapshot = await get(matchRef);
+    const match = matchSnapshot.val();
+
+    if (!match) {
+      throw new Error('Match not found');
+    }
+
+    // Update set scores
+    const setScores = match.setScores || {};
+    setScores[`set${setNumber}`] = { scoreA: 0, scoreB: 0 };
+
+    // Remove the locked status for this set
+    const completedSets = match.completedSets || {};
+    completedSets[`set${setNumber}`] = false;
+
+    await update(matchRef, {
+      setScores: setScores,
+      completedSets: completedSets
+    });
+
+    // Delete all stat logs for this set
+    const statLogsRef = ref(database, 'statLogs');
+    const statLogsSnapshot = await get(statLogsRef);
+    const statLogs = statLogsSnapshot.val() || {};
+
+    const logsToDelete = [];
+    for (const [logId, log] of Object.entries(statLogs)) {
+      const statLog = log as StatLog;
+      if (statLog.matchId === matchId && statLog.set === setNumber) {
+        logsToDelete.push(logId);
+      }
+    }
+
+    // Delete the logs
+    for (const logId of logsToDelete) {
+      await remove(ref(database, `statLogs/${logId}`));
+    }
+
+    // Reset player stats for this set
+    const statsRef = ref(database, `stats/${matchId}`);
+    const statsSnapshot = await get(statsRef);
+    const matchStats = statsSnapshot.val() || {};
+
+    for (const playerId in matchStats) {
+      const playerStats = matchStats[playerId];
+      if (playerStats.set === setNumber) {
+        await remove(ref(database, `stats/${matchId}/${playerId}`));
+      }
+    }
+
+    // Log the reset action
+    await logTrackerAction({
+      action: 'Reset Set',
+      teamName: teamName,
+      matchId: matchId,
+      set: setNumber,
+      details: `Set ${setNumber} reset by admin ${adminUsername}`
+    });
+
+    console.log(`[RESET_SET] Successfully reset Set ${setNumber} for match ${matchId}`);
+  } catch (error) {
+    console.error('Error resetting set:', error);
+    throw error;
+  }
+};
+
+// Reset Full Game Function
+export const resetFullGame = async (
+  matchId: string,
+  adminUsername: string,
+  teamAName: string,
+  teamBName: string
+): Promise<void> => {
+  try {
+    console.log(`[RESET_GAME] Starting full game reset for match ${matchId}`);
+
+    // Reset the match to initial state
+    const matchRef = ref(database, `matches/${matchId}`);
+    const matchSnapshot = await get(matchRef);
+    const match = matchSnapshot.val();
+
+    if (!match) {
+      throw new Error('Match not found');
+    }
+
+    // Reset all sets to 0-0 and unlock all sets except set 1
+    const resetData = {
+      currentSet: 1,
+      scoreA: 0,
+      scoreB: 0,
+      setScores: {
+        set1: { scoreA: 0, scoreB: 0 },
+        set2: { scoreA: 0, scoreB: 0 },
+        set3: { scoreA: 0, scoreB: 0 }
+      },
+      completedSets: {
+        set1: false,
+        set2: false,
+        set3: false
+      },
+      status: 'in_progress'
+    };
+
+    await update(matchRef, resetData);
+
+    // Delete all stat logs for this match
+    const statLogsRef = ref(database, 'statLogs');
+    const statLogsSnapshot = await get(statLogsRef);
+    const statLogs = statLogsSnapshot.val() || {};
+
+    const logsToDelete = [];
+    for (const [logId, log] of Object.entries(statLogs)) {
+      const statLog = log as StatLog;
+      if (statLog.matchId === matchId) {
+        logsToDelete.push(logId);
+      }
+    }
+
+    // Delete all logs for this match
+    for (const logId of logsToDelete) {
+      await remove(ref(database, `statLogs/${logId}`));
+    }
+
+    // Delete all player stats for this match
+    const statsRef = ref(database, `stats/${matchId}`);
+    await remove(statsRef);
+
+    // Log the reset action
+    await logTrackerAction({
+      action: 'Reset Full Game',
+      teamName: `${teamAName} vs ${teamBName}`,
+      matchId: matchId,
+      details: `Full game reset by admin ${adminUsername}`
+    });
+
+    console.log(`[RESET_GAME] Successfully reset full game for match ${matchId}`);
+  } catch (error) {
+    console.error('Error resetting full game:', error);
+    throw error;
+  }
+};
+
 
 
 

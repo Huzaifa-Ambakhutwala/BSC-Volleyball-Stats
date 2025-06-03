@@ -532,7 +532,9 @@ const StatTrackerPage = () => {
     setShowResetModal(true);
   };
 
-  const handleResetModalSuccess = () => {
+  const handleResetModalSuccess = (adminUsername?: string) => {
+    console.log(`[RESET] Admin verified: ${adminUsername}`);
+    setVerifiedAdminUsername(adminUsername || 'Unknown Admin');
     setShowResetModal(false);
     setShowResetConfirmDialog(true);
   };
@@ -543,17 +545,15 @@ const StatTrackerPage = () => {
   };
 
   const handleConfirmReset = async () => {
-    if (!currentMatch || !selectedMatchId || !resetType) return;
+    if (!currentMatch || !selectedMatchId || !resetType || !verifiedAdminUsername) return;
 
     try {
-      const adminUsername = localStorage.getItem('adminUsername') || 'Unknown Admin';
-      
-      console.log(`[RESET] Starting ${resetType} reset for match ${selectedMatchId}`);
+      console.log(`[RESET] Starting ${resetType} reset for match ${selectedMatchId} by admin ${verifiedAdminUsername}`);
       
       if (resetType === 'set') {
         const teamName = teamA?.teamName || teamB?.teamName || 'Unknown Team';
         console.log(`[RESET] Resetting Set ${currentSet} for team ${teamName}`);
-        await resetSet(selectedMatchId, currentSet, adminUsername, teamName);
+        await resetSet(selectedMatchId, currentSet, verifiedAdminUsername, teamName);
         
         toast({
           title: "Set Reset Complete",
@@ -563,7 +563,7 @@ const StatTrackerPage = () => {
         const teamAName = teamA?.teamName || 'Team A';
         const teamBName = teamB?.teamName || 'Team B';
         console.log(`[RESET] Resetting full game: ${teamAName} vs ${teamBName}`);
-        await resetFullGame(selectedMatchId, adminUsername, teamAName, teamBName);
+        await resetFullGame(selectedMatchId, verifiedAdminUsername, teamAName, teamBName);
         
         // Reset to Set 1 after full game reset
         setCurrentSet(1);
@@ -585,6 +585,7 @@ const StatTrackerPage = () => {
     } finally {
       setShowResetConfirmDialog(false);
       setResetType(null);
+      setVerifiedAdminUsername(null);
     }
   };
 

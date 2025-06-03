@@ -70,8 +70,9 @@ const AdminUnlockModal: React.FC<AdminUnlockModalProps> = ({
           console.log(`[AdminUnlockModal] Admin ${username} verified for reset operation`);
           toast({
             title: 'Success',
-            description: isResetOperation ? 'Admin verified. Proceeding with reset...' : 'Match has been unlocked for editing.',
+            description: 'Admin verified. Proceeding with reset...',
           });
+          onUnlock(username); // Pass the verified admin username
         } else {
           // For unlock operations, actually unlock the match
           await unlockMatch(matchId, username);
@@ -79,8 +80,8 @@ const AdminUnlockModal: React.FC<AdminUnlockModalProps> = ({
             title: 'Success',
             description: 'Match has been unlocked for editing.',
           });
+          onUnlock();
         }
-        onUnlock();
         onClose();
         return;
       }

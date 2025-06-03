@@ -5,12 +5,14 @@ import { unlockMatch, fetchAdminUsersList, verifyAdminCredentials } from '@/lib/
 
 interface AdminUnlockModalProps {
   matchId: string;
+  setNumber?: number;
   onClose: () => void;
   onUnlock: () => void;
 }
 
 const AdminUnlockModal: React.FC<AdminUnlockModalProps> = ({
   matchId,
+  setNumber,
   onClose,
   onUnlock
 }) => {

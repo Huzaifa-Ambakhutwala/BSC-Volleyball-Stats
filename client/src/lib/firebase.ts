@@ -1350,11 +1350,7 @@ export const isSetLocked = (match: Match, setNumber: number): boolean => {
     }
   }
 
-  // When a match has advanced to a later set, all previous sets are considered locked
-  if (match.currentSet && match.currentSet > setNumber) {
-    return true;
-  }
-
+  // Do not lock previous sets based on currentSet; only completedSets should determine lock status
   return false;
 };
 

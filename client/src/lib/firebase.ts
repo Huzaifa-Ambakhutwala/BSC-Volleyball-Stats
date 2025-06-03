@@ -1562,22 +1562,24 @@ export const resetSet = async (
     });
 
     // Delete all stat logs for this set
-    const statLogsRef = ref(database, 'statLogs');
+    const statLogsRef = ref(database, `statLogs/${matchId}`);
     const statLogsSnapshot = await get(statLogsRef);
     const statLogs = statLogsSnapshot.val() || {};
 
     const logsToDelete = [];
     for (const [logId, log] of Object.entries(statLogs)) {
       const statLog = log as StatLog;
-      if (statLog.matchId === matchId && statLog.set === setNumber) {
+      if (statLog.set === setNumber) {
         logsToDelete.push(logId);
       }
     }
 
     // Delete the logs
     for (const logId of logsToDelete) {
-      await remove(ref(database, `statLogs/${logId}`));
+      await remove(ref(database, `statLogs/${matchId}/${logId}`));
     }
+
+    console.log(`[RESET_SET] Deleted ${logsToDelete.length} stat logs for Set ${setNumber}`);
 
     // Reset player stats for this set
     const statsRef = ref(database, `stats/${matchId}`);
@@ -1647,22 +1649,10 @@ export const resetFullGame = async (
     await update(matchRef, resetData);
 
     // Delete all stat logs for this match
-    const statLogsRef = ref(database, 'statLogs');
-    const statLogsSnapshot = await get(statLogsRef);
-    const statLogs = statLogsSnapshot.val() || {};
+    const statLogsRef = ref(database, `statLogs/${matchId}`);
+    await remove(statLogsRef);
 
-    const logsToDelete = [];
-    for (const [logId, log] of Object.entries(statLogs)) {
-      const statLog = log as StatLog;
-      if (statLog.matchId === matchId) {
-        logsToDelete.push(logId);
-      }
-    }
-
-    // Delete all logs for this match
-    for (const logId of logsToDelete) {
-      await remove(ref(database, `statLogs/${logId}`));
-    }
+    console.log(`[RESET_GAME] Deleted all stat logs for match ${matchId}`);
 
     // Delete all player stats for this match
     const statsRef = ref(database, `stats/${matchId}`);

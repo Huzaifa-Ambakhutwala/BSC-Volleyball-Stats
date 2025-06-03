@@ -547,8 +547,11 @@ const StatTrackerPage = () => {
     try {
       const adminUsername = localStorage.getItem('adminUsername') || 'Unknown Admin';
       
+      console.log(`[RESET] Starting ${resetType} reset for match ${selectedMatchId}`);
+      
       if (resetType === 'set') {
         const teamName = teamA?.teamName || teamB?.teamName || 'Unknown Team';
+        console.log(`[RESET] Resetting Set ${currentSet} for team ${teamName}`);
         await resetSet(selectedMatchId, currentSet, adminUsername, teamName);
         
         toast({
@@ -558,6 +561,7 @@ const StatTrackerPage = () => {
       } else if (resetType === 'game') {
         const teamAName = teamA?.teamName || 'Team A';
         const teamBName = teamB?.teamName || 'Team B';
+        console.log(`[RESET] Resetting full game: ${teamAName} vs ${teamBName}`);
         await resetFullGame(selectedMatchId, adminUsername, teamAName, teamBName);
         
         // Reset to Set 1 after full game reset
@@ -568,10 +572,13 @@ const StatTrackerPage = () => {
           description: "Full game has been reset to Set 1 (0-0)",
         });
       }
+      
+      console.log(`[RESET] ${resetType} reset completed successfully`);
     } catch (error) {
+      console.error(`[RESET] Error during ${resetType} reset:`, error);
       toast({
         title: "Reset Failed",
-        description: "Failed to reset. Please try again.",
+        description: `Failed to reset. Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     } finally {
@@ -1739,30 +1746,32 @@ const StatTrackerPage = () => {
               <AlertTriangle className="h-5 w-5 text-red-600" />
               Confirm {resetType === 'set' ? 'Set Reset' : 'Full Game Reset'}
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              {resetType === 'set' ? (
-                <>
-                  Are you sure you want to reset Set {currentSet}? This will:
-                  <ul className="list-disc list-inside mt-2 space-y-1">
-                    <li>Reset the score to 0-0</li>
-                    <li>Delete all action logs for this set</li>
-                    <li>Remove player stats for this set</li>
-                    <li>Keep the set unlocked for editing</li>
-                  </ul>
-                </>
-              ) : (
-                <>
-                  Are you sure you want to reset the entire game? This will:
-                  <ul className="list-disc list-inside mt-2 space-y-1">
-                    <li>Reset all sets (1-3) to 0-0</li>
-                    <li>Delete all action logs for the match</li>
-                    <li>Remove all player stats</li>
-                    <li>Return to Set 1 as current</li>
-                    <li>Lock Sets 2 and 3</li>
-                  </ul>
-                </>
-              )}
-              <p className="mt-3 font-semibold text-red-600">This action cannot be undone.</p>
+            <AlertDialogDescription asChild>
+              <div>
+                {resetType === 'set' ? (
+                  <div>
+                    <p>Are you sure you want to reset Set {currentSet}? This will:</p>
+                    <ul className="list-disc list-inside mt-2 space-y-1">
+                      <li>Reset the score to 0-0</li>
+                      <li>Delete all action logs for this set</li>
+                      <li>Remove player stats for this set</li>
+                      <li>Keep the set unlocked for editing</li>
+                    </ul>
+                  </div>
+                ) : (
+                  <div>
+                    <p>Are you sure you want to reset the entire game? This will:</p>
+                    <ul className="list-disc list-inside mt-2 space-y-1">
+                      <li>Reset all sets (1-3) to 0-0</li>
+                      <li>Delete all action logs for the match</li>
+                      <li>Remove all player stats</li>
+                      <li>Return to Set 1 as current</li>
+                      <li>Lock Sets 2 and 3</li>
+                    </ul>
+                  </div>
+                )}
+                <p className="mt-3 font-semibold text-red-600">This action cannot be undone.</p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

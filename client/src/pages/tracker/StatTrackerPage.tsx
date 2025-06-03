@@ -520,6 +520,71 @@ const StatTrackerPage = () => {
     setShowConfirmDialog(false);
   };
 
+  // Reset functionality handlers
+  const handleResetSet = () => {
+    setResetType('set');
+    setShowResetModal(true);
+  };
+
+  const handleResetGame = () => {
+    setResetType('game');
+    setShowResetModal(true);
+  };
+
+  const handleResetModalSuccess = () => {
+    setShowResetModal(false);
+    setShowResetConfirmDialog(true);
+  };
+
+  const handleResetCancel = () => {
+    setShowResetModal(false);
+    setResetType(null);
+  };
+
+  const handleConfirmReset = async () => {
+    if (!currentMatch || !selectedMatchId || !resetType) return;
+
+    try {
+      const adminUsername = localStorage.getItem('adminUsername') || 'Unknown Admin';
+      
+      if (resetType === 'set') {
+        const teamName = teamA?.teamName || teamB?.teamName || 'Unknown Team';
+        await resetSet(selectedMatchId, currentSet, adminUsername, teamName);
+        
+        toast({
+          title: "Set Reset Complete",
+          description: `Set ${currentSet} has been reset to 0-0`,
+        });
+      } else if (resetType === 'game') {
+        const teamAName = teamA?.teamName || 'Team A';
+        const teamBName = teamB?.teamName || 'Team B';
+        await resetFullGame(selectedMatchId, adminUsername, teamAName, teamBName);
+        
+        // Reset to Set 1 after full game reset
+        setCurrentSet(1);
+        
+        toast({
+          title: "Game Reset Complete",
+          description: "Full game has been reset to Set 1 (0-0)",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Reset Failed",
+        description: "Failed to reset. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setShowResetConfirmDialog(false);
+      setResetType(null);
+    }
+  };
+
+  const handleCancelReset = () => {
+    setShowResetConfirmDialog(false);
+    setResetType(null);
+  };
+
   // Handler for changing the current set
   const handleSetChange = (setNumber: number) => {
     if (!currentMatch || !selectedMatchId) return;
@@ -1170,18 +1235,45 @@ const StatTrackerPage = () => {
 
               {/* Revised Layout: Team A (left), Actions (middle), Team B (right) */}
               <div className="p-6">
-                {/* Swap Teams Button */}
-                <div className="flex justify-end mb-4">
+                {/* Control Buttons Row */}
+                <div className="flex justify-between items-center mb-4">
+                  {/* Reset Full Game Button - Left side, separated for safety */}
                   <button
-                    onClick={() => setSwapTeamPositions(!swapTeamPositions)}
-                    className="flex items-center gap-1 bg-white text-gray-700 border border-gray-300 rounded-md px-3 py-1.5 text-sm font-medium hover:bg-gray-50 transition-colors"
+                    onClick={handleResetGame}
+                    className="flex items-center gap-1 bg-red-50 text-red-700 border border-red-300 rounded-md px-3 py-1.5 text-sm font-medium hover:bg-red-100 transition-colors"
+                    title="Reset entire game - clears all sets and returns to Set 1"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M7 16V4m0 0L3 8m4-4l4 4" />
-                      <path d="M17 8v12m0 0l4-4m-4 4l-4-4" />
-                    </svg>
-                    Swap Team Positions
+                    <AlertTriangle className="h-4 w-4" />
+                    Reset Full Game
                   </button>
+
+                  {/* Right side controls */}
+                  <div className="flex items-center gap-2">
+                    {/* Reset Set Button */}
+                    <button
+                      onClick={handleResetSet}
+                      className="flex items-center gap-1 bg-orange-50 text-orange-700 border border-orange-300 rounded-md px-3 py-1.5 text-sm font-medium hover:bg-orange-100 transition-colors"
+                      title={`Reset Set ${currentSet} - clears score and actions for this set`}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M1 4v6h6" />
+                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                      </svg>
+                      Reset Set {currentSet}
+                    </button>
+
+                    {/* Swap Teams Button */}
+                    <button
+                      onClick={() => setSwapTeamPositions(!swapTeamPositions)}
+                      className="flex items-center gap-1 bg-white text-gray-700 border border-gray-300 rounded-md px-3 py-1.5 text-sm font-medium hover:bg-gray-50 transition-colors"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M7 16V4m0 0L3 8m4-4l4 4" />
+                        <path d="M17 8v12m0 0l4-4m-4 4l-4-4" />
+                      </svg>
+                      Swap Team Positions
+                    </button>
+                  </div>
                 </div>
 
                 {/* Sticky Current Set Score Display */}
@@ -1629,6 +1721,61 @@ const StatTrackerPage = () => {
           onUnlock={() => setSetToUnlock(null)}
         />
       )}
+
+      {/* Reset Admin Authentication Modal */}
+      {showResetModal && (
+        <AdminUnlockModal
+          matchId={selectedMatchId}
+          onClose={handleResetCancel}
+          onUnlock={handleResetModalSuccess}
+        />
+      )}
+
+      {/* Reset Confirmation Dialog */}
+      <AlertDialog open={showResetConfirmDialog} onOpenChange={setShowResetConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+              Confirm {resetType === 'set' ? 'Set Reset' : 'Full Game Reset'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {resetType === 'set' ? (
+                <>
+                  Are you sure you want to reset Set {currentSet}? This will:
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    <li>Reset the score to 0-0</li>
+                    <li>Delete all action logs for this set</li>
+                    <li>Remove player stats for this set</li>
+                    <li>Keep the set unlocked for editing</li>
+                  </ul>
+                </>
+              ) : (
+                <>
+                  Are you sure you want to reset the entire game? This will:
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    <li>Reset all sets (1-3) to 0-0</li>
+                    <li>Delete all action logs for the match</li>
+                    <li>Remove all player stats</li>
+                    <li>Return to Set 1 as current</li>
+                    <li>Lock Sets 2 and 3</li>
+                  </ul>
+                </>
+              )}
+              <p className="mt-3 font-semibold text-red-600">This action cannot be undone.</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelReset}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmReset}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {resetType === 'set' ? `Reset Set ${currentSet}` : 'Reset Full Game'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 };

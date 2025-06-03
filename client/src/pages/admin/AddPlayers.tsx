@@ -229,14 +229,7 @@ const AddPlayers = () => {
       return;
     }
     
-    if (!newJerseyNumber) {
-      toast({
-        title: "Error",
-        description: "Jersey number is required",
-        variant: "destructive",
-      });
-      return;
-    }
+    // Jersey number can be empty or 0, so no validation needed
     
     if (!newJerseyName.trim()) {
       toast({
@@ -250,7 +243,7 @@ const AddPlayers = () => {
     setIsAddingSingle(true);
     
     try {
-      const jerseyNum = typeof newJerseyNumber === 'string' ? parseInt(newJerseyNumber) : newJerseyNumber;
+      const jerseyNum = newJerseyNumber === '' ? 0 : (typeof newJerseyNumber === 'string' ? parseInt(newJerseyNumber) || 0 : newJerseyNumber);
       await addPlayer(newPlayerName, jerseyNum, newJerseyName);
       
       // No need to update local state - Firebase listener will handle it
@@ -482,7 +475,7 @@ const AddPlayers = () => {
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-[hsl(var(--vb-blue))] focus:border-[hsl(var(--vb-blue))]"
               placeholder="Jersey #"
               value={newJerseyNumber}
-              onChange={(e) => setNewJerseyNumber(e.target.value ? parseInt(e.target.value) : '')}
+              onChange={(e) => setNewJerseyNumber(e.target.value === '' ? '' : parseInt(e.target.value) || 0)}
               min="0"
             />
           </div>
@@ -579,7 +572,7 @@ const AddPlayers = () => {
                           type="number"
                           className="w-full px-3 py-1 border border-gray-300 rounded-md"
                           value={editJerseyNumber}
-                          onChange={(e) => setEditJerseyNumber(e.target.value ? parseInt(e.target.value) : 0)}
+                          onChange={(e) => setEditJerseyNumber(e.target.value === '' ? 0 : parseInt(e.target.value) || 0)}
                           min="0"
                         />
                       </div>

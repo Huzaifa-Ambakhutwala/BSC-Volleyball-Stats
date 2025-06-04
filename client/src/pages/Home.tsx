@@ -6,7 +6,7 @@ const Home = () => {
     <section className="py-12">
       <div className="container mx-auto px-4">
         <div className="max-w-5xl mx-auto text-center mb-12">
-          <VolleyballIcon className="h-24 w-24 text-[hsl(var(--vb-blue))] mx-auto mb-6" />
+          <VolleyballIcon className="h-32 w-32 mx-auto mb-6" />
           <h1 className="text-4xl font-bold mb-4">
             BSC Volleyball Stat Tracker
           </h1>

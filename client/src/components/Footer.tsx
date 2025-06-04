@@ -8,7 +8,7 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="mb-4 md:mb-0">
             <Link href="/" className="flex items-center space-x-2">
-              <VolleyballIcon className="h-6 w-6 text-[hsl(var(--vb-yellow))]" />
+              <VolleyballIcon className="h-8 w-8" />
               <h2 className="text-lg font-bold">BSC Volleyball Stat Tracker</h2>
             </Link>
             <p className="text-sm text-gray-400 mt-1">Real-time volleyball statistics tracking</p>

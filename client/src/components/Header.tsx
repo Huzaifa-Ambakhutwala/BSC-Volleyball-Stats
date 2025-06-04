@@ -8,7 +8,7 @@ const Header = () => {
     <header className="bg-[hsl(var(--vb-dark-blue))] text-white shadow-md">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         <Link href="/" className="flex items-center space-x-2">
-          <VolleyballIcon className="h-8 w-8 text-[hsl(var(--vb-yellow))]" />
+          <VolleyballIcon className="h-10 w-10" />
           <h1 className="text-xl font-bold tracking-wide">BSC Volleyball Stat Tracker</h1>
         </Link>
         <div className="flex items-center space-x-4">

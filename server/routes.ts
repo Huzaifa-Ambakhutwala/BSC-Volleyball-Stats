@@ -14,6 +14,7 @@ import { z } from "zod";
 import multer from 'multer';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { hashPassword } from "./auth"; // Import hashPassword function
 
 // Middleware to ensure user is authenticated
 function isAuthenticated(req: Request, res: Response, next: Function) {
@@ -192,6 +193,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error in team matches debug route:", error);
       res.status(500).json({ error: String(error) });
+    }
+  });
+
+  app.get("/api/user", (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    const user = req.user;
+    res.json({ id: user.id, username: user.username });
+  });
+
+  // API endpoint to update admin password
+  app.post("/api/admin/update-password", isAuthenticated, async (req, res) => {
+    try {
+      const { username, newPassword } = req.body;
+
+      if (!req.user || !req.user.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      // Hash the new password
+      const hashedPassword = await hashPassword(newPassword);
+
+      // Update the user in the database
+      const success = await storage.updateUserPassword(username, hashedPassword);
+
+      if (success) {
+        res.json({ message: "Password updated successfully" });
+      } else {
+        res.status(404).json({ message: "User not found" });
+      }
+    } catch (error) {
+      console.error("Error updating admin password:", error);
+      res.status(500).json({ message: "Internal server error" });
     }
   });
 
@@ -585,11 +621,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const feedbackId = req.params.feedbackId;
       const success = await storage.deleteFeedback(feedbackId);
-      
+
       if (!success) {
         return res.status(404).json({ message: "Feedback not found" });
       }
-      
+
       res.json({ message: "Feedback deleted successfully" });
     } catch (error) {
       console.error('Error deleting feedback:', error);
@@ -609,7 +645,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Downtime Management API Routes
-  
+
   // Get current downtime status
   app.get("/api/downtime", async (req, res) => {
     try {
@@ -633,7 +669,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/downtime/schedule", isAuthenticated, async (req, res) => {
     try {
       const { start, end, message } = req.body;
-      
+
       if (!start || !end || !message) {
         return res.status(400).json({ message: "Start time, end time, and message are required" });
       }
@@ -720,7 +756,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const downtimeData = await fs.readFile(path.join(process.cwd(), 'data', 'downtime.json'), 'utf8');
       const downtime = JSON.parse(downtimeData);
-      
+
       downtime.overriddenByAdmin = true;
 
       await fs.writeFile(

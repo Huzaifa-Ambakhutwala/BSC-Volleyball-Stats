@@ -144,6 +144,7 @@ const AdminDashboard = () => {
             {activeTab === 'stats' && <AllPlayerStats />}
             {activeTab === 'logs' && <TrackerLogs />}
             {activeTab === 'feedback' && <FeedbackView />}
+            {activeTab === 'downtime' && <ManageDowntime />}
             {activeTab === 'guide' && (
               <div className="h-screen">
                 <UserGuide />

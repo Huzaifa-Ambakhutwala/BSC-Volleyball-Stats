@@ -429,48 +429,56 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
             onClick={() => handleStatUpdate('serveErrors', 'Serve Fault', 'fault')}
             className="btn-error"
             disabled={isSetLocked}
+            title="Service error - serve into net or out of bounds"
           />
           <ActionButton
             label="Spike Error"
             onClick={() => handleStatUpdate('spikeErrors', 'Spike Fault', 'fault')}
             className="btn-error"
             disabled={isSetLocked}
+            title="Attack error - spike into net or out of bounds"
           />
           <ActionButton
             label="Net Touch"
             onClick={() => handleStatUpdate('netTouches', 'Net Touch', 'fault')}
             className="btn-error"
             disabled={isSetLocked}
+            title="Net violation - player touches the net"
           />
           <ActionButton
             label="Foot Fault"
             onClick={() => handleStatUpdate('footFaults', 'Foot Fault', 'fault')}
             className="btn-error"
             disabled={isSetLocked}
+            title="Foot fault - stepping over the line when serving"
           />
           <ActionButton
             label="Reach"
             onClick={() => handleStatUpdate('reaches', 'Reach', 'fault')}
             className="btn-error"
             disabled={isSetLocked}
+            title="Reach violation - reaching over the net illegally"
           />
           <ActionButton
             label="Carry"
             onClick={() => handleStatUpdate('carries', 'Carry', 'fault')}
             className="btn-error"
             disabled={isSetLocked}
+            title="Ball handling error - lifting or carrying the ball"
           />
           <ActionButton
             label="Out of Bounds"
             onClick={() => handleStatUpdate('outOfBounds', 'Out of Bounds', 'fault')}
             className="btn-error"
             disabled={isSetLocked}
+            title="Ball hit out of bounds by this player"
           />
           <ActionButton
             label="Generic Fault"
             onClick={() => handleStatUpdate('faults', 'Generic Fault', 'fault')}
             className="btn-error"
             disabled={isSetLocked}
+            title="Any other violation or fault not covered above"
           />
         </div>
       </div>

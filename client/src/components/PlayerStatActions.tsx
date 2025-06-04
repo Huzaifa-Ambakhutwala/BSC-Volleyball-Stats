@@ -131,9 +131,10 @@ interface ActionButtonProps {
   onClick: () => void;
   className?: string;
   disabled?: boolean; // Add disabled prop
+  title?: string; // Add title prop for hover descriptions
 }
 
-const ActionButton = ({ label, onClick, className = "btn-neutral", disabled = false }: ActionButtonProps) => {
+const ActionButton = ({ label, onClick, className = "btn-neutral", disabled = false, title }: ActionButtonProps) => {
   const [isActive, setIsActive] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -163,6 +164,7 @@ const ActionButton = ({ label, onClick, className = "btn-neutral", disabled = fa
         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
       onClick={handleClick}
       disabled={isActive || disabled}
+      title={title || label}
     >
       {showSuccess && (
         <span className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20 rounded">
@@ -346,30 +348,35 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
             onClick={() => handleStatUpdate('aces', 'Ace', 'earned')}
             className="btn-success"
             disabled={isSetLocked}
+            title="Service ace - ball served directly for a point"
           />
           <ActionButton
             label="Kill"
             onClick={() => handleStatUpdate('spikes', 'Kill', 'earned')}
             className="btn-success"
             disabled={isSetLocked}
+            title="Attack kill - spike that results in a point"
           />
           <ActionButton
             label="Tip"
             onClick={() => handleStatUpdate('tips', 'Tip', 'earned')}
             className="btn-success"
             disabled={isSetLocked}
+            title="Tip attack - soft attack that scores a point"
           />
           <ActionButton
             label="Dump"
             onClick={() => handleStatUpdate('dumps', 'Dump', 'earned')}
             className="btn-success"
             disabled={isSetLocked}
+            title="Setter dump - setter attacks ball for a point"
           />
           <ActionButton
             label="Point"
             onClick={() => handleStatUpdate('points', 'Generic Point', 'earned')}
             className="btn-success"
             disabled={isSetLocked}
+            title="Generic point - any other way to score a point"
           />
         </div>
       </div>
@@ -385,6 +392,7 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
               } ${isSetLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
             onClick={() => !isSetLocked && setBlockType('point')}
             disabled={isSetLocked}
+            title="Block that wins the point directly"
           >
             Point Block
           </button>
@@ -395,6 +403,7 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
               } ${isSetLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
             onClick={() => !isSetLocked && setBlockType('neutral')}
             disabled={isSetLocked}
+            title="Block that touches ball but doesn't score"
           >
             Neutral Block
           </button>
@@ -406,6 +415,7 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
             onClick={() => handleStatUpdate('blocks', blockType === 'point' ? 'Block Point' : 'Neutral Block', 'earned')}
             className={blockType === 'point' ? "btn-success" : "bg-blue-500 text-white hover:bg-blue-600"}
             disabled={isSetLocked}
+            title={blockType === 'point' ? "Record a block that wins the point" : "Record a block that only touches the ball"}
           />
         </div>
       </div>

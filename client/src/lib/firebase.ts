@@ -1235,19 +1235,22 @@ export const deleteStatLog = async (matchId: string, logId: string): Promise<boo
       // Determine if player is on Team A or Team B
       const isTeamA = log.teamId === match.teamA;
 
-      // Adjust score based on the original action
+      // Adjust score based on the original action using set-specific scores
+      const setKey = `set${log.set || 1}` as keyof typeof match.setScores;
+      const currentSetScore = match.setScores?.[setKey] || { scoreA: 0, scoreB: 0 };
+      
       if (log.category === 'earned' && isTeamA) {
         // Undo Team A earned point
-        await updateMatchScore(matchId, Math.max(0, match.scoreA - 1), match.scoreB);
+        await updateMatchScore(matchId, Math.max(0, currentSetScore.scoreA - 1), currentSetScore.scoreB, log.set || 1);
       } else if (log.category === 'earned' && !isTeamA) {
         // Undo Team B earned point
-        await updateMatchScore(matchId, match.scoreA, Math.max(0, match.scoreB - 1));
+        await updateMatchScore(matchId, currentSetScore.scoreA, Math.max(0, currentSetScore.scoreB - 1), log.set || 1);
       } else if (log.category === 'fault' && isTeamA) {
         // Undo Team A fault (point for Team B)
-        await updateMatchScore(matchId, match.scoreA, Math.max(0, match.scoreB - 1));
+        await updateMatchScore(matchId, currentSetScore.scoreA, Math.max(0, currentSetScore.scoreB - 1), log.set || 1);
       } else if (log.category === 'fault' && !isTeamA) {
         // Undo Team B fault (point for Team A)
-        await updateMatchScore(matchId, Math.max(0, match.scoreA - 1), match.scoreB);
+        await updateMatchScore(matchId, Math.max(0, currentSetScore.scoreA - 1), currentSetScore.scoreB, log.set || 1);
       }
 
       // Delete the log

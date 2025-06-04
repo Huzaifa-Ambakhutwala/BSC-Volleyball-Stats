@@ -10,7 +10,19 @@ app.use(express.urlencoded({ extended: false }));
 // Serve static files from public directory
 app.use(express.static(path.join(process.cwd(), 'public')));
 
-// Downtime middleware - check before serving the main app
+// Optimized downtime middleware with caching
+interface DowntimeConfig {
+  active: boolean;
+  start: string | null;
+  end: string | null;
+  message: string;
+  overriddenByAdmin: boolean;
+}
+
+let downtimeCache: DowntimeConfig | null = null;
+let cacheTimestamp = 0;
+const CACHE_DURATION = 30000; // 30 seconds cache
+
 app.use(async (req, res, next) => {
   // Skip downtime check for API routes, maintenance page, static assets, and Vite dev files
   if (req.path.startsWith('/api') || 
@@ -30,25 +42,32 @@ app.use(async (req, res, next) => {
   }
 
   try {
-    const fs = await import('fs/promises');
-    const downtimeData = await fs.readFile(path.join(process.cwd(), 'data/downtime.json'), 'utf8');
-    const downtime = JSON.parse(downtimeData);
+    const now = Date.now();
+    
+    // Use cached data if available and fresh
+    if (!downtimeCache || (now - cacheTimestamp) > CACHE_DURATION) {
+      const fs = await import('fs/promises');
+      const downtimeData = await fs.readFile(path.join(process.cwd(), 'data/downtime.json'), 'utf8');
+      downtimeCache = JSON.parse(downtimeData);
+      cacheTimestamp = now;
+    }
 
-    if (downtime.active && !downtime.overriddenByAdmin) {
-      const now = new Date();
-      const start = downtime.start ? new Date(downtime.start) : null;
-      const end = downtime.end ? new Date(downtime.end) : null;
+    if (downtimeCache && downtimeCache.active && !downtimeCache.overriddenByAdmin) {
+      const currentTime = new Date();
+      const start = downtimeCache.start ? new Date(downtimeCache.start) : null;
+      const end = downtimeCache.end ? new Date(downtimeCache.end) : null;
       
       const isDowntimeActive = 
-        (!start || now >= start) && 
-        (!end || now <= end);
+        (!start || currentTime >= start) && 
+        (!end || currentTime <= end);
       
       if (isDowntimeActive) {
         return res.redirect('/maintenance.html');
       }
     }
   } catch (error) {
-    console.error('Error checking downtime:', error);
+    // Fail silently to avoid breaking the app - downtime check is not critical
+    console.error('Downtime check failed:', error);
   }
 
   next();

@@ -647,10 +647,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Downtime Management API Routes
 
   // Get current downtime status
+  // Optimized downtime endpoint with caching
+  let downtimeApiCache: any = null;
+  let downtimeApiCacheTime = 0;
+  const DOWNTIME_API_CACHE_DURATION = 30000; // 30 seconds
+  
   app.get("/api/downtime", async (req, res) => {
     try {
+      const now = Date.now();
+      
+      // Use cached response if available and fresh
+      if (downtimeApiCache && (now - downtimeApiCacheTime) < DOWNTIME_API_CACHE_DURATION) {
+        res.set({
+          'Cache-Control': 'public, max-age=30',
+          'ETag': `"${downtimeApiCacheTime}"`,
+          'Last-Modified': new Date(downtimeApiCacheTime).toUTCString()
+        });
+        return res.json(downtimeApiCache);
+      }
+      
+      // Check if client has current version
+      const clientETag = req.get('If-None-Match');
+      if (clientETag === `"${downtimeApiCacheTime}"` && downtimeApiCache) {
+        return res.status(304).end();
+      }
+      
       const downtimeData = await fs.readFile(path.join(process.cwd(), 'data', 'downtime.json'), 'utf8');
       const downtime = JSON.parse(downtimeData);
+      
+      // Update cache
+      downtimeApiCache = downtime;
+      downtimeApiCacheTime = now;
+      
+      res.set({
+        'Cache-Control': 'public, max-age=30',
+        'ETag': `"${downtimeApiCacheTime}"`,
+        'Last-Modified': new Date(downtimeApiCacheTime).toUTCString()
+      });
+      
       res.json(downtime);
     } catch (error) {
       // If file doesn't exist, return default state
@@ -661,6 +695,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "",
         overriddenByAdmin: false
       };
+      
+      // Cache default response too
+      downtimeApiCache = defaultDowntime;
+      downtimeApiCacheTime = Date.now();
+      
+      res.set({
+        'Cache-Control': 'public, max-age=30',
+        'ETag': `"${downtimeApiCacheTime}"`,
+        'Last-Modified': new Date(downtimeApiCacheTime).toUTCString()
+      });
+      
       res.json(defaultDowntime);
     }
   });

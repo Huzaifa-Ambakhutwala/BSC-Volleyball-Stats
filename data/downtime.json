@@ -1,7 +1,7 @@
 {
-  "active": true,
-  "start": "2025-06-04T23:46:06.382Z",
+  "active": false,
+  "start": null,
   "end": null,
-  "message": "Come back Saturday",
+  "message": "",
   "overriddenByAdmin": false
 }

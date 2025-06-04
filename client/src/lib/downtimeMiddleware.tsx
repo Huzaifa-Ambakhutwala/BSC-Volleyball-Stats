@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useLocation } from "wouter";
 
 interface DowntimeConfig {
@@ -9,53 +9,92 @@ interface DowntimeConfig {
   overriddenByAdmin: boolean;
 }
 
+// Global cache to avoid multiple API calls
+let globalDowntimeCache: DowntimeConfig | null = null;
+let globalCacheTimestamp = 0;
+const CACHE_DURATION = 30000; // 30 seconds
+
 export const useDowntimeCheck = () => {
-  const [location, setLocation] = useLocation();
-  const [isChecking, setIsChecking] = useState(true);
+  const [location] = useLocation();
+  const [isChecking, setIsChecking] = useState(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const checkDowntime = async () => {
+      // Skip if on maintenance page
+      if (location.includes('/maintenance.html')) {
+        setIsChecking(false);
+        return;
+      }
+
       try {
-        const response = await fetch("/api/downtime");
-        if (response.ok) {
-          const downtime: DowntimeConfig = await response.json();
+        const now = Date.now();
+        
+        // Use cached data if available and fresh
+        if (!globalDowntimeCache || (now - globalCacheTimestamp) > CACHE_DURATION) {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
           
-          // Check if downtime is currently active
-          if (downtime.active && !downtime.overriddenByAdmin) {
-            const now = new Date();
-            const start = downtime.start ? new Date(downtime.start) : null;
-            const end = downtime.end ? new Date(downtime.end) : null;
+          try {
+            const response = await fetch("/api/downtime", {
+              signal: controller.signal,
+              headers: { 'Cache-Control': 'max-age=30' }
+            });
             
-            const isDowntimeActive = 
-              (!start || now >= start) && 
-              (!end || now <= end);
+            clearTimeout(timeoutId);
             
-            if (isDowntimeActive) {
-              // Redirect to maintenance page unless already there
-              if (!location.includes('/maintenance.html')) {
-                window.location.href = '/maintenance.html';
-                return;
-              }
+            if (response.ok) {
+              globalDowntimeCache = await response.json();
+              globalCacheTimestamp = now;
             }
+          } catch (fetchError) {
+            clearTimeout(timeoutId);
+            // Silently fail - don't block the app for downtime checks
+            console.warn("Downtime check failed:", fetchError);
+            return;
+          }
+        }
+
+        if (globalDowntimeCache?.active && !globalDowntimeCache.overriddenByAdmin) {
+          const currentTime = new Date();
+          const start = globalDowntimeCache.start ? new Date(globalDowntimeCache.start) : null;
+          const end = globalDowntimeCache.end ? new Date(globalDowntimeCache.end) : null;
+          
+          const isDowntimeActive = 
+            (!start || currentTime >= start) && 
+            (!end || currentTime <= end);
+          
+          if (isDowntimeActive && !location.includes('/maintenance.html')) {
+            window.location.href = '/maintenance.html';
+            return;
           }
         }
       } catch (error) {
-        console.error("Error checking downtime status:", error);
+        // Silently fail to avoid blocking the app
+        console.warn("Downtime check error:", error);
       } finally {
         setIsChecking(false);
       }
     };
 
-    // Don't check downtime for maintenance page or admin override routes
-    if (!location.includes('/maintenance.html')) {
-      checkDowntime();
-      
-      // Check every minute for scheduled downtime activation
-      const interval = setInterval(checkDowntime, 60000);
-      return () => clearInterval(interval);
-    } else {
+    // Skip downtime checks for maintenance page
+    if (location.includes('/maintenance.html')) {
       setIsChecking(false);
+      return;
     }
+
+    // Initial check with minimal delay
+    setIsChecking(true);
+    setTimeout(checkDowntime, 100);
+    
+    // Set up periodic checks every 2 minutes (less frequent to reduce load)
+    intervalRef.current = setInterval(checkDowntime, 120000);
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
   }, [location]);
 
   return { isChecking };

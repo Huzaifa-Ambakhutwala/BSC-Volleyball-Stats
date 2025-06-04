@@ -1,7 +1,7 @@
 {
-  "active": true,
-  "start": "2025-06-04T23:37:53.876Z",
+  "active": false,
+  "start": null,
   "end": null,
-  "message": "This site will come back online on Saturday morning",
+  "message": "The site is temporarily under maintenance. Please check back later.",
   "overriddenByAdmin": false
 }

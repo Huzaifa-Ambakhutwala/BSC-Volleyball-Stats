@@ -7,16 +7,14 @@ interface AdminUnlockModalProps {
   matchId: string;
   setNumber?: number;
   onClose: () => void;
-  onUnlock: (adminUsername?: string) => void;
-  isResetOperation?: boolean; // New prop to indicate this is for reset, not unlock
+  onUnlock: () => void;
 }
 
 const AdminUnlockModal: React.FC<AdminUnlockModalProps> = ({
   matchId,
   setNumber,
   onClose,
-  onUnlock,
-  isResetOperation = false
+  onUnlock
 }) => {
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
@@ -65,23 +63,12 @@ const AdminUnlockModal: React.FC<AdminUnlockModalProps> = ({
     try {
       const admin = await verifyAdminCredentials(username, password);
       if (admin) {
-        if (isResetOperation) {
-          // For reset operations, just verify credentials and proceed
-          console.log(`[AdminUnlockModal] Admin ${username} verified for reset operation`);
-          toast({
-            title: 'Success',
-            description: 'Admin verified. Proceeding with reset...',
-          });
-          onUnlock(username); // Pass the verified admin username
-        } else {
-          // For unlock operations, actually unlock the match
-          await unlockMatch(matchId, username);
-          toast({
-            title: 'Success',
-            description: 'Match has been unlocked for editing.',
-          });
-          onUnlock();
-        }
+        await unlockMatch(matchId, username);
+        toast({
+          title: 'Success',
+          description: 'Match has been unlocked for editing.',
+        });
+        onUnlock();
         onClose();
         return;
       }
@@ -89,7 +76,7 @@ const AdminUnlockModal: React.FC<AdminUnlockModalProps> = ({
     } catch (error) {
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : (isResetOperation ? 'Failed to verify admin credentials' : 'Failed to unlock match'),
+        description: error instanceof Error ? error.message : 'Failed to unlock match',
         variant: 'destructive',
       });
     } finally {

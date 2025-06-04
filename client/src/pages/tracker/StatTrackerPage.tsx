@@ -17,9 +17,7 @@ import {
   verifyAdminCredentials,
   fetchAdminUsersList,
   type StatLog,
-  getTeams,
-  resetSet,
-  resetFullGame
+  getTeams
 } from '@/lib/firebase';
 import { getOptimizedTextStyle } from '@/lib/colorUtils';
 import type { Match, Team, Player } from '@shared/schema';
@@ -94,10 +92,6 @@ const StatTrackerPage = () => {
   const [showFinalizeMatchDialog, setShowFinalizeMatchDialog] = useState(false);
   const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [matchToUnlock, setMatchToUnlock] = useState<string | null>(null);
-  const [showResetModal, setShowResetModal] = useState(false);
-  const [resetType, setResetType] = useState<'set' | 'game' | null>(null);
-  const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
-  const [verifiedAdminUsername, setVerifiedAdminUsername] = useState<string | null>(null);
 
   // Logout handler
   const handleLogout = () => {
@@ -519,79 +513,6 @@ const StatTrackerPage = () => {
 
   const handleCancelSubmit = () => {
     setShowConfirmDialog(false);
-  };
-
-  // Reset functionality handlers
-  const handleResetSet = () => {
-    setResetType('set');
-    setShowResetModal(true);
-  };
-
-  const handleResetGame = () => {
-    setResetType('game');
-    setShowResetModal(true);
-  };
-
-  const handleResetModalSuccess = (adminUsername?: string) => {
-    console.log(`[RESET] Admin verified: ${adminUsername}`);
-    setVerifiedAdminUsername(adminUsername || 'Unknown Admin');
-    setShowResetModal(false);
-    setShowResetConfirmDialog(true);
-  };
-
-  const handleResetCancel = () => {
-    setShowResetModal(false);
-    setResetType(null);
-  };
-
-  const handleConfirmReset = async () => {
-    if (!currentMatch || !selectedMatchId || !resetType || !verifiedAdminUsername) return;
-
-    try {
-      console.log(`[RESET] Starting ${resetType} reset for match ${selectedMatchId} by admin ${verifiedAdminUsername}`);
-      
-      if (resetType === 'set') {
-        const teamName = teamA?.teamName || teamB?.teamName || 'Unknown Team';
-        console.log(`[RESET] Resetting Set ${currentSet} for team ${teamName}`);
-        await resetSet(selectedMatchId, currentSet, verifiedAdminUsername, teamName);
-        
-        toast({
-          title: "Set Reset Complete",
-          description: `Set ${currentSet} has been reset to 0-0`,
-        });
-      } else if (resetType === 'game') {
-        const teamAName = teamA?.teamName || 'Team A';
-        const teamBName = teamB?.teamName || 'Team B';
-        console.log(`[RESET] Resetting full game: ${teamAName} vs ${teamBName}`);
-        await resetFullGame(selectedMatchId, verifiedAdminUsername, teamAName, teamBName);
-        
-        // Reset to Set 1 after full game reset
-        setCurrentSet(1);
-        
-        toast({
-          title: "Game Reset Complete",
-          description: "Full game has been reset to Set 1 (0-0)",
-        });
-      }
-      
-      console.log(`[RESET] ${resetType} reset completed successfully`);
-    } catch (error) {
-      console.error(`[RESET] Error during ${resetType} reset:`, error);
-      toast({
-        title: "Reset Failed",
-        description: `Failed to reset. Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive",
-      });
-    } finally {
-      setShowResetConfirmDialog(false);
-      setResetType(null);
-      setVerifiedAdminUsername(null);
-    }
-  };
-
-  const handleCancelReset = () => {
-    setShowResetConfirmDialog(false);
-    setResetType(null);
   };
 
   // Handler for changing the current set
@@ -1244,45 +1165,18 @@ const StatTrackerPage = () => {
 
               {/* Revised Layout: Team A (left), Actions (middle), Team B (right) */}
               <div className="p-6">
-                {/* Control Buttons Row */}
-                <div className="flex justify-between items-center mb-4">
-                  {/* Reset Full Game Button - Left side, separated for safety */}
+                {/* Swap Teams Button */}
+                <div className="flex justify-end mb-4">
                   <button
-                    onClick={handleResetGame}
-                    className="flex items-center gap-1 bg-red-50 text-red-700 border border-red-300 rounded-md px-3 py-1.5 text-sm font-medium hover:bg-red-100 transition-colors"
-                    title="Reset entire game - clears all sets and returns to Set 1"
+                    onClick={() => setSwapTeamPositions(!swapTeamPositions)}
+                    className="flex items-center gap-1 bg-white text-gray-700 border border-gray-300 rounded-md px-3 py-1.5 text-sm font-medium hover:bg-gray-50 transition-colors"
                   >
-                    <AlertTriangle className="h-4 w-4" />
-                    Reset Full Game
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M7 16V4m0 0L3 8m4-4l4 4" />
+                      <path d="M17 8v12m0 0l4-4m-4 4l-4-4" />
+                    </svg>
+                    Swap Team Positions
                   </button>
-
-                  {/* Right side controls */}
-                  <div className="flex items-center gap-2">
-                    {/* Reset Set Button */}
-                    <button
-                      onClick={handleResetSet}
-                      className="flex items-center gap-1 bg-orange-50 text-orange-700 border border-orange-300 rounded-md px-3 py-1.5 text-sm font-medium hover:bg-orange-100 transition-colors"
-                      title={`Reset Set ${currentSet} - clears score and actions for this set`}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M1 4v6h6" />
-                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-                      </svg>
-                      Reset Set {currentSet}
-                    </button>
-
-                    {/* Swap Teams Button */}
-                    <button
-                      onClick={() => setSwapTeamPositions(!swapTeamPositions)}
-                      className="flex items-center gap-1 bg-white text-gray-700 border border-gray-300 rounded-md px-3 py-1.5 text-sm font-medium hover:bg-gray-50 transition-colors"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M7 16V4m0 0L3 8m4-4l4 4" />
-                        <path d="M17 8v12m0 0l4-4m-4 4l-4-4" />
-                      </svg>
-                      Swap Team Positions
-                    </button>
-                  </div>
                 </div>
 
                 {/* Sticky Current Set Score Display */}
@@ -1730,64 +1624,6 @@ const StatTrackerPage = () => {
           onUnlock={() => setSetToUnlock(null)}
         />
       )}
-
-      {/* Reset Admin Authentication Modal */}
-      {showResetModal && (
-        <AdminUnlockModal
-          matchId={selectedMatchId}
-          onClose={handleResetCancel}
-          onUnlock={handleResetModalSuccess}
-          isResetOperation={true}
-        />
-      )}
-
-      {/* Reset Confirmation Dialog */}
-      <AlertDialog open={showResetConfirmDialog} onOpenChange={setShowResetConfirmDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-red-600" />
-              Confirm {resetType === 'set' ? 'Set Reset' : 'Full Game Reset'}
-            </AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div>
-                {resetType === 'set' ? (
-                  <div>
-                    <p>Are you sure you want to reset Set {currentSet}? This will:</p>
-                    <ul className="list-disc list-inside mt-2 space-y-1">
-                      <li>Reset the score to 0-0</li>
-                      <li>Delete all action logs for this set</li>
-                      <li>Remove player stats for this set</li>
-                      <li>Keep the set unlocked for editing</li>
-                    </ul>
-                  </div>
-                ) : (
-                  <div>
-                    <p>Are you sure you want to reset the entire game? This will:</p>
-                    <ul className="list-disc list-inside mt-2 space-y-1">
-                      <li>Reset all sets (1-3) to 0-0</li>
-                      <li>Delete all action logs for the match</li>
-                      <li>Remove all player stats</li>
-                      <li>Return to Set 1 as current</li>
-                      <li>Lock Sets 2 and 3</li>
-                    </ul>
-                  </div>
-                )}
-                <p className="mt-3 font-semibold text-red-600">This action cannot be undone.</p>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleCancelReset}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmReset}
-              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
-            >
-              {resetType === 'set' ? `Reset Set ${currentSet}` : 'Reset Full Game'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </section>
   );
 };

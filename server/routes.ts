@@ -113,10 +113,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allTeams = teamsSnapshot.val() || {};
 
       // Collect detailed match information for the requested team
-      const matchSummary = {};
-      const matchesAsTeamA = [];
-      const matchesAsTeamB = [];
-      const matchesAsTracker = [];
+      const matchSummary: any = {};
+      const matchesAsTeamA: any[] = [];
+      const matchesAsTeamB: any[] = [];
+      const matchesAsTracker: any[] = [];
 
       // Loop through matches and categorize them
       Object.entries(allMatches).forEach(([matchId, matchData]) => {
@@ -172,9 +172,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .map(([id]) => id);
 
       // Compile results
-      matchSummary['asTeamA'] = matchesAsTeamA;
-      matchSummary['asTeamB'] = matchesAsTeamB;
-      matchSummary['asTracker'] = matchesAsTracker;
+      (matchSummary as any)['asTeamA'] = matchesAsTeamA;
+      (matchSummary as any)['asTeamB'] = matchesAsTeamB;
+      (matchSummary as any)['asTracker'] = matchesAsTracker;
 
       res.json({
         teamId,

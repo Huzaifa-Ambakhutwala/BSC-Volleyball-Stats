@@ -7,6 +7,53 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Serve static files from public directory
+app.use(express.static(path.join(process.cwd(), 'public')));
+
+// Downtime middleware - check before serving the main app
+app.use(async (req, res, next) => {
+  // Skip downtime check for API routes, maintenance page, static assets, and Vite dev files
+  if (req.path.startsWith('/api') || 
+      req.path === '/maintenance.html' || 
+      req.path.startsWith('/assets/') ||
+      req.path.startsWith('/@') ||
+      req.path.startsWith('/src/') ||
+      req.path.includes('.js') ||
+      req.path.includes('.css') ||
+      req.path.includes('.ts') ||
+      req.path.includes('.tsx') ||
+      req.path.includes('.ico') ||
+      req.path.includes('.png') ||
+      req.path.includes('.jpg') ||
+      req.path.includes('.svg')) {
+    return next();
+  }
+
+  try {
+    const fs = await import('fs/promises');
+    const downtimeData = await fs.readFile(path.join(process.cwd(), 'data/downtime.json'), 'utf8');
+    const downtime = JSON.parse(downtimeData);
+
+    if (downtime.active && !downtime.overriddenByAdmin) {
+      const now = new Date();
+      const start = downtime.start ? new Date(downtime.start) : null;
+      const end = downtime.end ? new Date(downtime.end) : null;
+      
+      const isDowntimeActive = 
+        (!start || now >= start) && 
+        (!end || now <= end);
+      
+      if (isDowntimeActive) {
+        return res.redirect('/maintenance.html');
+      }
+    }
+  } catch (error) {
+    console.error('Error checking downtime:', error);
+  }
+
+  next();
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;

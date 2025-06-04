@@ -202,7 +202,6 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
   const [currentSet, setCurrentSet] = useState<number>(1);
-  const [blockType, setBlockType] = useState<'point' | 'neutral'>('point');
   const [currentMatch, setCurrentMatch] = useState<Match | null>(null);
   const [isSetLocked, setIsSetLocked] = useState<boolean>(false);
 
@@ -258,12 +257,7 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
     // Set loading state
     setIsUpdating(true);
 
-    // Special handling for blocks based on selected type
-    if (statName === 'blocks' && blockType === 'neutral') {
-      statName = 'neutralBlocks' as keyof PlayerStats;
-      label = 'Neutral Block';
-      category = 'neutral'; // Change to neutral category - counted but doesn't affect score
-    }
+    // Block is now always an earned action
 
     try {
       // Update the stat with category to properly handle scoring, and include current set
@@ -372,6 +366,13 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
             title="Setter dump - setter attacks ball for a point"
           />
           <ActionButton
+            label="Block"
+            onClick={() => handleStatUpdate('blocks', 'Block', 'earned')}
+            className="btn-success"
+            disabled={isSetLocked}
+            title="Block that wins the point directly"
+          />
+          <ActionButton
             label="Point"
             onClick={() => handleStatUpdate('points', 'Generic Point', 'earned')}
             className="btn-success"
@@ -381,44 +382,7 @@ export const StatActions = ({ matchId, selectedPlayerId, currentSet: propCurrent
         </div>
       </div>
 
-      {/* Block Section */}
-      <div className="mb-2 mt-4">
-        <div className="text-lg font-bold text-left text-gray-700 border-l-4 border-blue-500 pl-2 mb-2">Block</div>
-        <div className="grid grid-cols-2 gap-2 mb-2">
-          <button
-            className={`px-3 py-1 rounded-md ${blockType === 'point'
-              ? 'bg-green-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              } ${isSetLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
-            onClick={() => !isSetLocked && setBlockType('point')}
-            disabled={isSetLocked}
-            title="Block that wins the point directly"
-          >
-            Point Block
-          </button>
-          <button
-            className={`px-3 py-1 rounded-md ${blockType === 'neutral'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              } ${isSetLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
-            onClick={() => !isSetLocked && setBlockType('neutral')}
-            disabled={isSetLocked}
-            title="Block that touches ball but doesn't score"
-          >
-            Neutral Block
-          </button>
-        </div>
 
-        <div className="grid grid-cols-1 gap-2">
-          <ActionButton
-            label={blockType === 'point' ? "Block (Point)" : "Block (Touch Only)"}
-            onClick={() => handleStatUpdate('blocks', blockType === 'point' ? 'Block Point' : 'Neutral Block', 'earned')}
-            className={blockType === 'point' ? "btn-success" : "bg-blue-500 text-white hover:bg-blue-600"}
-            disabled={isSetLocked}
-            title={blockType === 'point' ? "Record a block that wins the point" : "Record a block that only touches the ball"}
-          />
-        </div>
-      </div>
 
       {/* Fault Section */}
       <div className="mb-2 mt-4">

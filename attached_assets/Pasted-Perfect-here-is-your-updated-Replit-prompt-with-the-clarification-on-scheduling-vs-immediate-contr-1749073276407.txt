@@ -1,0 +1,71 @@
+Perfect — here is your updated Replit prompt with the clarification on scheduling vs immediate controls:
+
+⸻
+
+✅ Replit Prompt: Manage Downtime System (with Scheduled and Manual Controls)
+
+Add a “Manage Downtime” section in the Admin Dashboard with the following functionality:
+
+⸻
+
+🖥 Admin UI (ManageDowntimePage.tsx):
+
+1. Schedule Downtime
+	•	Input fields:
+	•	Start Date/Time (datetime picker)
+	•	End Date/Time (datetime picker)
+	•	Downtime Message (textarea)
+	•	✅ Button: “Schedule Downtime”
+	•	Stores downtime object in /data/downtime.json
+	•	Marks "active": false initially and downtime only activates when currentTime >= start
+
+2. Immediate Controls
+	•	🔴 “Start Downtime Now” button:
+	•	Optional popup/input to write a message
+	•	Immediately sets active: true and start: now, end: null, stores in /data/downtime.json
+	•	🟢 “End Downtime Now” button:
+	•	Clears or disables downtime, sets active: false, overriddenByAdmin: false
+
+3. Display Current Downtime Status
+	•	If downtime is scheduled or active, show:
+	•	Start, End, Message, and whether it’s currently active
+
+⸻
+
+🧠 Logic (Middleware in _app.tsx or shared layout):
+	•	Load /data/downtime.json
+	•	If:
+
+downtime.active &&
+(!downtime.overriddenByAdmin) &&
+(downtime.end === null || currentTime <= downtime.end)
+
+→ Redirect user to /maintenance.html
+
+	•	Exception: If admin logs in from maintenance page, set overriddenByAdmin: true in downtime.json
+
+⸻
+
+📄 maintenance.html:
+	•	Display:
+	•	❗”Site Under Maintenance”
+	•	💬 Message from downtime.message
+	•	🔐 “Admin Login” button at the bottom:
+	•	Authenticates using existing Admin credentials
+	•	If success, unlocks for that admin session by setting overriddenByAdmin: true
+
+⸻
+
+✅ Requirements:
+	•	All data stored in:
+
+/data/downtime.json
+
+
+	•	Prevent all app pages (stat tracker, schedule, history, scoreboard, etc.) during downtime
+	•	Downtime ends automatically at end OR if manually ended
+	•	Admin UI must cleanly allow both manual and scheduled downtime management
+
+⸻
+
+Let me know if you want me to generate the downtime.json schema or the check function too!

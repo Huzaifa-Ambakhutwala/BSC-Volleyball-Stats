@@ -608,7 +608,132 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Downtime Management API Routes
+  
+  // Get current downtime status
+  app.get("/api/downtime", async (req, res) => {
+    try {
+      const downtimeData = await fs.readFile(path.join(process.cwd(), 'data', 'downtime.json'), 'utf8');
+      const downtime = JSON.parse(downtimeData);
+      res.json(downtime);
+    } catch (error) {
+      // If file doesn't exist, return default state
+      const defaultDowntime = {
+        active: false,
+        start: null,
+        end: null,
+        message: "",
+        overriddenByAdmin: false
+      };
+      res.json(defaultDowntime);
+    }
+  });
 
+  // Schedule downtime
+  app.post("/api/downtime/schedule", isAuthenticated, async (req, res) => {
+    try {
+      const { start, end, message } = req.body;
+      
+      if (!start || !end || !message) {
+        return res.status(400).json({ message: "Start time, end time, and message are required" });
+      }
+
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+      const now = new Date();
+
+      if (endDate <= startDate) {
+        return res.status(400).json({ message: "End time must be after start time" });
+      }
+
+      const downtimeConfig = {
+        active: now >= startDate, // Active if start time has passed
+        start: start,
+        end: end,
+        message: message,
+        overriddenByAdmin: false
+      };
+
+      await fs.writeFile(
+        path.join(process.cwd(), 'data', 'downtime.json'),
+        JSON.stringify(downtimeConfig, null, 2)
+      );
+
+      res.json({ message: "Downtime scheduled successfully", downtime: downtimeConfig });
+    } catch (error) {
+      console.error('Error scheduling downtime:', error);
+      res.status(500).json({ message: "Error scheduling downtime" });
+    }
+  });
+
+  // Start immediate downtime
+  app.post("/api/downtime/start", isAuthenticated, async (req, res) => {
+    try {
+      const { message } = req.body;
+      const defaultMessage = "The site is temporarily under maintenance. Please check back later.";
+
+      const downtimeConfig = {
+        active: true,
+        start: new Date().toISOString(),
+        end: null,
+        message: message || defaultMessage,
+        overriddenByAdmin: false
+      };
+
+      await fs.writeFile(
+        path.join(process.cwd(), 'data', 'downtime.json'),
+        JSON.stringify(downtimeConfig, null, 2)
+      );
+
+      res.json({ message: "Downtime started successfully", downtime: downtimeConfig });
+    } catch (error) {
+      console.error('Error starting downtime:', error);
+      res.status(500).json({ message: "Error starting downtime" });
+    }
+  });
+
+  // End downtime now
+  app.post("/api/downtime/end", isAuthenticated, async (req, res) => {
+    try {
+      const downtimeConfig = {
+        active: false,
+        start: null,
+        end: null,
+        message: "",
+        overriddenByAdmin: false
+      };
+
+      await fs.writeFile(
+        path.join(process.cwd(), 'data', 'downtime.json'),
+        JSON.stringify(downtimeConfig, null, 2)
+      );
+
+      res.json({ message: "Downtime ended successfully", downtime: downtimeConfig });
+    } catch (error) {
+      console.error('Error ending downtime:', error);
+      res.status(500).json({ message: "Error ending downtime" });
+    }
+  });
+
+  // Admin override downtime (for maintenance page login)
+  app.post("/api/downtime/override", isAuthenticated, async (req, res) => {
+    try {
+      const downtimeData = await fs.readFile(path.join(process.cwd(), 'data', 'downtime.json'), 'utf8');
+      const downtime = JSON.parse(downtimeData);
+      
+      downtime.overriddenByAdmin = true;
+
+      await fs.writeFile(
+        path.join(process.cwd(), 'data', 'downtime.json'),
+        JSON.stringify(downtime, null, 2)
+      );
+
+      res.json({ message: "Admin override activated", downtime });
+    } catch (error) {
+      console.error('Error overriding downtime:', error);
+      res.status(500).json({ message: "Error overriding downtime" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

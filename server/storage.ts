@@ -100,29 +100,6 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async updateUser(id: number, updates: Partial<Omit<User, 'id'>>) {
-    const result = await db
-      .update(users)
-      .set(updates)
-      .where(eq(users.id, id))
-      .returning();
-    return result[0];
-  }
-
-  async updateUserPassword(username: string, hashedPassword: string): Promise<boolean> {
-    try {
-      const result = await db
-        .update(users)
-        .set({ password: hashedPassword })
-        .where(eq(users.username, username))
-        .returning();
-      return result.length > 0;
-    } catch (error) {
-      console.error("Error updating user password:", error);
-      return false;
-    }
-  }
-
   // Player methods
   async getPlayer(id: number): Promise<Player_DB | undefined> {
     const [player] = await db.select().from(players).where(eq(players.id, id));

@@ -193,43 +193,24 @@ const ManagePasswords = () => {
       return;
     }
 
-    // Update in Firebase
-    const firebaseSuccess = await updateAdminUser(username, newPassword, newAdminAccessLevel);
-    if (!firebaseSuccess) {
+    const success = await updateAdminUser(username, newPassword, newAdminAccessLevel);
+
+    if (success) {
+      // Refresh admin users
+      const admins = await getAdminUsers();
+      setAdminUsers(admins);
+
+      toast({
+        title: "Success",
+        description: `Password updated for ${username}`,
+      });
+    } else {
       toast({
         title: "Error",
         description: "Failed to update password",
         variant: "destructive",
       });
-      return;
     }
-
-    // Also update in backend database for login consistency
-    try {
-      const response = await fetch('/api/admin/update-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ username, newPassword }),
-      });
-
-      if (!response.ok) {
-        console.warn('Backend password update failed, but Firebase succeeded');
-      }
-    } catch (backendError) {
-      console.warn('Backend password update failed:', backendError);
-    }
-
-    // Refresh admin users
-    const admins = await getAdminUsers();
-    setAdminUsers(admins);
-
-    toast({
-      title: "Success",
-      description: `Password updated for ${username}`,
-    });
 
     setEditingAdminIndex(null);
     setNewPassword('');

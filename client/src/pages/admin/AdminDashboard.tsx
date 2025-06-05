@@ -10,9 +10,8 @@ import AllPlayerStats from './AllPlayerStats';
 import TrackerLogs from './TrackerLogs';
 import FeedbackView from './FeedbackView';
 import UserGuide from './UserGuide';
-import ManageDowntime from './ManageDowntime';
 
-type AdminTab = 'players' | 'teams' | 'schedule' | 'passwords' | 'stats' | 'logs' | 'feedback' | 'downtime' | 'guide';
+type AdminTab = 'players' | 'teams' | 'schedule' | 'passwords' | 'stats' | 'logs' | 'feedback' | 'guide';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('players');
@@ -114,15 +113,6 @@ const AdminDashboard = () => {
                   Feedback
                 </button>
                 <button
-                  className={`px-6 py-3 border-b-2 font-medium ${activeTab === 'downtime'
-                      ? 'border-[hsl(var(--vb-blue))] text-[hsl(var(--vb-blue))]'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    } transition whitespace-nowrap`}
-                  onClick={() => setActiveTab('downtime')}
-                >
-                  Downtime
-                </button>
-                <button
                   className={`px-6 py-3 border-b-2 font-medium ${activeTab === 'guide'
                       ? 'border-[hsl(var(--vb-blue))] text-[hsl(var(--vb-blue))]'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -144,7 +134,6 @@ const AdminDashboard = () => {
             {activeTab === 'stats' && <AllPlayerStats />}
             {activeTab === 'logs' && <TrackerLogs />}
             {activeTab === 'feedback' && <FeedbackView />}
-            {activeTab === 'downtime' && <ManageDowntime />}
             {activeTab === 'guide' && (
               <div className="h-screen">
                 <UserGuide />

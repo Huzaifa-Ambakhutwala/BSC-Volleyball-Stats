@@ -14,7 +14,6 @@ import { z } from "zod";
 import multer from 'multer';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { hashPassword } from "./auth"; // Import hashPassword function
 
 // Middleware to ensure user is authenticated
 function isAuthenticated(req: Request, res: Response, next: Function) {
@@ -114,10 +113,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allTeams = teamsSnapshot.val() || {};
 
       // Collect detailed match information for the requested team
-      const matchSummary: any = {};
-      const matchesAsTeamA: any[] = [];
-      const matchesAsTeamB: any[] = [];
-      const matchesAsTracker: any[] = [];
+      const matchSummary = {};
+      const matchesAsTeamA = [];
+      const matchesAsTeamB = [];
+      const matchesAsTracker = [];
 
       // Loop through matches and categorize them
       Object.entries(allMatches).forEach(([matchId, matchData]) => {
@@ -173,9 +172,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .map(([id]) => id);
 
       // Compile results
-      (matchSummary as any)['asTeamA'] = matchesAsTeamA;
-      (matchSummary as any)['asTeamB'] = matchesAsTeamB;
-      (matchSummary as any)['asTracker'] = matchesAsTracker;
+      matchSummary['asTeamA'] = matchesAsTeamA;
+      matchSummary['asTeamB'] = matchesAsTeamB;
+      matchSummary['asTracker'] = matchesAsTracker;
 
       res.json({
         teamId,
@@ -193,41 +192,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error in team matches debug route:", error);
       res.status(500).json({ error: String(error) });
-    }
-  });
-
-  app.get("/api/user", (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-
-    const user = req.user;
-    res.json({ id: user.id, username: user.username });
-  });
-
-  // API endpoint to update admin password
-  app.post("/api/admin/update-password", isAuthenticated, async (req, res) => {
-    try {
-      const { username, newPassword } = req.body;
-
-      if (!req.user || !req.user.isAdmin) {
-        return res.status(403).json({ message: "Admin access required" });
-      }
-
-      // Hash the new password
-      const hashedPassword = await hashPassword(newPassword);
-
-      // Update the user in the database
-      const success = await storage.updateUserPassword(username, hashedPassword);
-
-      if (success) {
-        res.json({ message: "Password updated successfully" });
-      } else {
-        res.status(404).json({ message: "User not found" });
-      }
-    } catch (error) {
-      console.error("Error updating admin password:", error);
-      res.status(500).json({ message: "Internal server error" });
     }
   });
 
@@ -621,11 +585,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const feedbackId = req.params.feedbackId;
       const success = await storage.deleteFeedback(feedbackId);
-
+      
       if (!success) {
         return res.status(404).json({ message: "Feedback not found" });
       }
-
+      
       res.json({ message: "Feedback deleted successfully" });
     } catch (error) {
       console.error('Error deleting feedback:', error);
@@ -644,173 +608,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Downtime Management API Routes
 
-  // Get current downtime status
-  // Optimized downtime endpoint with caching
-  let downtimeApiCache: any = null;
-  let downtimeApiCacheTime = 0;
-  const DOWNTIME_API_CACHE_DURATION = 30000; // 30 seconds
-  
-  app.get("/api/downtime", async (req, res) => {
-    try {
-      const now = Date.now();
-      
-      // Use cached response if available and fresh
-      if (downtimeApiCache && (now - downtimeApiCacheTime) < DOWNTIME_API_CACHE_DURATION) {
-        res.set({
-          'Cache-Control': 'public, max-age=30',
-          'ETag': `"${downtimeApiCacheTime}"`,
-          'Last-Modified': new Date(downtimeApiCacheTime).toUTCString()
-        });
-        return res.json(downtimeApiCache);
-      }
-      
-      // Check if client has current version
-      const clientETag = req.get('If-None-Match');
-      if (clientETag === `"${downtimeApiCacheTime}"` && downtimeApiCache) {
-        return res.status(304).end();
-      }
-      
-      const downtimeData = await fs.readFile(path.join(process.cwd(), 'data', 'downtime.json'), 'utf8');
-      const downtime = JSON.parse(downtimeData);
-      
-      // Update cache
-      downtimeApiCache = downtime;
-      downtimeApiCacheTime = now;
-      
-      res.set({
-        'Cache-Control': 'public, max-age=30',
-        'ETag': `"${downtimeApiCacheTime}"`,
-        'Last-Modified': new Date(downtimeApiCacheTime).toUTCString()
-      });
-      
-      res.json(downtime);
-    } catch (error) {
-      // If file doesn't exist, return default state
-      const defaultDowntime = {
-        active: false,
-        start: null,
-        end: null,
-        message: ""
-      };
-      
-      // Cache default response too
-      downtimeApiCache = defaultDowntime;
-      downtimeApiCacheTime = Date.now();
-      
-      res.set({
-        'Cache-Control': 'public, max-age=30',
-        'ETag': `"${downtimeApiCacheTime}"`,
-        'Last-Modified': new Date(downtimeApiCacheTime).toUTCString()
-      });
-      
-      res.json(defaultDowntime);
-    }
-  });
-
-  // Schedule downtime
-  app.post("/api/downtime/schedule", isAuthenticated, async (req, res) => {
-    try {
-      const { start, end, message } = req.body;
-
-      if (!start || !end || !message) {
-        return res.status(400).json({ message: "Start time, end time, and message are required" });
-      }
-
-      const startDate = new Date(start);
-      const endDate = new Date(end);
-      const now = new Date();
-
-      if (endDate <= startDate) {
-        return res.status(400).json({ message: "End time must be after start time" });
-      }
-
-      const downtimeConfig = {
-        active: now >= startDate, // Active if start time has passed
-        start: start,
-        end: end,
-        message: message
-      };
-
-      await fs.writeFile(
-        path.join(process.cwd(), 'data', 'downtime.json'),
-        JSON.stringify(downtimeConfig, null, 2)
-      );
-
-      res.json({ message: "Downtime scheduled successfully", downtime: downtimeConfig });
-    } catch (error) {
-      console.error('Error scheduling downtime:', error);
-      res.status(500).json({ message: "Error scheduling downtime" });
-    }
-  });
-
-  // Start immediate downtime
-  app.post("/api/downtime/start", isAuthenticated, async (req, res) => {
-    try {
-      const { message } = req.body;
-      const defaultMessage = "The site is temporarily under maintenance. Please check back later.";
-
-      const downtimeConfig = {
-        active: true,
-        start: new Date().toISOString(),
-        end: null,
-        message: message || defaultMessage
-      };
-
-      await fs.writeFile(
-        path.join(process.cwd(), 'data', 'downtime.json'),
-        JSON.stringify(downtimeConfig, null, 2)
-      );
-
-      res.json({ message: "Downtime started successfully", downtime: downtimeConfig });
-    } catch (error) {
-      console.error('Error starting downtime:', error);
-      res.status(500).json({ message: "Error starting downtime" });
-    }
-  });
-
-  // End downtime now
-  app.post("/api/downtime/end", isAuthenticated, async (req, res) => {
-    try {
-      const downtimeConfig = {
-        active: false,
-        start: null,
-        end: null,
-        message: ""
-      };
-
-      await fs.writeFile(
-        path.join(process.cwd(), 'data', 'downtime.json'),
-        JSON.stringify(downtimeConfig, null, 2)
-      );
-
-      res.json({ message: "Downtime ended successfully", downtime: downtimeConfig });
-    } catch (error) {
-      console.error('Error ending downtime:', error);
-      res.status(500).json({ message: "Error ending downtime" });
-    }
-  });
-
-  // Admin override downtime (sets cookie for individual admin access only)
-  app.post("/api/downtime/override", isAuthenticated, async (req, res) => {
-    try {
-      // Set cookie that can be read by client-side JS for proper override handling
-      res.cookie('admin_override', 'true', {
-        httpOnly: false, // Allow frontend JS to read it
-        secure: false,   // Set to true in production with HTTPS
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
-      });
-      
-      console.log('Setting admin override cookie');
-      res.redirect('/');
-    } catch (error) {
-      console.error('Error setting admin override:', error);
-      res.status(500).json({ message: "Error setting admin override" });
-    }
-  });
 
   const httpServer = createServer(app);
   return httpServer;

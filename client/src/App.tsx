@@ -21,7 +21,6 @@ import Home from "@/pages/Home";
 import { useEffect, useState, lazy, Suspense } from "react";
 import { useLocation } from "wouter";
 import { getTrackerUser, type TrackerUser } from "@/lib/firebase";
-import { DowntimeProvider } from "@/lib/downtimeMiddleware";
 
 // Context for tracker authentication
 import { createContext } from "react";
@@ -383,20 +382,18 @@ function App() {
 
   return (
     <DarkModeContext.Provider value={{ darkMode, setDarkMode }}>
-      <DowntimeProvider>
-        <div className="min-h-screen flex flex-col">
-          <Header />
-          <main className="flex-grow">
-            <QueryClientProvider client={queryClient}>
-              <TooltipProvider>
-                <Router />
-                <Toaster />
-              </TooltipProvider>
-            </QueryClientProvider>
-          </main>
-          <Footer />
-        </div>
-      </DowntimeProvider>
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-grow">
+          <QueryClientProvider client={queryClient}>
+            <TooltipProvider>
+              <Router />
+              <Toaster />
+            </TooltipProvider>
+          </QueryClientProvider>
+        </main>
+        <Footer />
+      </div>
     </DarkModeContext.Provider>
   );
 }

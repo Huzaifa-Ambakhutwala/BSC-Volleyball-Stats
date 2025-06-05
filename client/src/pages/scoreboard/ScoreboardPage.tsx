@@ -23,6 +23,7 @@ const ScoreboardPage = () => {
   const [matchStatsData, setMatchStatsData] = useState<MatchStats>({});
   const [statsLoading, setStatsLoading] = useState(false);
   const [statLogs, setStatLogs] = useState<StatLog[]>([]);
+  const [isAllMatchesComplete, setIsAllMatchesComplete] = useState(false);
   const { toast } = useToast();
 
   // Helper function to get emoji for stat type
@@ -80,10 +81,12 @@ const ScoreboardPage = () => {
         // Find the first match that is not completed
         let selectedMatch = sortedMatches.find(({ match }) => match.status !== 'completed');
         
-        // If no active match found, check if all matches are completed
+        // Check if all matches are completed
+        const allCompleted = sortedMatches.every(({ match }) => match.status === 'completed');
+        setIsAllMatchesComplete(allCompleted);
+        
+        // If no active match found, handle completion cases
         if (!selectedMatch) {
-          const allCompleted = sortedMatches.every(({ match }) => match.status === 'completed');
-          
           if (allCompleted) {
             // All matches complete - show the latest completed match
             selectedMatch = sortedMatches[sortedMatches.length - 1];
@@ -376,6 +379,21 @@ const ScoreboardPage = () => {
               <p className="text-xl">No matches scheduled for this court</p>
             </div>
           </div>
+        ) : isAllMatchesComplete && currentMatch.status === 'completed' ? (
+          <div className="bg-[hsl(var(--vb-dark-gray))] text-white rounded-lg shadow-md overflow-hidden">
+            <div className="p-8 text-center">
+              <h3 className="text-2xl font-bold mb-6">Court {courtNumber}</h3>
+              <div className="text-green-400 text-2xl font-bold mb-4">
+                All matches complete for today on this court
+              </div>
+              <div className="text-lg text-gray-400 mb-4">
+                Last match: {formatTime(currentMatch.startTime)}
+              </div>
+              <div className="text-sm text-gray-500">
+                Final Score: {teamA?.teamName || 'Team A'} {currentMatch.scoreA} - {currentMatch.scoreB} {teamB?.teamName || 'Team B'}
+              </div>
+            </div>
+          </div>
         ) : (
           <div>
             {/* Match Scoreboard */}
@@ -399,7 +417,49 @@ const ScoreboardPage = () => {
                 </div>
                 <div className="mt-8 text-lg text-gray-400">
                   Start Time: {formatTime(currentMatch.startTime)}
+                  {currentMatch.currentSet && (
+                    <span className="ml-4 text-yellow-400">
+                      • Set {currentMatch.currentSet}
+                    </span>
+                  )}
+                  {currentMatch.status === 'completed' && (
+                    <span className="ml-4 text-green-400">
+                      • Complete
+                    </span>
+                  )}
                 </div>
+                
+                {/* Set Scores Display */}
+                {currentMatch.setScores && (
+                  <div className="mt-4 text-sm text-gray-300">
+                    <div className="flex justify-center space-x-6">
+                      {currentMatch.setScores.set1 && (
+                        <div className="text-center">
+                          <div className="text-gray-400">Set 1</div>
+                          <div className="font-mono">
+                            {currentMatch.setScores.set1.scoreA} - {currentMatch.setScores.set1.scoreB}
+                          </div>
+                        </div>
+                      )}
+                      {currentMatch.setScores.set2 && (
+                        <div className="text-center">
+                          <div className="text-gray-400">Set 2</div>
+                          <div className="font-mono">
+                            {currentMatch.setScores.set2.scoreA} - {currentMatch.setScores.set2.scoreB}
+                          </div>
+                        </div>
+                      )}
+                      {currentMatch.setScores.set3 && (
+                        <div className="text-center">
+                          <div className="text-gray-400">Set 3</div>
+                          <div className="font-mono">
+                            {currentMatch.setScores.set3.scoreA} - {currentMatch.setScores.set3.scoreB}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

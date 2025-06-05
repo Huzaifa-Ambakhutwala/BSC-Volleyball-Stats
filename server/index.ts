@@ -68,9 +68,11 @@ app.use(async (req, res, next) => {
       // Check if this specific admin has override cookie
       const hasAdminOverride = req.cookies?.adminDowntimeOverride;
       
-      // Debug cookie info
-      console.log('Downtime check for path:', req.path);
-      console.log('Admin override cookie:', hasAdminOverride);
+      // Debug cookie info (only log non-asset requests)
+      if (!req.path.includes('.') && !req.path.startsWith('/@') && !req.path.startsWith('/src/')) {
+        console.log('Downtime check for path:', req.path);
+        console.log('Admin override cookie:', hasAdminOverride);
+      }
       
       if (isDowntimeActive && !hasAdminOverride) {
         console.log('Redirecting to maintenance - no admin override');

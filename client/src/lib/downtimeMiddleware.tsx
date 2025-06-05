@@ -64,9 +64,15 @@ export const useDowntimeCheck = () => {
             (!start || currentTime >= start) && 
             (!end || currentTime <= end);
           
-          if (isDowntimeActive && !location.includes('/maintenance.html')) {
+          // Check if admin has override cookie
+          const hasAdminOverride = document.cookie.includes('adminDowntimeOverride=');
+          
+          if (isDowntimeActive && !hasAdminOverride && !location.includes('/maintenance.html')) {
+            console.log('Client-side downtime redirect - no admin override detected');
             window.location.href = '/maintenance.html';
             return;
+          } else if (isDowntimeActive && hasAdminOverride) {
+            console.log('Client-side downtime check - admin override detected, allowing access');
           }
         }
       } catch (error) {
@@ -77,8 +83,9 @@ export const useDowntimeCheck = () => {
       }
     };
 
-    // Skip downtime checks for maintenance page
-    if (location.includes('/maintenance.html')) {
+    // Skip downtime checks for maintenance page or admin areas when override is present
+    if (location.includes('/maintenance.html') || 
+        (location.includes('/admin') && document.cookie.includes('adminDowntimeOverride='))) {
       setIsChecking(false);
       return;
     }

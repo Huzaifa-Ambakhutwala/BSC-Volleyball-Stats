@@ -69,17 +69,44 @@ const ScoreboardPage = () => {
       console.log(`[SCOREBOARD] Received ${Object.keys(matchesByCourtNumber).length} matches for court ${courtNumber}`);
       setMatches(matchesByCourtNumber);
 
-      // Get the first match (or the one that's currently happening)
+      // Find the earliest upcoming/active match for this court
       const matchEntries = Object.entries(matchesByCourtNumber);
       if (matchEntries.length > 0) {
-        const [matchId, firstMatch] = matchEntries[0];
-        console.log(`[SCOREBOARD] Setting current match to: ${matchId}`);
+        // Sort matches by start time
+        const sortedMatches = matchEntries
+          .map(([id, match]) => ({ id, match }))
+          .sort((a, b) => new Date(a.match.startTime).getTime() - new Date(b.match.startTime).getTime());
 
-        // Create match object with ID
-        setCurrentMatch({
-          ...firstMatch,
-          id: matchId
-        });
+        // Find the first match that is not completed
+        let selectedMatch = sortedMatches.find(({ match }) => match.status !== 'completed');
+        
+        // If no active match found, check if all matches are completed
+        if (!selectedMatch) {
+          const allCompleted = sortedMatches.every(({ match }) => match.status === 'completed');
+          
+          if (allCompleted) {
+            // All matches complete - show the latest completed match
+            selectedMatch = sortedMatches[sortedMatches.length - 1];
+            console.log(`[SCOREBOARD] All matches complete for court ${courtNumber}, showing latest`);
+          } else {
+            // Use the earliest match as fallback
+            selectedMatch = sortedMatches[0];
+            console.log(`[SCOREBOARD] Using earliest match as fallback for court ${courtNumber}`);
+          }
+        }
+
+        if (selectedMatch) {
+          console.log(`[SCOREBOARD] Setting current match to: ${selectedMatch.id}`);
+          
+          // Create match object with ID
+          setCurrentMatch({
+            ...selectedMatch.match,
+            id: selectedMatch.id
+          });
+        } else {
+          console.log(`[SCOREBOARD] No suitable match found for court ${courtNumber}`);
+          setCurrentMatch(null);
+        }
       } else {
         console.log(`[SCOREBOARD] No matches found for court ${courtNumber}`);
         setCurrentMatch(null);

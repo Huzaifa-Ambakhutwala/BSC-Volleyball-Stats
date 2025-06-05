@@ -65,7 +65,7 @@ export const useDowntimeCheck = () => {
             (!end || currentTime <= end);
           
           // Check if admin has override cookie
-          const hasAdminOverride = document.cookie.includes('adminDowntimeOverride=');
+          const hasAdminOverride = document.cookie.includes('admin_override=true');
           
           if (isDowntimeActive && !hasAdminOverride && !location.includes('/maintenance.html')) {
             console.log('Client-side downtime redirect - no admin override detected');
@@ -85,7 +85,7 @@ export const useDowntimeCheck = () => {
 
     // Skip downtime checks for maintenance page or admin areas when override is present
     if (location.includes('/maintenance.html') || 
-        (location.includes('/admin') && document.cookie.includes('adminDowntimeOverride='))) {
+        (location.includes('/admin') && document.cookie.includes('admin_override=true'))) {
       setIsChecking(false);
       return;
     }

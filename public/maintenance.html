@@ -272,19 +272,8 @@
                 });
 
                 if (loginResponse.ok) {
-                    const overrideResponse = await fetch('/api/downtime/override', {
-                        method: 'POST',
-                        credentials: 'same-origin'
-                    });
-
-                    if (overrideResponse.ok) {
-                        // Small delay to ensure session is saved, then redirect
-                        setTimeout(() => {
-                            window.location.href = '/admin/dashboard';
-                        }, 100);
-                    } else {
-                        throw new Error('Failed to set admin override');
-                    }
+                    // Trigger the override endpoint which will set cookie and redirect
+                    window.location.href = '/api/downtime/override';
                 } else {
                     throw new Error('Invalid credentials');
                 }

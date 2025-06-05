@@ -269,9 +269,10 @@
                     });
 
                     if (overrideResponse.ok) {
-                        window.location.href = '/admin';
+                        // Session-based override now active - redirect to admin dashboard
+                        window.location.href = '/admin/dashboard';
                     } else {
-                        throw new Error('Failed to override downtime');
+                        throw new Error('Failed to set admin override');
                     }
                 } else {
                     throw new Error('Invalid credentials');

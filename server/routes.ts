@@ -692,8 +692,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         active: false,
         start: null,
         end: null,
-        message: "",
-        overriddenByAdmin: false
+        message: ""
       };
       
       // Cache default response too
@@ -778,8 +777,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         active: false,
         start: null,
         end: null,
-        message: "",
-        overriddenByAdmin: false
+        message: ""
       };
 
       await fs.writeFile(

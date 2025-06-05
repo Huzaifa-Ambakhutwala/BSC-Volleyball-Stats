@@ -1,11 +1,15 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import cookieParser from 'cookie-parser';
 import path from "path";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Add cookie parser middleware
+app.use(cookieParser());
 
 // Serve static files from public directory
 app.use(express.static(path.join(process.cwd(), 'public')));
@@ -61,11 +65,18 @@ app.use(async (req, res, next) => {
         (!start || currentTime >= start) && 
         (!end || currentTime <= end);
       
-      // Check if this specific admin session has override
-      const hasAdminOverride = (req.session as any)?.adminDowntimeOverride === true;
+      // Check if this specific admin has override cookie
+      const hasAdminOverride = req.cookies?.adminDowntimeOverride;
+      
+      // Debug cookie info
+      console.log('Downtime check for path:', req.path);
+      console.log('Admin override cookie:', hasAdminOverride);
       
       if (isDowntimeActive && !hasAdminOverride) {
+        console.log('Redirecting to maintenance - no admin override');
         return res.redirect('/maintenance.html');
+      } else if (isDowntimeActive && hasAdminOverride) {
+        console.log('Admin override active - allowing access');
       }
     }
   } catch (error) {

@@ -792,13 +792,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin override downtime (sets session flag for individual admin access only)
+  // Admin override downtime (sets secure cookie for individual admin access only)
   app.post("/api/downtime/override", isAuthenticated, async (req, res) => {
     try {
-      // Set session flag for this specific admin user only - does not affect other users
-      (req.session as any).adminDowntimeOverride = true;
+      // Set secure cookie for this specific admin user only - does not affect other users
+      const overrideToken = `admin_override_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
-      res.json({ message: "Admin downtime override activated for this session only" });
+      res.cookie('adminDowntimeOverride', overrideToken, {
+        httpOnly: true,
+        secure: false, // Set to true in production with HTTPS
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      });
+      
+      console.log('Setting admin override cookie:', overrideToken);
+      res.json({ message: "Admin downtime override activated for this browser only" });
     } catch (error) {
       console.error('Error setting admin override:', error);
       res.status(500).json({ message: "Error setting admin override" });

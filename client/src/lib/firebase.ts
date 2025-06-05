@@ -1455,8 +1455,28 @@ export const addAdminUser = async (username: string, password: string, accessLev
       }
     }
 
+    // Add to Firebase
     const newAdminRef = push(adminUsersRef);
     await set(newAdminRef, { username, password, accessLevel });
+
+    // Sync to PostgreSQL database
+    try {
+      const response = await fetch('/api/admin/sync-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ username, password, accessLevel }),
+      });
+
+      if (!response.ok) {
+        console.warn('Failed to sync user to PostgreSQL:', await response.text());
+      }
+    } catch (syncError) {
+      console.warn('Error syncing user to PostgreSQL:', syncError);
+    }
+
     return true;
   } catch (error) {
     console.error('Error adding admin user:', error);
@@ -1484,7 +1504,28 @@ export const updateAdminUser = async (username: string, newPassword: string, acc
     if (accessLevel) {
       updateData.accessLevel = accessLevel;
     }
+    
+    // Update in Firebase
     await update(ref(database, `adminUsers/${adminId}`), updateData);
+
+    // Sync to PostgreSQL database
+    try {
+      const response = await fetch(`/api/admin/sync-user/${username}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ password: newPassword, accessLevel }),
+      });
+
+      if (!response.ok) {
+        console.warn('Failed to sync user update to PostgreSQL:', await response.text());
+      }
+    } catch (syncError) {
+      console.warn('Error syncing user update to PostgreSQL:', syncError);
+    }
+
     return true;
   } catch (error) {
     console.error('Error updating admin user:', error);
@@ -1514,7 +1555,23 @@ export const deleteAdminUser = async (username: string): Promise<boolean> => {
 
     if (!adminId) return false;
 
+    // Remove from Firebase
     await remove(ref(database, `adminUsers/${adminId}`));
+
+    // Sync deletion to PostgreSQL database
+    try {
+      const response = await fetch(`/api/admin/sync-user/${username}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        console.warn('Failed to sync user deletion to PostgreSQL:', await response.text());
+      }
+    } catch (syncError) {
+      console.warn('Error syncing user deletion to PostgreSQL:', syncError);
+    }
+
     return true;
   } catch (error) {
     console.error('Error deleting admin user:', error);

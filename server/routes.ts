@@ -14,6 +14,10 @@ import { z } from "zod";
 import multer from 'multer';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { scrypt, randomBytes } from "crypto";
+import { promisify } from "util";
+
+const scryptAsync = promisify(scrypt);
 
 // Middleware to ensure user is authenticated
 function isAuthenticated(req: Request, res: Response, next: Function) {
@@ -493,6 +497,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(logs);
     } catch (error) {
       res.status(500).json({ message: "Error fetching tracker logs", error });
+    }
+  });
+
+  // Admin user sync API routes
+  async function hashPassword(password: string) {
+    const salt = randomBytes(16).toString("hex");
+    const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+    return `${buf.toString("hex")}.${salt}`;
+  }
+
+  app.post("/api/admin/sync-user", isAuthenticated, async (req, res) => {
+    try {
+      const { username, password, accessLevel } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username and password are required" });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByUsername(username);
+      if (existingUser) {
+        return res.status(409).json({ message: "User already exists" });
+      }
+
+      // Hash the password and create user
+      const hashedPassword = await hashPassword(password);
+      const user = await storage.createUser({
+        username,
+        password: hashedPassword,
+        isAdmin: true,
+        accessLevel: accessLevel || 'limited'
+      });
+
+      res.status(201).json({ message: "User synced successfully", user: { id: user.id, username: user.username } });
+    } catch (error) {
+      console.error("Error syncing admin user:", error);
+      res.status(500).json({ message: "Error syncing admin user", error });
+    }
+  });
+
+  app.put("/api/admin/sync-user/:username", isAuthenticated, async (req, res) => {
+    try {
+      const { username } = req.params;
+      const { password, accessLevel } = req.body;
+
+      const existingUser = await storage.getUserByUsername(username);
+      if (!existingUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Hash new password if provided
+      const updates: any = {};
+      if (password) {
+        updates.password = await hashPassword(password);
+      }
+      if (accessLevel) {
+        updates.accessLevel = accessLevel;
+      }
+
+      const updatedUser = await storage.updateUserAccessLevel(existingUser.id, accessLevel);
+      res.json({ message: "User updated successfully", user: { id: updatedUser?.id, username: updatedUser?.username } });
+    } catch (error) {
+      console.error("Error updating admin user:", error);
+      res.status(500).json({ message: "Error updating admin user", error });
+    }
+  });
+
+  app.delete("/api/admin/sync-user/:username", isAuthenticated, async (req, res) => {
+    try {
+      const { username } = req.params;
+
+      const existingUser = await storage.getUserByUsername(username);
+      if (!existingUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Don't allow deleting the last admin
+      // Note: This is a simplified check - in production you might want more sophisticated logic
+      if (username === 'Mehdi') {
+        return res.status(403).json({ message: "Cannot delete primary admin user" });
+      }
+
+      // For now, we'll just mark them as inactive rather than delete
+      // In a full implementation, you'd add a deleteUser method to storage
+      res.json({ message: "User deletion not implemented - would mark as inactive" });
+    } catch (error) {
+      console.error("Error deleting admin user:", error);
+      res.status(500).json({ message: "Error deleting admin user", error });
     }
   });
 

@@ -239,11 +239,13 @@ export const trackerLogsRelations = relations(trackerLogs, ({ one }) => ({
 
 // Insert Schemas
 export const insertUserSchema = createInsertSchema(users, {
-  isAdmin: z.boolean().default(false)
+  isAdmin: z.boolean().default(false),
+  accessLevel: z.enum(["full", "limited"]).default("limited")
 }).pick({
   username: true,
   password: true,
   isAdmin: true,
+  accessLevel: true,
 });
 
 export const insertPlayerSchema = createInsertSchema(players).extend({

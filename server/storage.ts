@@ -22,6 +22,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserAccessLevel(id: number, accessLevel: "full" | "limited"): Promise<User | undefined>;
+  updateUserPassword(id: number, password: string, accessLevel?: "full" | "limited"): Promise<User | undefined>;
 
   // Player methods
   getPlayer(id: number): Promise<Player_DB | undefined>;
@@ -95,6 +96,19 @@ export class DatabaseStorage implements IStorage {
   async updateUserAccessLevel(id: number, accessLevel: "full" | "limited"): Promise<User | undefined> {
     const [user] = await db.update(users)
       .set({ accessLevel })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  async updateUserPassword(id: number, password: string, accessLevel?: "full" | "limited"): Promise<User | undefined> {
+    const updateData: any = { password };
+    if (accessLevel) {
+      updateData.accessLevel = accessLevel;
+    }
+    
+    const [user] = await db.update(users)
+      .set(updateData)
       .where(eq(users.id, id))
       .returning();
     return user;

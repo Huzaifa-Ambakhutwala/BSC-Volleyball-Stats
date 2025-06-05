@@ -556,7 +556,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updates.accessLevel = accessLevel;
       }
 
-      const updatedUser = await storage.updateUserAccessLevel(existingUser.id, accessLevel);
+      const hashedPassword = password ? await hashPassword(password) : undefined;
+      const updatedUser = await storage.updateUserPassword(existingUser.id, hashedPassword || existingUser.password, accessLevel);
       res.json({ message: "User updated successfully", user: { id: updatedUser?.id, username: updatedUser?.username } });
     } catch (error) {
       console.error("Error updating admin user:", error);

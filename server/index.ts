@@ -52,7 +52,7 @@ app.use(async (req, res, next) => {
       cacheTimestamp = now;
     }
 
-    if (downtimeCache && downtimeCache.active && !downtimeCache.overriddenByAdmin) {
+    if (downtimeCache && downtimeCache.active) {
       const currentTime = new Date();
       const start = downtimeCache.start ? new Date(downtimeCache.start) : null;
       const end = downtimeCache.end ? new Date(downtimeCache.end) : null;
@@ -61,7 +61,10 @@ app.use(async (req, res, next) => {
         (!start || currentTime >= start) && 
         (!end || currentTime <= end);
       
-      if (isDowntimeActive) {
+      // Check if this specific admin session has override
+      const hasAdminOverride = (req.session as any)?.adminDowntimeOverride === true;
+      
+      if (isDowntimeActive && !hasAdminOverride) {
         return res.redirect('/maintenance.html');
       }
     }

@@ -55,7 +55,7 @@ export const useDowntimeCheck = () => {
           }
         }
 
-        if (globalDowntimeCache?.active && !globalDowntimeCache.overriddenByAdmin) {
+        if (globalDowntimeCache?.active) {
           const currentTime = new Date();
           const start = globalDowntimeCache.start ? new Date(globalDowntimeCache.start) : null;
           const end = globalDowntimeCache.end ? new Date(globalDowntimeCache.end) : null;

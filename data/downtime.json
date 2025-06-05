@@ -1,7 +1,7 @@
 {
-  "active": false,
-  "start": null,
-  "end": null,
-  "message": "",
+  "active": true,
+  "start": "2025-06-04T19:00",
+  "end": "2025-06-04T19:01",
+  "message": "test",
   "overriddenByAdmin": false
 }

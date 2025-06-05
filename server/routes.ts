@@ -731,8 +731,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         active: now >= startDate, // Active if start time has passed
         start: start,
         end: end,
-        message: message,
-        overriddenByAdmin: false
+        message: message
       };
 
       await fs.writeFile(
@@ -757,8 +756,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         active: true,
         start: new Date().toISOString(),
         end: null,
-        message: message || defaultMessage,
-        overriddenByAdmin: false
+        message: message || defaultMessage
       };
 
       await fs.writeFile(
@@ -796,23 +794,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin override downtime (for maintenance page login)
+  // Admin override downtime (sets session flag for individual admin access only)
   app.post("/api/downtime/override", isAuthenticated, async (req, res) => {
     try {
-      const downtimeData = await fs.readFile(path.join(process.cwd(), 'data', 'downtime.json'), 'utf8');
-      const downtime = JSON.parse(downtimeData);
-
-      downtime.overriddenByAdmin = true;
-
-      await fs.writeFile(
-        path.join(process.cwd(), 'data', 'downtime.json'),
-        JSON.stringify(downtime, null, 2)
-      );
-
-      res.json({ message: "Admin override activated", downtime });
+      // Set session flag for this specific admin user only - does not affect other users
+      (req.session as any).adminDowntimeOverride = true;
+      
+      res.json({ message: "Admin downtime override activated for this session only" });
     } catch (error) {
-      console.error('Error overriding downtime:', error);
-      res.status(500).json({ message: "Error overriding downtime" });
+      console.error('Error setting admin override:', error);
+      res.status(500).json({ message: "Error setting admin override" });
     }
   });
 

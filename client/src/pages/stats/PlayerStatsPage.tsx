@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { getPlayers, getMatches, getMatchStats } from '@/lib/firebase';
 import type { Player, Match, PlayerStats } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
-import ScoreboardStatCard from '@/components/ScoreboardStatCard';
+import SimpleStatCard from '@/components/SimpleStatCard';
 import { ChevronDown, ChevronUp, Award, BarChart, Activity, TrendingUp, Trophy } from 'lucide-react';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, RadialLinearScale, PointElement, LineElement, ArcElement } from 'chart.js';
 import { Bar, Radar } from 'react-chartjs-2';
@@ -367,73 +367,73 @@ const PlayerStatsPage = () => {
                     {isExpanded && (
                       <div className="mt-6 pl-16">
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                          <ScoreboardStatCard
+                          <SimpleStatCard
                             title="Aces"
                             value={playerData.totalStats.aces || 0}
                             bgColor="bg-green-500"
                             emoji="🔥"
                           />
-                          <ScoreboardStatCard
+                          <SimpleStatCard
                             title="Spikes"
                             value={playerData.totalStats.spikes || 0}
                             bgColor="bg-green-500"
                             emoji="💥"
                           />
-                          <ScoreboardStatCard
+                          <SimpleStatCard
                             title="Blocks"
                             value={playerData.totalStats.blocks || 0}
                             bgColor="bg-green-500"
                             emoji="🧱"
                           />
-                          <ScoreboardStatCard
+                          <SimpleStatCard
                             title="Tips"
                             value={playerData.totalStats.tips || 0}
                             bgColor="bg-green-500"
                             emoji="👆"
                           />
-                          <ScoreboardStatCard
+                          <SimpleStatCard
                             title="Dumps"
                             value={playerData.totalStats.dumps || 0}
                             bgColor="bg-green-500"
                             emoji="🧮"
                           />
-                          <ScoreboardStatCard
+                          <SimpleStatCard
                             title="Digs"
                             value={playerData.totalStats.digs || 0}
                             bgColor="bg-blue-500"
                             emoji="🛡️"
                           />
-                          <ScoreboardStatCard
+                          <SimpleStatCard
                             title="Serve Errors"
                             value={playerData.totalStats.serveErrors || 0}
                             bgColor="bg-red-500"
                             emoji="❌"
                           />
-                          <ScoreboardStatCard
+                          <SimpleStatCard
                             title="Spike Errors"
                             value={playerData.totalStats.spikeErrors || 0}
                             bgColor="bg-red-500"
                             emoji="❌"
                           />
-                          <ScoreboardStatCard
+                          <SimpleStatCard
                             title="Net Touches"
                             value={playerData.totalStats.netTouches || 0}
                             bgColor="bg-red-500"
                             emoji="🔗"
                           />
-                          <ScoreboardStatCard
+                          <SimpleStatCard
                             title="Foot Faults"
                             value={playerData.totalStats.footFaults || 0}
                             bgColor="bg-red-500"
                             emoji="👣"
                           />
-                          <ScoreboardStatCard
+                          <SimpleStatCard
                             title="Reaches"
                             value={playerData.totalStats.reaches || 0}
                             bgColor="bg-red-500"
                             emoji="🙋"
                           />
-                          <ScoreboardStatCard
+                          <SimpleStatCard
                             title="Carries"
                             value={playerData.totalStats.carries || 0}
                             bgColor="bg-red-500"

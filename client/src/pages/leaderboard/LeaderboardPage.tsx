@@ -364,6 +364,9 @@ const LeaderboardPage = () => {
                       <SortIcon field="score" />
                     </div>
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Statistics
+                  </th>
                   <th
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                     onClick={() => handleSort('matches')}
@@ -420,6 +423,56 @@ const LeaderboardPage = () => {
                           className="bg-blue-600 h-1.5 rounded-full"
                           style={{ width: `${Math.min(100, (player.score / (mvpPlayer?.score || 100)) * 100)}%` }}
                         ></div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex flex-wrap gap-1">
+                        {(() => {
+                          const totalEarned = (player.stats.aces || 0) + (player.stats.spikes || 0) + 
+                                            (player.stats.blocks || 0) + (player.stats.tips || 0) + 
+                                            (player.stats.dumps || 0) + (player.stats.digs || 0) + 
+                                            (player.stats.points || 0);
+                          const totalFaults = (player.stats.serveErrors || 0) + (player.stats.spikeErrors || 0) + 
+                                            (player.stats.netTouches || 0) + (player.stats.footFaults || 0) + 
+                                            (player.stats.reaches || 0) + (player.stats.carries || 0) + 
+                                            (player.stats.outOfBounds || 0) + (player.stats.faults || 0);
+                          
+                          return (
+                            <>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                Pts: {totalEarned}
+                              </span>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                Faults: {totalFaults}
+                              </span>
+                              {(player.stats.aces || 0) > 0 && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
+                                  🔥{player.stats.aces}
+                                </span>
+                              )}
+                              {(player.stats.spikes || 0) > 0 && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                  💥{player.stats.spikes}
+                                </span>
+                              )}
+                              {(player.stats.blocks || 0) > 0 && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                  🧱{player.stats.blocks}
+                                </span>
+                              )}
+                              {(player.stats.tips || 0) > 0 && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                  👆{player.stats.tips}
+                                </span>
+                              )}
+                              {(player.stats.digs || 0) > 0 && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-cyan-100 text-cyan-800">
+                                  🛡️{player.stats.digs}
+                                </span>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

@@ -79,12 +79,27 @@ const PlayerStatsPage = () => {
         setPlayers(playersData);
         setMatches(matchesData);
 
-        // Calculate stats for each player
+        // Calculate stats for each player more efficiently
         const playersWithStatsData: PlayerWithTotalStats[] = [];
+        
+        // First, load all match stats in parallel
+        console.log('[PLAYER_STATS] Loading all match stats...');
+        const allMatchStats = await Promise.all(
+          Object.keys(matchesData).map(async (matchId) => {
+            try {
+              const stats = await getMatchStats(matchId);
+              return { matchId, stats };
+            } catch (error) {
+              console.error(`[PLAYER_STATS] Error loading stats for match ${matchId}:`, error);
+              return { matchId, stats: {} };
+            }
+          })
+        );
 
+        console.log(`[PLAYER_STATS] Loaded stats for ${allMatchStats.length} matches`);
+
+        // Now process each player
         for (const [playerId, player] of Object.entries(playersData)) {
-          console.log(`[PLAYER_STATS] Processing player: ${player.name} (${playerId})`);
-          
           // Initialize totals
           const totalStats: PlayerStats = {
             aces: 0,
@@ -107,39 +122,32 @@ const PlayerStatsPage = () => {
 
           let matchCount = 0;
 
-          // Go through all matches and aggregate stats for this player
-          for (const [matchId, match] of Object.entries(matchesData)) {
-            try {
-              const matchStats = await getMatchStats(matchId);
+          // Go through all match stats and aggregate for this player
+          allMatchStats.forEach(({ matchId, stats }) => {
+            if (stats[playerId]) {
+              matchCount++;
               
-              if (matchStats[playerId]) {
-                console.log(`[PLAYER_STATS] Found stats for ${player.name} in match ${matchId}`);
-                matchCount++;
-                
-                const playerMatchStats = matchStats[playerId];
-                
-                // Add up all the stats
-                Object.keys(totalStats).forEach(statKey => {
-                  const key = statKey as keyof PlayerStats;
-                  if (typeof playerMatchStats[key] === 'number') {
-                    (totalStats[key] as number) += (playerMatchStats[key] as number) || 0;
-                  }
-                });
-              }
-            } catch (error) {
-              console.error(`[PLAYER_STATS] Error loading stats for match ${matchId}:`, error);
+              const playerMatchStats = stats[playerId];
+              
+              // Add up all the stats
+              Object.keys(totalStats).forEach(statKey => {
+                const key = statKey as keyof PlayerStats;
+                if (typeof playerMatchStats[key] === 'number') {
+                  (totalStats[key] as number) += (playerMatchStats[key] as number) || 0;
+                }
+              });
             }
-          }
-
-          console.log(`[PLAYER_STATS] ${player.name} total stats:`, totalStats);
-          console.log(`[PLAYER_STATS] ${player.name} played in ${matchCount} matches`);
-
-          playersWithStatsData.push({
-            player,
-            id: playerId,
-            totalStats,
-            matchCount
           });
+
+          // Only include players who have played in at least one match
+          if (matchCount > 0) {
+            playersWithStatsData.push({
+              player,
+              id: playerId,
+              totalStats,
+              matchCount
+            });
+          }
         }
 
         console.log('[PLAYER_STATS] Finished processing all players');

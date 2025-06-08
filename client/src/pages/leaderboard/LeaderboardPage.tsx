@@ -329,8 +329,48 @@ const LeaderboardPage = () => {
           </p>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="overflow-x-auto">
+        <>
+          {/* Statistics Legend */}
+          <div className="bg-blue-50 rounded-lg p-4 mb-6">
+            <h3 className="font-semibold text-gray-900 mb-3">Statistics Legend</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 text-sm">
+              <div className="flex items-center space-x-2">
+                <span className="text-lg">🔥</span>
+                <span className="text-gray-700">Aces</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-lg">💥</span>
+                <span className="text-gray-700">Spikes</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-lg">🧱</span>
+                <span className="text-gray-700">Blocks</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-lg">👆</span>
+                <span className="text-gray-700">Tips</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-lg">🛡️</span>
+                <span className="text-gray-700">Digs</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                  Pts
+                </span>
+                <span className="text-gray-700">Total Points</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                  Faults
+                </span>
+                <span className="text-gray-700">Total Faults</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -482,23 +522,24 @@ const LeaderboardPage = () => {
                 ))}
               </tbody>
             </table>
-          </div>
+            </div>
 
-          <div className="p-4 bg-gray-50 border-t border-gray-200">
-            <h3 className="font-medium text-sm mb-2">How scores are calculated:</h3>
-            <div className="text-xs text-gray-600">
-              <ul className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                <li>Points: 1 point</li>
-                <li>Spikes: 2 points</li>
-                <li>Aces: 2 points</li>
-                <li>Blocks: 1.5 points</li>
-                <li>Tips: 1 point</li>
-                <li>Digs: 1 point</li>
-                <li>Errors: -1 point</li>
-              </ul>
+            <div className="p-4 bg-gray-50 border-t border-gray-200">
+              <h3 className="font-medium text-sm mb-2">How scores are calculated:</h3>
+              <div className="text-xs text-gray-600">
+                <ul className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <li>Points: 1 point</li>
+                  <li>Spikes: 2 points</li>
+                  <li>Aces: 2 points</li>
+                  <li>Blocks: 1.5 points</li>
+                  <li>Tips: 1 point</li>
+                  <li>Digs: 1 point</li>
+                  <li>Errors: -1 point</li>
+                </ul>
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

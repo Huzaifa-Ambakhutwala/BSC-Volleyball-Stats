@@ -316,15 +316,20 @@ const PlayerWiseAnalysis = ({ players, matches, teams }: PlayerWiseAnalysisProps
       ['Digs', (playerData.totalStats.digs || 0).toString()],
       [''],
       ['Match-by-Match Performance'],
-      ['Match #', 'Date', 'Court', 'Points', 'Faults', 'Net Score'],
-      ...playerData.matchPerformances.map((perf, index) => [
-        (index + 1).toString(),
-        new Date(perf.match.startTime).toLocaleDateString(),
-        perf.match.courtNumber.toString(),
-        calculateTotalEarned(perf.stats).toString(),
-        calculateTotalFaults(perf.stats).toString(),
-        perf.netScore.toString()
-      ])
+      ['Match #', 'Teams', 'Date', 'Court', 'Points', 'Faults', 'Net Score'],
+      ...playerData.matchPerformances.map((perf, index) => {
+        const teamAName = teams[perf.match.teamA]?.teamName || 'Team A';
+        const teamBName = teams[perf.match.teamB]?.teamName || 'Team B';
+        return [
+          (index + 1).toString(),
+          `${teamAName} vs ${teamBName}`,
+          new Date(perf.match.startTime).toLocaleDateString(),
+          perf.match.courtNumber.toString(),
+          calculateTotalEarned(perf.stats).toString(),
+          calculateTotalFaults(perf.stats).toString(),
+          perf.netScore.toString()
+        ];
+      })
     ];
 
     const csvContent = csvData.map(row => row.join(',')).join('\n');
@@ -637,6 +642,9 @@ const PlayerWiseAnalysis = ({ players, matches, teams }: PlayerWiseAnalysisProps
                           Match
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Teams
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Date
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -657,10 +665,15 @@ const PlayerWiseAnalysis = ({ players, matches, teams }: PlayerWiseAnalysisProps
                       {playerData.matchPerformances.map((performance, index) => {
                         const points = calculateTotalEarned(performance.stats);
                         const faults = calculateTotalFaults(performance.stats);
+                        const teamAName = teams[performance.match.teamA]?.teamName || 'Team A';
+                        const teamBName = teams[performance.match.teamB]?.teamName || 'Team B';
                         return (
                           <tr key={performance.matchId}>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                               Match {index + 1}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {teamAName} vs {teamBName}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {new Date(performance.match.startTime).toLocaleDateString()}

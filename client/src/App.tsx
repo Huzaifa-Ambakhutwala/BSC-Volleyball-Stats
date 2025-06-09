@@ -17,7 +17,7 @@ import MatchDetailsPage from "@/pages/history/MatchDetailsPage";
 import LeaderboardPage from "@/pages/leaderboard/LeaderboardPage";
 import SchedulePage from "@/pages/schedule/SchedulePage";
 import FeedbackPage from "@/pages/FeedbackPage";
-import PlayerStatsPage from "@/pages/stats/PlayerStatsPage";
+
 import PerformanceAnalysisPage from "@/pages/analysis/PerformanceAnalysisPage";
 import Home from "@/pages/Home";
 import { useEffect, useState, lazy, Suspense } from "react";
@@ -124,8 +124,8 @@ function Router() {
           <Route path="/history" component={GameHistoryPage} />
           <Route path="/history/:matchId" component={MatchDetailsPage} />
           <Route path="/leaderboard" component={LeaderboardPage} />
-          <Route path="/player-stats" component={PlayerStatsPage} />
-          <Route path="/stats" component={PlayerStatsPage} />
+          <Route path="/player-stats" component={PerformanceAnalysisPage} />
+          <Route path="/stats" component={PerformanceAnalysisPage} />
           <Route path="/analysis" component={PerformanceAnalysisPage} />
           <Route path="/performance-analysis" component={PerformanceAnalysisPage} />
           <Route path="/schedule" component={SchedulePage} />

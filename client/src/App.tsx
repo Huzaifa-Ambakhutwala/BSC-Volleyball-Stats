@@ -18,6 +18,7 @@ import LeaderboardPage from "@/pages/leaderboard/LeaderboardPage";
 import SchedulePage from "@/pages/schedule/SchedulePage";
 import FeedbackPage from "@/pages/FeedbackPage";
 import PlayerStatsPage from "@/pages/stats/PlayerStatsPage";
+import PerformanceAnalysisPage from "@/pages/analysis/PerformanceAnalysisPage";
 import Home from "@/pages/Home";
 import { useEffect, useState, lazy, Suspense } from "react";
 import { useLocation } from "wouter";
@@ -125,6 +126,8 @@ function Router() {
           <Route path="/leaderboard" component={LeaderboardPage} />
           <Route path="/player-stats" component={PlayerStatsPage} />
           <Route path="/stats" component={PlayerStatsPage} />
+          <Route path="/analysis" component={PerformanceAnalysisPage} />
+          <Route path="/performance-analysis" component={PerformanceAnalysisPage} />
           <Route path="/schedule" component={SchedulePage} />
           <Route path="/feedback" component={FeedbackPage} />
           <Route path="/debug">

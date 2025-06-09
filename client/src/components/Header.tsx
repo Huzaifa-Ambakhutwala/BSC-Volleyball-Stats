@@ -57,6 +57,12 @@ const Header = () => {
                 </Link>
               </li>
               <li>
+                <Link href="/analysis"
+                  className={`hover:text-[hsl(var(--vb-yellow))] transition ${location.startsWith('/analysis') || location.startsWith('/performance-analysis') ? 'text-[hsl(var(--vb-yellow))]' : ''}`}>
+                  Analysis
+                </Link>
+              </li>
+              <li>
                 <Link href="/feedback"
                   className={`hover:text-[hsl(var(--vb-yellow))] transition ${location.startsWith('/feedback') ? 'text-[hsl(var(--vb-yellow))]' : ''}`}>
                   Feedback

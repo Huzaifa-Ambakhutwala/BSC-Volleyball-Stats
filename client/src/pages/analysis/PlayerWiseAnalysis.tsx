@@ -57,10 +57,14 @@ type PlayerPerformanceData = {
 
 const PlayerWiseAnalysis = ({ players, matches, teams }: PlayerWiseAnalysisProps) => {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>('');
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [playerData, setPlayerData] = useState<PlayerPerformanceData | null>(null);
+  const [comparisonData, setComparisonData] = useState<PlayerPerformanceData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isComparison, setIsComparison] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string>('overview');
+  const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const { toast } = useToast();
 
   // Helper functions
@@ -75,6 +79,57 @@ const PlayerWiseAnalysis = ({ players, matches, teams }: PlayerWiseAnalysisProps
            (stats.outOfBounds || 0) + (stats.faults || 0);
   };
 
+  // Generate AI-powered suggestions based on player stats
+  const generateAISuggestions = (playerData: PlayerPerformanceData): string[] => {
+    const suggestions: string[] = [];
+    const totalEarned = calculateTotalEarned(playerData.totalStats);
+    const totalFaults = calculateTotalFaults(playerData.totalStats);
+    const netScore = totalEarned - totalFaults;
+    const matchCount = playerData.matchCount;
+
+    // Performance analysis
+    if (totalFaults > totalEarned) {
+      suggestions.push("Focus on reducing errors - your faults exceed your points earned. Practice fundamental techniques with emphasis on control over power.");
+    }
+
+    // Serve analysis
+    const serveAccuracy = playerData.totalStats.aces / Math.max(1, (playerData.totalStats.aces + playerData.totalStats.serveErrors));
+    if (serveAccuracy < 0.6) {
+      suggestions.push("Improve serve consistency - practice target serving and focus on placement over power to reduce serve errors.");
+    }
+
+    // Attack analysis
+    const attackEfficiency = playerData.totalStats.spikes / Math.max(1, (playerData.totalStats.spikes + playerData.totalStats.spikeErrors));
+    if (attackEfficiency < 0.7) {
+      suggestions.push("Work on attack accuracy - focus on shot placement and approach timing to improve spike success rate.");
+    }
+
+    // Defense analysis
+    if (playerData.totalStats.digs < matchCount * 2) {
+      suggestions.push("Enhance defensive skills - practice reading opponent attacks and improve court positioning for better dig opportunities.");
+    }
+
+    // Blocking analysis
+    if (playerData.totalStats.blocks < matchCount) {
+      suggestions.push("Develop blocking technique - work on timing, hand positioning, and reading setter patterns to increase block effectiveness.");
+    }
+
+    // Overall performance
+    if (netScore / matchCount < 2) {
+      suggestions.push("Focus on consistent positive impact - aim for at least 2-3 net positive points per match through smart play selection.");
+    }
+
+    // Consistency analysis
+    const performances = playerData.matchPerformances.map(p => p.netScore);
+    const avgPerformance = performances.reduce((a, b) => a + b, 0) / performances.length;
+    const variance = performances.reduce((a, b) => a + Math.pow(b - avgPerformance, 2), 0) / performances.length;
+    if (variance > 4) {
+      suggestions.push("Work on consistency - your performance varies significantly between matches. Focus on mental preparation and routine development.");
+    }
+
+    return suggestions.length > 0 ? suggestions : ["Great performance! Continue with your current training regimen and focus on maintaining consistency."];
+  };
+
   // Filter players based on search
   const filteredPlayers = useMemo(() => {
     return Object.entries(players).filter(([id, player]) =>
@@ -83,126 +138,155 @@ const PlayerWiseAnalysis = ({ players, matches, teams }: PlayerWiseAnalysisProps
     );
   }, [players, searchQuery]);
 
-  // Load player performance data
+  // Load single player performance data
   const loadPlayerData = async (playerId: string) => {
     if (!playerId) return;
     
     setIsLoading(true);
     try {
-      const player = players[playerId];
-      if (!player) return;
-
-      console.log(`[PLAYER_ANALYSIS] Loading data for ${player.name}`);
-
-      // Get all match stats in parallel
-      const allMatchStats = await Promise.all(
-        Object.keys(matches).map(async (matchId) => {
-          try {
-            const stats = await getMatchStats(matchId);
-            return { matchId, stats };
-          } catch (error) {
-            console.error(`Error loading stats for match ${matchId}:`, error);
-            return { matchId, stats: {} };
-          }
-        })
-      );
-
-      // Initialize totals
-      const totalStats: PlayerStats = {
-        aces: 0, serveErrors: 0, spikes: 0, spikeErrors: 0, digs: 0, blocks: 0,
-        netTouches: 0, tips: 0, dumps: 0, footFaults: 0, reaches: 0, carries: 0,
-        points: 0, outOfBounds: 0, faults: 0, neutralBlocks: 0
-      };
-
-      const matchPerformances: PlayerPerformanceData['matchPerformances'] = [];
-      let teamInfo: PlayerPerformanceData['teamInfo'] = undefined;
-
-      // Process each match
-      allMatchStats.forEach(({ matchId, stats }) => {
-        if (stats[playerId]) {
-          const match = matches[matchId];
-          const playerStats = stats[playerId];
-          
-          // Add to totals
-          Object.keys(totalStats).forEach(statKey => {
-            const key = statKey as keyof PlayerStats;
-            if (typeof playerStats[key] === 'number') {
-              (totalStats[key] as number) += (playerStats[key] as number) || 0;
-            }
-          });
-
-          // Calculate net score for this match
-          const earned = calculateTotalEarned(playerStats);
-          const faults = calculateTotalFaults(playerStats);
-          const netScore = earned - faults;
-
-          matchPerformances.push({
-            matchId,
-            match,
-            stats: playerStats,
-            netScore
-          });
-
-          // Find player's team
-          if (!teamInfo) {
-            Object.entries(teams).forEach(([teamId, team]) => {
-              if (team.players && team.players.includes(playerId)) {
-                teamInfo = {
-                  id: teamId,
-                  name: team.teamName,
-                  color: team.teamColor
-                };
-              }
-            });
-          }
-        }
-      });
-
-      // Find best and worst performances
-      let bestPerformance: PlayerPerformanceData['bestPerformance'];
-      let worstPerformance: PlayerPerformanceData['worstPerformance'];
-
-      if (matchPerformances.length > 0) {
-        const sortedByNet = [...matchPerformances].sort((a, b) => b.netScore - a.netScore);
-        bestPerformance = {
-          matchId: sortedByNet[0].matchId,
-          netScore: sortedByNet[0].netScore,
-          totalPoints: calculateTotalEarned(sortedByNet[0].stats)
-        };
-
-        worstPerformance = {
-          matchId: sortedByNet[sortedByNet.length - 1].matchId,
-          netScore: sortedByNet[sortedByNet.length - 1].netScore,
-          totalFaults: calculateTotalFaults(sortedByNet[sortedByNet.length - 1].stats)
-        };
+      const data = await loadSinglePlayerData(playerId);
+      if (data) {
+        setPlayerData(data);
+        setAiSuggestions(generateAISuggestions(data));
       }
-
-      const performanceData: PlayerPerformanceData = {
-        player,
-        playerId,
-        totalStats,
-        matchCount: matchPerformances.length,
-        teamInfo,
-        matchPerformances: matchPerformances.sort((a, b) => 
-          new Date(a.match.startTime).getTime() - new Date(b.match.startTime).getTime()
-        ),
-        bestPerformance,
-        worstPerformance
-      };
-
-      setPlayerData(performanceData);
-      console.log(`[PLAYER_ANALYSIS] Loaded data for ${player.name}:`, performanceData);
-
     } catch (error) {
-      console.error('[PLAYER_ANALYSIS] Error loading player data:', error);
+      console.error('Error loading player data:', error);
       toast({
         title: "Error",
-        description: "Failed to load player performance data",
+        description: "Failed to load player data",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Load multiple players for comparison
+  const loadComparisonData = async (playerIds: string[]) => {
+    if (playerIds.length === 0) return;
+    
+    setIsLoading(true);
+    try {
+      const comparisonResults = await Promise.all(
+        playerIds.map(id => loadSinglePlayerData(id))
+      );
+      setComparisonData(comparisonResults.filter(Boolean) as PlayerPerformanceData[]);
+    } catch (error) {
+      console.error('Error loading comparison data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load comparison data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Helper function to load data for a single player
+  const loadSinglePlayerData = async (playerId: string): Promise<PlayerPerformanceData | null> => {
+    const player = players[playerId];
+    if (!player) return null;
+
+    console.log(`[PLAYER_ANALYSIS] Loading data for ${player.name}`);
+
+    // Get all match stats in parallel
+    const allMatchStats = await Promise.all(
+      Object.keys(matches).map(async (matchId) => {
+        try {
+          const stats = await getMatchStats(matchId);
+          return { matchId, stats };
+        } catch (error) {
+          console.error(`Error loading stats for match ${matchId}:`, error);
+          return { matchId, stats: {} };
+        }
+      })
+    );
+
+    // Initialize totals
+    const totalStats: PlayerStats = {
+      aces: 0, serveErrors: 0, spikes: 0, spikeErrors: 0, digs: 0, blocks: 0,
+      netTouches: 0, tips: 0, dumps: 0, footFaults: 0, reaches: 0, carries: 0,
+      points: 0, outOfBounds: 0, faults: 0, neutralBlocks: 0
+    };
+
+    const matchPerformances: PlayerPerformanceData['matchPerformances'] = [];
+    let teamInfo: PlayerPerformanceData['teamInfo'] = undefined;
+
+    // Process each match
+    allMatchStats.forEach(({ matchId, stats }) => {
+      if (stats[playerId]) {
+        const match = matches[matchId];
+        const playerStats = stats[playerId];
+        
+        // Add to totals
+        Object.keys(totalStats).forEach(statKey => {
+          const key = statKey as keyof PlayerStats;
+          if (typeof playerStats[key] === 'number') {
+            (totalStats[key] as number) += (playerStats[key] as number) || 0;
+          }
+        });
+
+        // Calculate net score for this match
+        const earned = calculateTotalEarned(playerStats);
+        const faults = calculateTotalFaults(playerStats);
+        const netScore = earned - faults;
+
+        matchPerformances.push({
+          matchId,
+          match,
+          stats: playerStats,
+          netScore
+        });
+
+        // Find player's team
+        if (!teamInfo) {
+          Object.entries(teams).forEach(([teamId, team]) => {
+            if (team.players && team.players.includes(playerId)) {
+              teamInfo = {
+                id: teamId,
+                name: team.teamName,
+                color: team.teamColor
+              };
+            }
+          });
+        }
+      }
+    });
+
+    // Find best and worst performances
+    let bestPerformance: PlayerPerformanceData['bestPerformance'];
+    let worstPerformance: PlayerPerformanceData['worstPerformance'];
+
+    if (matchPerformances.length > 0) {
+      const sortedByNet = [...matchPerformances].sort((a, b) => b.netScore - a.netScore);
+      bestPerformance = {
+        matchId: sortedByNet[0].matchId,
+        netScore: sortedByNet[0].netScore,
+        totalPoints: calculateTotalEarned(sortedByNet[0].stats)
+      };
+
+      worstPerformance = {
+        matchId: sortedByNet[sortedByNet.length - 1].matchId,
+        netScore: sortedByNet[sortedByNet.length - 1].netScore,
+        totalFaults: calculateTotalFaults(sortedByNet[sortedByNet.length - 1].stats)
+      };
+    }
+
+    const performanceData: PlayerPerformanceData = {
+      player,
+      playerId,
+      totalStats,
+      matchCount: matchPerformances.length,
+      teamInfo,
+      matchPerformances: matchPerformances.sort((a, b) => 
+        new Date(a.match.startTime).getTime() - new Date(b.match.startTime).getTime()
+      ),
+      bestPerformance,
+      worstPerformance
+    };
+
+    return performanceData;
   };
 
   // Load data when player is selected

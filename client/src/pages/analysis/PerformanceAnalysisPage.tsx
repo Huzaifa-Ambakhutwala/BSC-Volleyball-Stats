@@ -21,6 +21,7 @@ import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Toolti
 import { Bar, Pie, Radar, Line } from 'react-chartjs-2';
 import PlayerWiseAnalysis from './PlayerWiseAnalysis';
 import GameWiseAnalysis from './GameWiseAnalysis';
+import PlayerComparison from './PlayerComparison';
 
 // Register ChartJS components
 ChartJS.register(
@@ -36,7 +37,7 @@ ChartJS.register(
   Legend
 );
 
-type AnalysisView = 'player' | 'game';
+type AnalysisView = 'player' | 'game' | 'comparison';
 
 const PerformanceAnalysisPage = () => {
   const [activeView, setActiveView] = useState<AnalysisView>('player');
@@ -124,6 +125,19 @@ const PerformanceAnalysisPage = () => {
               </div>
             </button>
             <button
+              onClick={() => setActiveView('comparison')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeView === 'comparison'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-center">
+                <TrendingUp className="h-4 w-4 mr-2" />
+                Player Comparison
+              </div>
+            </button>
+            <button
               onClick={() => setActiveView('game')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeView === 'game'
@@ -143,6 +157,12 @@ const PerformanceAnalysisPage = () => {
       {/* Content */}
       {activeView === 'player' ? (
         <PlayerWiseAnalysis 
+          players={players}
+          matches={matches}
+          teams={teams}
+        />
+      ) : activeView === 'comparison' ? (
+        <PlayerComparison 
           players={players}
           matches={matches}
           teams={teams}

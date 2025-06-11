@@ -14,7 +14,8 @@ import {
   ChevronUp,
   Info,
   BarChart3,
-  PieChart as PieChartIcon
+  PieChart as PieChartIcon,
+  Lightbulb
 } from 'lucide-react';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 import { Bar, Pie, Line } from 'react-chartjs-2';
